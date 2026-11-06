@@ -562,6 +562,7 @@
       unwatched: 'Unwatched', filters: 'Filters', filters_n: 'Filters ({0})', random_title: 'A random title', loading: 'Loading…',
       genre: 'Genre', decade: 'Decade', all_m: 'All', all_f: 'All', decade_label: '{1}s', before_1950: 'Before 1950',
       picture: 'Picture', hdr_all: 'HDR (all)', favorites_only: 'Favorites only', era: 'Era',
+      dv4k: '4K Dolby Vision', duration: 'Duration', dur_lt105: 'Under 1 h 45', dur_lt120: 'Under 2 h', dur_gt150: 'Over 2 h 30', sagas: 'Sagas',
       cant_load_lib: 'Unable to load this library.', n_titles: '{0} titles', n_title: '{0} title', no_titles: 'No titles',
       search_title: 'Search', search_placeholder: 'Movie or concert title', voice_search: 'Voice search',
       heard_nothing: 'Didn’t catch that', mic_unavailable: 'Microphone unavailable', mic_denied: 'Microphone blocked: allow it in Chrome',
@@ -614,6 +615,7 @@
       unwatched: 'Non vus', filters: 'Filtres', filters_n: 'Filtres ({0})', random_title: 'Un titre au hasard', loading: 'Chargement…',
       genre: 'Genre', decade: 'Décennie', all_m: 'Tous', all_f: 'Toutes', decade_label: 'Années {0}', before_1950: 'Avant 1950',
       picture: 'Image', hdr_all: 'HDR (tous)', favorites_only: 'Favoris seulement', era: 'Époque',
+      dv4k: '4K Dolby Vision', duration: 'Durée', dur_lt105: 'Moins de 1 h 45', dur_lt120: 'Moins de 2 h', dur_gt150: 'Plus de 2 h 30', sagas: 'Sagas',
       cant_load_lib: 'Impossible de charger cette bibliothèque.', n_titles: '{0} titres', n_title: '{0} titre', no_titles: 'Aucun titre',
       search_title: 'Recherche', search_placeholder: 'Titre d’un film ou d’un concert', voice_search: 'Recherche vocale',
       heard_nothing: 'Rien entendu', mic_unavailable: 'Micro indisponible', mic_denied: 'Micro refusé : autorise-le dans Chrome',
@@ -833,6 +835,7 @@
   });
 
   $('logout').addEventListener('click', function () {
+    androidMedia('');
     delete auth.token; delete auth.userId;
     writeAuth(auth);
     cache.forEach(function (v) { v.node.remove(); });
@@ -885,7 +888,18 @@
     var poster = el('div', { 'class': 'poster' });
     var src = image(item, 'Primary', 360);
     if (src) poster.appendChild(el('img', { src: src, loading: 'lazy', alt: '' }));
-    else poster.appendChild(el('span', { 'class': 'ph', text: item.Name }));
+    else {
+      var ph = el('span', { 'class': 'ph', text: item.Name });
+      poster.appendChild(ph);
+      // Collection without its own poster: borrow the poster of its first movie.
+      if (item.Type === 'BoxSet') {
+        emby('/Users/' + uid() + '/Items', { ParentId: item.Id, SortBy: 'ProductionYear,SortName', Limit: 1, ImageTypeLimit: 1, EnableImageTypes: 'Primary' })
+          .then(function (r) {
+            var first = r && r.Items && r.Items[0], img = first && image(first, 'Primary', 360);
+            if (img) poster.replaceChild(el('img', { src: img, loading: 'lazy', alt: '' }), ph);
+          }).catch(function () { /* placeholder kept */ });
+      }
+    }
     var ud = item.UserData || {};
     if (ud.Played) poster.appendChild(el('span', { 'class': 'badge', html: icon('check') }));
     if (ud.PlayedPercentage > 0 && ud.PlayedPercentage < 100) {
@@ -1220,6 +1234,14 @@
     });
     var favorites = el('section');
     node.insertBefore(favorites, latest);
+    var sagas = el('section');
+    node.insertBefore(sagas, latest);
+    getLibs().then(function (list) {
+      var coll = list.filter(function (l) { return l.CollectionType === 'boxsets'; })[0];
+      return emby('/Users/' + uid() + '/Items', { Recursive: true, IncludeItemTypes: 'BoxSet', SortBy: 'Random', Limit: 20,
+        Fields: FIELDS, ImageTypeLimit: 1, EnableImageTypes: 'Primary' })
+        .then(function (r) { if (r && r.Items && r.Items.length) fillRow(sagas, t('sagas'), coll ? '#/lib/' + coll.Id : null, r.Items); });
+    }).catch(function () { /* section skipped */ });
     var surpriseBtn = el('button', { 'class': 'lib-btn alt', type: 'button', html: icon('dice') }, [t('surprise')]);
     surpriseBtn.addEventListener('click', function () { surprise(); });
     var seanceBtn = el('button', { 'class': 'lib-btn alt', type: 'button', html: icon('seance') }, [t('showtime')]);
@@ -1285,9 +1307,13 @@
     decadeSel.appendChild(el('option', { value: 'old', text: t('before_1950') }));
     var imageSel = el('select', { 'aria-label': t('picture') }, [
       el('option', { value: '', text: t('all_f') }), el('option', { value: '4k', text: '4K' }),
-      el('option', { value: 'dv', text: 'Dolby Vision' }), el('option', { value: 'hdr', text: t('hdr_all') })]);
+      el('option', { value: 'dv', text: 'Dolby Vision' }), el('option', { value: '4kdv', text: t('dv4k') }),
+      el('option', { value: 'hdr', text: t('hdr_all') }), el('option', { value: '3d', text: '3D' })]);
+    var durSel = el('select', { 'aria-label': t('duration') }, [el('option', { value: '', text: t('all_f') }),
+      el('option', { value: 'lt105', text: t('dur_lt105') }), el('option', { value: 'lt120', text: t('dur_lt120') }),
+      el('option', { value: 'gt150', text: t('dur_gt150') })]);
     var favSel = el('select', { 'aria-label': t('favorites') }, [el('option', { value: '', text: t('all_m') }), el('option', { value: '1', text: t('favorites_only') })]);
-    var filters = el('div', { 'class': 'filters', hidden: true }, [field(t('genre'), genreSel), field(t('era'), decadeSel), field(t('picture'), imageSel), field(t('favorites'), favSel)]);
+    var filters = el('div', { 'class': 'filters', hidden: true }, [field(t('genre'), genreSel), field(t('era'), decadeSel), field(t('picture'), imageSel), field(t('duration'), durSel), field(t('favorites'), favSel)]);
     var node = el('div', { 'class': 'view' }, [el('div', { 'class': 'toolbar' }, [sort, unplayed, filterBtn, diceBtn, count]), filters, grid, status, sentinel]);
     emby('/Genres', { ParentId: id, UserId: uid(), SortBy: 'SortName' }).then(function (r) {
       ((r && r.Items) || []).forEach(function (g) { genreSel.appendChild(el('option', { value: g.Name, text: g.Name })); });
@@ -1296,12 +1322,30 @@
       filters.hidden = !filters.hidden;
       filterBtn.setAttribute('aria-pressed', filters.hidden && !activeFilters() ? 'false' : 'true');
     });
-    function activeFilters() { return [genreSel, decadeSel, imageSel, favSel].filter(function (x) { return x.value; }).length; }
-    [genreSel, decadeSel, imageSel, favSel].forEach(function (x) {
+    function activeFilters() { return [genreSel, decadeSel, imageSel, durSel, favSel].filter(function (x) { return x.value; }).length; }
+    // Emby has no runtime filter: the matching IDs are computed here from one light query, then passed as Ids.
+    var durIds = null;
+    function loadDuration() {
+      durIds = null;
+      if (!durSel.value) return Promise.resolve();
+      var q = { ParentId: id, Recursive: true, Fields: 'RunTimeTicks', EnableImages: false, EnableUserData: false };
+      if (parent && (parent.Type === 'CollectionFolder' || parent.Type === 'UserView')) q.IncludeItemTypes = typesFor(parent.CollectionType) === 'BoxSet' ? 'Movie' : typesFor(parent.CollectionType);
+      else q.IncludeItemTypes = 'Movie,MusicVideo';
+      return emby('/Users/' + uid() + '/Items', q).then(function (r) {
+        var min = 6e8;   // ticks per minute
+        durIds = ((r && r.Items) || []).filter(function (it) {
+          var m = (it.RunTimeTicks || 0) / min;
+          if (!m) return false;
+          return durSel.value === 'lt105' ? m < 105 : durSel.value === 'lt120' ? m < 120 : m > 150;
+        }).map(function (it) { return it.Id; });
+      });
+    }
+    [genreSel, decadeSel, imageSel, durSel, favSel].forEach(function (x) {
       x.addEventListener('change', function () {
         var n = activeFilters();
         filterBtn.querySelector('span').textContent = n ? t('filters_n', n) : t('filters');
-        reset();
+        if (x === durSel) loadDuration().then(reset, function () { durIds = null; reset(); });
+        else reset();
       });
     });
     function applyFilters(q) {
@@ -1310,6 +1354,9 @@
       else if (decadeSel.value) { var d0 = +decadeSel.value, ys = []; for (var b = d0; b < d0 + 10; b++) ys.push(b); q.Years = ys.join(','); }
       if (imageSel.value === '4k') q.MinWidth = 3800;
       if (imageSel.value === 'dv') q.ExtendedVideoTypes = 'DolbyVision';
+      if (imageSel.value === '4kdv') { q.MinWidth = 3800; q.ExtendedVideoTypes = 'DolbyVision'; }
+      if (imageSel.value === '3d') q.Is3D = true;
+      if (durSel.value && durIds) q.Ids = durIds.length ? durIds.join(',') : '0';
       if (imageSel.value === 'hdr') q.ExtendedVideoTypes = 'Hdr10,Hdr10Plus,HyperLogGamma,DolbyVision';
       if (favSel.value) q.IsFavorite = true;
       return q;
@@ -1774,6 +1821,21 @@
     return false;
   }
 
+  /** Android app: lock-screen / notification media controls (window.OppoAndroid.mediaState, app 1.1+). */
+  var androidMediaLast = '';
+  function androidMedia(state, title, chapter, position, duration, itemId, tag) {
+    if (!window.OppoAndroid || typeof window.OppoAndroid.mediaState !== 'function') return;
+    var origin = location.origin + BASE.replace(/\/emby$/i, '');
+    var payload = JSON.stringify({
+      base: origin, token: auth.token || '', state: title ? state || '' : '', title: title || '', chapter: chapter || '',
+      position: Math.round(position || 0), duration: Math.round(duration || 0),
+      image: itemId && tag ? location.origin + BASE + '/Items/' + itemId + '/Images/Primary?maxHeight=300&quality=85&tag=' + tag : ''
+    });
+    if (payload === androidMediaLast) return;
+    androidMediaLast = payload;
+    try { window.OppoAndroid.mediaState(payload); } catch (e) { /* older app */ }
+  }
+
   function render(s) {
     var state = (s.State || '').toUpperCase();
     var playing = PLAYING.indexOf(state) >= 0;
@@ -1796,6 +1858,7 @@
     last.title = title || null;
     last.itemId = itemId; last.imageTag = tag; last.stateText = stateText;
 
+    androidMedia(s.Reachable ? state : '', title, s.Chapter, s.Position, s.Duration, itemId, tag);
     loadPlayerItem(itemId);
     drawSleep(s);
     if (!playing) $('p-out').hidden = true;

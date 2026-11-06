@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
@@ -44,6 +45,8 @@ public class MainActivity extends Activity {
     private static final String KEY_SERVER = "server";
     private static final String DEFAULT_SERVER = "http://";
     private static final int VOICE = 1;
+    private static final int NOTIFICATIONS = 2;
+    private static final String KEY_NOTIF_ASKED = "notif_asked";
 
     private WebView web;
     private boolean errorShown;
@@ -67,7 +70,7 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setSupportZoom(false);
-        s.setUserAgentString(s.getUserAgentString() + " OppoAndroid/1.0");
+        s.setUserAgentString(s.getUserAgentString() + " OppoAndroid/1.1");
         web.addJavascriptInterface(new Bridge(), "OppoAndroid");
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new WebViewClient() {
@@ -172,6 +175,26 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onDestroy() {
+        // The page can no longer report the state: do not leave a stale notification behind
+        if (isFinishing()) {
+            MediaControls controls = MediaControls.peek();
+            if (controls != null) controls.hide();
+        }
+        super.onDestroy();
+    }
+
+    /** Android 13+: asks once for the notification permission (refusal: the notification is just not shown). */
+    private void askNotificationsOnce() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED) return;
+        SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
+        if (p.getBoolean(KEY_NOTIF_ASKED, false)) return;
+        p.edit().putBoolean(KEY_NOTIF_ASKED, true).apply();
+        requestPermissions(new String[] { "android.permission.POST_NOTIFICATIONS" }, NOTIFICATIONS);
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != VOICE) return;
@@ -208,7 +231,23 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String version() {
-            return "1.0";
+            return "1.1";
+        }
+
+        /**
+         * Player state for the lock-screen / notification controls, called by the page on every state update:
+         * {"base": "http://host:8096", "token": "...", "state": "PLAY"|"PAUSE"|"STOP"|""|..., "title": "...",
+         *  "chapter": "3 / 13", "position": seconds, "duration": seconds, "image": "http://..."}.
+         * state "" / STOP / SCREEN SAVER or an empty title removes the notification.
+         */
+        @JavascriptInterface
+        public void mediaState(final String json) {
+            if (json == null) return;
+            final boolean active = MediaControls.isActiveState(json);
+            runOnUiThread(() -> {
+                if (active) askNotificationsOnce();
+                MediaControls.get(MainActivity.this).update(json);
+            });
         }
     }
 }

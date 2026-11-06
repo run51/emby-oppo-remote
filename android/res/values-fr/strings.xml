@@ -4,4 +4,11 @@
     <string name="server_error">Le serveur ne répond pas (%1$s). Vérifie l\'adresse :</string>
     <string name="connect">Se connecter</string>
     <string name="voice_prompt">Titre du film ou du concert</string>
+    <string name="channel_playback">Lecture</string>
+    <string name="media_previous">Chapitre précédent</string>
+    <string name="media_play">Lecture</string>
+    <string name="media_pause">Pause</string>
+    <string name="media_next">Chapitre suivant</string>
+    <string name="media_stop">Arrêt</string>
+    <string name="media_chapter">Chapitre %1$s</string>
 </resources>

@@ -6,4 +6,11 @@
     <string name="server_error">The server is not responding (%1$s). Check the address:</string>
     <string name="connect">Connect</string>
     <string name="voice_prompt">Movie or concert title</string>
+    <string name="channel_playback">Playback</string>
+    <string name="media_previous">Previous chapter</string>
+    <string name="media_play">Play</string>
+    <string name="media_pause">Pause</string>
+    <string name="media_next">Next chapter</string>
+    <string name="media_stop">Stop</string>
+    <string name="media_chapter">Chapter %1$s</string>
 </resources>
