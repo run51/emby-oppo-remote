@@ -9,7 +9,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>Emby.IsoBluray</RootNamespace>
     <AssemblyName>Emby.IsoBluray</AssemblyName>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>

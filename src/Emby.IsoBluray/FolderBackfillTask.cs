@@ -31,8 +31,8 @@ namespace Emby.IsoBluray
         public string Name => Plugin.Text("Blu-ray: tracks and runtimes", "Blu-ray : pistes et durées");
         public string Key => "IsoBlurayFolderBackfill";
         public string Description => Plugin.Text(
-            "Blu-ray folders: sets track languages and removes duplicate tracks (AC3 core of TrueHD, Dolby Vision layer). ISOs and folders: fixes absurd runtimes using the disc playlist.",
-            "Dossiers Blu-ray : pose les langues des pistes et retire les pistes en double (cœur AC3 des TrueHD, couche Dolby Vision). ISO et dossiers : corrige les durées aberrantes d'après la playlist du disque.");
+            "Blu-ray folders: sets track languages and removes duplicate tracks (AC3 core of TrueHD, Dolby Vision layer). ISOs and folders: fixes absurd runtimes using the disc playlist and marks Blu-ray 3D discs as 3D.",
+            "Dossiers Blu-ray : pose les langues des pistes et retire les pistes en double (cœur AC3 des TrueHD, couche Dolby Vision). ISO et dossiers : corrige les durées aberrantes d'après la playlist du disque et marque les Blu-ray 3D comme 3D.");
         public string Category => "ISO Blu-ray";
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers() => Array.Empty<TaskTriggerInfo>();
@@ -46,7 +46,7 @@ namespace Emby.IsoBluray
                                         .OfType<Video>()
                                         .Where(v => !string.IsNullOrEmpty(v.Path))
                                         .ToList();
-            int done = 0, folders = 0, isos = 0, runtimes = 0, errors = 0;
+            int done = 0, folders = 0, isos = 0, runtimes = 0, stereo = 0, errors = 0;
             foreach (var video in videos)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -56,6 +56,7 @@ namespace Emby.IsoBluray
                     if (iso) isos++;
                     else if (applier.FixFolder(video, onlyIfNeeded: true)) folders++;
                     if ((iso || DiscInfo.FindBdmvFolder(video.Path) != null) && applier.FixRuntimeFromDisc(video)) runtimes++;
+                    if (applier.Mark3D(video)) stereo++;
                 }
                 catch (Exception ex)
                 {
@@ -64,8 +65,8 @@ namespace Emby.IsoBluray
                 }
                 progress.Report(100.0 * ++done / Math.Max(1, videos.Count));
             }
-            _logger.Info("ISO Blu-ray: backfill finished, {0} Blu-ray folder(s) and {1} ISO(s) seen, {2} runtime(s) fixed, {3} error(s)",
-                folders, isos, runtimes, errors);
+            _logger.Info("ISO Blu-ray: backfill finished, {0} Blu-ray folder(s) and {1} ISO(s) seen, {2} runtime(s) fixed, {3} marked 3D, {4} error(s)",
+                folders, isos, runtimes, stereo, errors);
             return Task.CompletedTask;
         }
     }

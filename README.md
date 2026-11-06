@@ -11,7 +11,7 @@ The interface is available in **English and French**. The language follows the d
 | Component | What it does |
 |---|---|
 | **Emby.Oppo** (plugin) | **Playback:** adds the OPPO to Emby's "Play on…" menu. The player mounts your share over NFS or SMB and opens the original file. Position is reported back to Emby, so resume and watched status work.<br>**Playback options:** audio and subtitle track selection, multi-disc titles, optional webhook for home automation.<br>**Web remote:** browse your libraries, open a title page, then control playback: chapter thumbnails, live OPPO output info (resolution, HDR, audio format), transport keys, a D-pad and a "Showtime" power scene. |
-| **Emby.IsoBluray** (plugin) | Reads inside Blu-ray ISOs and BDMV folders (UDF 2.50, MPLS playlists). Emby then shows the real audio and subtitle tracks, the correct runtime and the format (UHD, HDR…). |
+| **Emby.IsoBluray** (plugin) | Reads inside Blu-ray ISOs and BDMV folders (UDF 2.50, MPLS playlists). Emby then shows the real audio and subtitle tracks, the correct runtime and the format (UHD, HDR…). Blu-ray 3D discs are marked as 3D. |
 | **Android app** | Fullscreen app for the web remote, with voice search. The interface is served by the plugin, so it updates without reinstalling the app. |
 
 ## Installing the plugins

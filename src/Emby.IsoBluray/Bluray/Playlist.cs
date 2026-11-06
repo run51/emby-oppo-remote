@@ -45,6 +45,25 @@ namespace Emby.IsoBluray.Bluray
             [0x90] = "pgssub", [0x91] = "igs", [0x92] = "textst",
         };
 
+        /// <summary>
+        /// True if the .mpls carries the Blu-ray 3D extension data (ExtensionData entries with ID1 = 2:
+        /// stereoscopic stream table and sub-paths of the MVC dependent view). 2D playlists have none.
+        /// </summary>
+        public static bool HasStereoExtension(byte[] d)
+        {
+            if (d == null || d.Length < 20 || Encoding.ASCII.GetString(d, 0, 4) != "MPLS") return false;
+            int off = BE32(d, 16);
+            if (off <= 0 || off + 12 > d.Length || BE32(d, off) == 0) return false;
+            int count = d[off + 11];
+            for (int i = 0; i < count; i++)
+            {
+                int q = off + 12 + i * 12;
+                if (q + 4 > d.Length) break;
+                if (BE16(d, q) == 2) return true;
+            }
+            return false;
+        }
+
         /// <summary>Parses a .mpls file (public Blu-ray playlist format).</summary>
         public static Playlist Parse(string name, byte[] d)
         {
@@ -193,6 +212,44 @@ namespace Emby.IsoBluray.Bluray
                 if (image.Resolve(candidate + "/PLAYLIST") != null) return candidate;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Blu-ray 3D: the disc has a non-empty BDMV/STREAM/SSIF folder (interleaved left/right views, MVC),
+        /// or playlists with the 3D extension data. 2D discs have neither.
+        /// </summary>
+        public static bool IsStereo3D(UdfImage image)
+        {
+            string root = FindBdmvRoot(image);
+            if (root == null) return false;
+            var ssif = image.Resolve(root + "/STREAM/SSIF");
+            if (ssif != null && image.ListDirectory(ssif).Any(e => !e.IsDirectory && e.Name.EndsWith(".ssif", StringComparison.OrdinalIgnoreCase)))
+                return true;
+            // Some rips drop the SSIF folder but keep the 3D playlists.
+            var playlists = image.Resolve(root + "/PLAYLIST");
+            if (playlists == null) return false;
+            foreach (var e in image.ListDirectory(playlists))
+            {
+                if (e.IsDirectory || !e.Name.EndsWith(".mpls", StringComparison.OrdinalIgnoreCase)) continue;
+                try { if (Playlist.HasStereoExtension(image.ReadAllBytes(e))) return true; }
+                catch (Exception) { /* unreadable playlist: ignored */ }
+            }
+            return false;
+        }
+
+        /// <summary>Same as <see cref="IsStereo3D(UdfImage)"/> for a BDMV folder on disk.</summary>
+        public static bool IsStereo3DFolder(string bdmvFolder)
+        {
+            string ssif = System.IO.Path.Combine(bdmvFolder, "STREAM", "SSIF");
+            if (Directory.Exists(ssif) && Directory.EnumerateFiles(ssif, "*.ssif").Any()) return true;
+            string playlists = System.IO.Path.Combine(bdmvFolder, "PLAYLIST");
+            if (!Directory.Exists(playlists)) return false;
+            foreach (var file in Directory.EnumerateFiles(playlists, "*.mpls"))
+            {
+                try { if (Playlist.HasStereoExtension(File.ReadAllBytes(file))) return true; }
+                catch (Exception) { }
+            }
+            return false;
         }
 
         /// <summary>BDMV folder of a movie stored as a folder (or the folder itself if it is named BDMV).</summary>

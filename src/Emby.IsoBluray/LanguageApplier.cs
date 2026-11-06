@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -48,6 +49,7 @@ namespace Emby.IsoBluray
                 if (!(e.Item is Video video) || video.InternalId <= 0) return;
                 string path = video.Path;
                 if (string.IsNullOrEmpty(path)) return;
+                Mark3D(video);
                 if (path.EndsWith(".iso", StringComparison.OrdinalIgnoreCase))
                 {
                     if (IsoBlurayMounter.Analyses.TryRemove(IsoBlurayMounter.Key(path), out var analysis)) Apply(video, analysis);
@@ -98,6 +100,48 @@ namespace Emby.IsoBluray
                 AnalysedUtc = DateTime.UtcNow
             };
             Apply(video, analysis);
+            return true;
+        }
+
+        private static readonly ConcurrentDictionary<string, (DateTime Stamp, bool Is3D)> Stereo =
+            new ConcurrentDictionary<string, (DateTime, bool)>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Blu-ray 3D disc (ISO or folder): Emby only detects 3D from tags in the file name, so the
+        /// movie is marked MVC 3D here. Returns true if the item was changed.
+        /// </summary>
+        internal bool Mark3D(Video video)
+        {
+            if (video.Video3DFormat.HasValue) return false;
+            string path = video.Path;
+            bool iso = path.EndsWith(".iso", StringComparison.OrdinalIgnoreCase);
+            string bdmv = iso ? null : DiscInfo.FindBdmvFolder(path);
+            if (!iso && bdmv == null) return false;
+
+            DateTime stamp = iso ? File.GetLastWriteTimeUtc(path) : Directory.GetLastWriteTimeUtc(path);
+            bool is3D;
+            if (Stereo.TryGetValue(path, out var hit) && hit.Stamp == stamp) is3D = hit.Is3D;
+            else
+            {
+                try
+                {
+                    if (iso)
+                        using (var image = new UdfImage(path)) is3D = DiscInfo.IsStereo3D(image);
+                    else
+                        is3D = DiscInfo.IsStereo3DFolder(bdmv);
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    _logger.Debug("ISO Blu-ray: {0} unreadable for 3D detection ({1})", Path.GetFileName(path.TrimEnd('/')), ex.Message);
+                    is3D = false;
+                }
+                Stereo[path] = (stamp, is3D);
+            }
+            if (!is3D) return false;
+
+            video.Video3DFormat = Video3DFormat.MVC;
+            video.UpdateToRepository(ItemUpdateType.MetadataImport);
+            _logger.Info("ISO Blu-ray: {0} marked as 3D (MVC)", Path.GetFileName(path.TrimEnd('/')));
             return true;
         }
 
