@@ -1,0 +1,56 @@
+<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-horizontal="false" data-forcescrollbar="true" data-centerfocus="true" data-bindheader="true" data-controller="__plugin/oppojs" data-title="OPPO">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page">
+        <!-- English by default; oppo.js applies the data-i18n* texts (English or French) when the page loads. -->
+        <form class="oppoConfigForm auto-center padded-top">
+
+            <h2 class="sectionTitle" data-i18n="player">Player</h2>
+            <div class="inputContainer">
+                <input is="emby-input" type="text" id="txtOppoAddress" label="OPPO player IP address:" data-i18n-label="oppoAddress" required />
+                <div class="fieldDescription" data-i18n="oppoAddressHelp">UDP-203 / UDP-205 or a compatible clone, on the same network as this server. Enable network standby on the player so that it can be turned on remotely.</div>
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="text" id="txtDeviceName" label="Name in the &quot;Play on&quot; menu:" data-i18n-label="deviceName" />
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="number" id="txtStartTimeout" label="Start timeout (seconds):" data-i18n-label="startTimeout" min="10" max="300" />
+            </div>
+
+            <h2 class="sectionTitle" data-i18n="remote">Remote control</h2>
+            <div class="fieldDescription" style="margin-bottom:2em;">
+                <span data-i18n="remoteHelp">Full remote control page (playback, chapters, directional pad, menus, audio and subtitles) to open on a phone and add to its home screen. Sign in with an Emby account.</span><br />
+                <a class="lnkOppoRemote button-link" href="#" target="_blank" rel="noopener" data-i18n="openRemote">Open the remote control</a>
+                — <span data-i18n="address">address:</span> <code class="txtOppoRemoteUrl"></code>
+            </div>
+
+            <h2 class="sectionTitle" data-i18n="access">Access to movies</h2>
+            <div class="fieldDescription" style="margin-bottom:1em;" data-i18n="accessHelp">
+                Each folder of your Emby libraries must match a share that the OPPO can mount.
+                "Search" turns the OPPO on and lists the shares it sees; a match is suggested
+                automatically. Check it with "Test".
+            </div>
+            <button is="emby-button" type="button" class="raised btnDiscover"><span data-i18n="discover">Search the OPPO's shares</span></button>
+            <div class="discoverStatus fieldDescription" style="margin:1em 0;"></div>
+            <div class="oppoMappings"></div>
+
+            <h2 class="sectionTitle" style="margin-top:2em;" data-i18n="homeAutomation">Home automation</h2>
+            <div class="inputContainer">
+                <input is="emby-input" type="url" id="txtWebhookUrl" label="Webhook URL (optional):" data-i18n-label="webhookUrl" />
+                <div class="fieldDescription" data-i18n-html="webhookHelp">Called with POST at the start (<code>{"event":"detected","title":…}</code>) and at the end (<code>"stopped"</code>) of each movie, and by the remote control's Showtime / All off buttons (<code>"seance_on"</code> / <code>"seance_off"</code>). Home Assistant example: <code>http://homeassistant:8123/api/webhook/my_id</code></div>
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="text" id="txtRemoteAddress" label="Unfolded Circle remote — address (optional):" data-i18n-label="ucAddress" />
+                <div class="fieldDescription" data-i18n="ucAddressHelp">If set, the Remote 2/3 turns the TV on over the network when a movie starts and with the Showtime button.</div>
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="password" id="txtRemoteApiKey" label="Remote — API key:" data-i18n-label="ucApiKey" />
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="text" id="txtRemoteTvEntity" label="Remote — TV entity (e.g. lgwebos_driver.main.media_player.192.168.1.20):" data-i18n-label="ucTvEntity" />
+            </div>
+
+            <div style="margin-top:2em;">
+                <button is="emby-button" type="submit" class="raised button-submit block"><span data-i18n="save">Save</span></button>
+            </div>
+        </form>
+    </div>
+</div>

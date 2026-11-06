@@ -1,0 +1,10 @@
+bin/
+obj/
+android/build/
+src/Emby.Oppo/Remote/oppo.apk
+*.jks
+*.keystore
+__pycache__/
+*.user
+.vs/
+dist/

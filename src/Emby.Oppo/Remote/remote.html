@@ -1,0 +1,2134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0f12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="OPPO">
+<title>OPPO</title>
+<link rel="manifest" href="Remote/app.webmanifest" id="manifest">
+<link rel="icon" href="Remote/icon192.png" id="favicon">
+<link rel="apple-touch-icon" href="Remote/icon192.png" id="touchicon">
+<style>
+  :root {
+    --bg: #0e0f12;
+    --surface: #181a20;
+    --surface-2: #22252d;
+    --surface-3: #2c3039;
+    --line: #2f333c;
+    --text: #eef0f3;
+    --text-2: #cfd3da;
+    --muted: #9aa1ad;
+    --accent: #3ea6ff;
+    --accent-ink: #06121f;
+    --danger: #ff6b6b;
+    --ok: #46d483;
+    --red: #e5484d; --green: #30a46c; --yellow: #f5d90a; --blue: #3e63dd;
+    --radius: 16px;
+    --appbar-h: 60px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  [hidden] { display: none !important; }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; touch-action: manipulation; }
+  button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  svg { width: 24px; height: 24px; fill: currentColor; display: block; flex: none; }
+  select, input[type=search] {
+    font: inherit; font-size: 15px; color: var(--text); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-height: 44px;
+  }
+
+  /* Top bar */
+  .appbar {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; gap: 2px;
+    padding: max(8px, env(safe-area-inset-top)) 6px 8px;
+    background: rgba(14, 15, 18, .94);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .appbar-title { flex: 1; min-width: 0; font-weight: 650; font-size: 18px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon-btn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); flex: none; }
+  .icon-btn:active { background: var(--surface-3); }
+  .appbar .icon-btn { background: transparent; }
+  .appbar .icon-btn:active { background: var(--surface-2); }
+
+  .view { max-width: 980px; margin: 0 auto; padding: 4px 16px calc(28px + env(safe-area-inset-bottom)); }
+  body.has-mini .view { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .loading { color: var(--muted); text-align: center; padding: 28px 0; font-size: 15px; }
+
+  /* Home */
+  .libs { display: flex; gap: 10px; flex-wrap: wrap; padding: 6px 0 4px; }
+  .lib-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: 23px; background: var(--surface); text-decoration: none; font-weight: 600; }
+  .lib-btn:active { background: var(--surface-3); }
+  .lib-btn svg { width: 20px; height: 20px; color: var(--accent); }
+  h2.section { font-size: 17px; font-weight: 650; margin: 22px 0 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  h2.section a { font-size: 14px; color: var(--accent); text-decoration: none; font-weight: 500; white-space: nowrap; }
+  .hrow {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 114px; gap: 12px;
+    overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+    margin: 0 -16px; padding: 0 16px 4px; scroll-padding: 0 16px;
+  }
+  .hrow::-webkit-scrollbar { display: none; }
+
+  /* Posters */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 16px 12px; }
+  .card { color: inherit; text-decoration: none; display: flex; flex-direction: column; gap: 6px; scroll-snap-align: start; min-width: 0; }
+  .card .poster { position: relative; aspect-ratio: 2 / 3; border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+  .card:active .poster { opacity: .8; }
+  .card .poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card .ph { position: absolute; inset: 0; display: grid; place-items: center; padding: 8px; text-align: center; color: var(--muted); font-size: 13px; }
+  .card .name { font-size: 13px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .year { font-size: 12px; color: var(--muted); margin-top: -4px; }
+  .badge { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  .badge svg { width: 15px; height: 15px; }
+  .bar-mini { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0, 0, 0, .55); }
+  .bar-mini span { display: block; height: 100%; background: var(--accent); }
+
+  /* Library */
+  .toolbar { position: sticky; top: var(--appbar-h); z-index: 4; display: flex; gap: 8px; align-items: center; padding: 6px 0 12px; background: var(--bg); }
+  .toolbar select { flex: 0 1 auto; min-width: 0; }
+  .toggle { min-height: 44px; padding: 0 14px; border-radius: 12px; background: var(--surface); font-size: 15px; white-space: nowrap; }
+  .toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .count { margin-left: auto; color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .search-box { position: sticky; top: var(--appbar-h); z-index: 4; background: var(--bg); padding: 6px 0 12px; }
+  .search-box input { width: 100%; }
+
+  /* Item page */
+  .hero { position: relative; margin: 0 -16px; aspect-ratio: 16 / 9; max-height: 44vh; overflow: hidden; background: var(--surface); }
+  .hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(14,15,18,0) 35%, rgba(14,15,18,.75) 75%, var(--bg) 100%); }
+  .dhead { display: flex; gap: 14px; align-items: flex-end; margin-top: -72px; position: relative; z-index: 1; }
+  .dposter { width: 104px; aspect-ratio: 2 / 3; border-radius: 10px; object-fit: cover; background: var(--surface-2); box-shadow: 0 8px 28px rgba(0,0,0,.55); flex: none; }
+  .dtitle { min-width: 0; padding-bottom: 2px; }
+  .dtitle h1 { font-size: 21px; line-height: 1.2; margin: 0 0 6px; }
+  .meta { color: var(--muted); font-size: 14px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+  .badges:empty { display: none; }
+  .vb { font-size: 12px; font-weight: 700; letter-spacing: .3px; line-height: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text-2); white-space: nowrap; }
+  .vb.res { color: var(--text); border-color: #4a505c; }
+  .vb.dv { color: #d4b8ff; border-color: rgba(190, 150, 255, .45); background: rgba(150, 100, 255, .10); }
+  .vb.hdr { color: #f3d35b; border-color: rgba(243, 211, 91, .4); background: rgba(243, 211, 91, .08); }
+  /* Disc format: labels in the usual colours (these are not the official logos). */
+  .vb.src { font-style: italic; letter-spacing: .2px; }
+  .vb.src.bluray { color: #fff; border-color: transparent; background: linear-gradient(180deg, #3b8ff0, #1257b8); }
+  .vb.src.uhd { color: #fff; border-color: #6b7280; background: linear-gradient(180deg, #2a2d33, #050506); }
+  .vb.src.dvd { color: #111; border-color: transparent; background: linear-gradient(180deg, #f5f5f5, #cfd2d6); }
+  .vb.src.file, .vb.src.iso, .vb.src.folder { font-style: normal; }
+  .actions { display: flex; flex-direction: column; gap: 10px; margin: 14px 0 14px; }
+  .btn { min-height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600; padding: 0 16px; }
+  .btn svg { width: 22px; height: 22px; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.primary:active { filter: brightness(.9); }
+  .btn.secondary { background: var(--surface); }
+  .btn.secondary:active { background: var(--surface-3); }
+  .fields { display: grid; gap: 12px; margin-bottom: 14px; }
+  .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+  .field select { width: 100%; }
+  .note { margin: 0; color: var(--muted); font-size: 14px; }
+  .overview { color: var(--text-2); font-size: 15px; line-height: 1.55; margin: 6px 0 14px; cursor: pointer; }
+  .overview.clamp { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .pill { min-height: 46px; border-radius: 12px; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; font-size: 15px; }
+  .pill:active { background: var(--surface-3); }
+  .pill svg { width: 20px; height: 20px; }
+  .pill.on { color: var(--accent); }
+
+  /* Mini player */
+  .mini {
+    position: fixed; left: 8px; right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); z-index: 6;
+    max-width: 560px; margin: 0 auto; display: flex; align-items: center; gap: 12px; padding: 8px;
+    background: var(--surface-2); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.55); cursor: pointer;
+  }
+  .mini img, .mini .m-ph { width: 40px; height: 60px; border-radius: 6px; object-fit: cover; background: var(--surface-3); flex: none; }
+  .m-text { flex: 1; min-width: 0; }
+  .m-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-state { color: var(--muted); font-size: 13px; }
+  .mini .icon-btn { background: var(--surface-3); }
+
+  /* Playback (remote) */
+  #player { display: flex; flex-direction: column; gap: 14px; max-width: 460px; }
+  .status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .dev { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text-2); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); transition: background .3s; }
+  .dot.on { background: var(--ok); }
+  .dot.off { background: var(--danger); }
+  #power.off { color: var(--danger); }
+  .now { background: var(--surface); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .now-top { display: flex; gap: 14px; align-items: center; min-height: 72px; }
+  .now .p-poster { width: 56px; height: 84px; border-radius: 8px; object-fit: cover; background: var(--surface-2); flex: none; }
+  .now-text { min-width: 0; flex: 1; }
+  .p-title { font-size: 18px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub { color: var(--muted); font-size: 14px; margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .progress { display: flex; flex-direction: column; gap: 6px; }
+  .bar { height: 28px; display: flex; align-items: center; cursor: pointer; touch-action: manipulation; }
+  .track { position: relative; height: 6px; width: 100%; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+  .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); border-radius: 3px; }
+  .times { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .transport { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; }
+  .t-btn { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); }
+  .t-btn:active { background: var(--surface-3); }
+  .t-btn.main { width: 72px; height: 72px; background: var(--accent); color: var(--accent-ink); }
+  .t-btn.main:active { filter: brightness(.9); }
+  .t-btn.main svg { width: 34px; height: 34px; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; }
+  .row .pill { display: flex; }
+  .pill.stop { color: var(--danger); }
+  .nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  .side { display: flex; flex-direction: column; gap: 12px; }
+  .side.left { align-items: flex-start; }
+  .side.right { align-items: flex-end; }
+  .labelled { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); width: 64px; text-align: center; }
+  .labelled .icon-btn { width: 48px; height: 48px; color: var(--text); }
+  .pad { position: relative; width: 196px; height: 196px; border-radius: 50%; background: var(--surface); }
+  .pad .arrow { position: absolute; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; }
+  .pad .arrow:active { background: var(--surface-3); }
+  .pad .arrow svg { width: 30px; height: 30px; }
+  .pad .up { top: 2px; left: 66px; } .pad .down { bottom: 2px; left: 66px; }
+  .pad .left { left: 2px; top: 66px; } .pad .right { right: 2px; top: 66px; }
+  .pad .ok { position: absolute; inset: 58px; border-radius: 50%; background: var(--surface-3); font-weight: 700; font-size: 17px; }
+  .pad .ok:active { background: var(--accent); color: var(--accent-ink); }
+  section.card-box, details.card-box { background: var(--surface); border-radius: var(--radius); padding: 12px 14px 14px; }
+  .card-box h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin: 2px 0 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { min-height: 38px; padding: 6px 12px; border-radius: 19px; background: var(--surface-2); font-size: 14px; text-align: left; }
+  .chip:active { background: var(--surface-3); }
+  .chip.selected { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .empty { color: var(--muted); font-size: 14px; }
+  details.card-box summary { cursor: pointer; list-style: none; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  details.card-box summary::-webkit-details-marker { display: none; }
+  details.card-box summary { display: flex; justify-content: space-between; align-items: center; }
+  details.card-box summary::after { content: ""; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .2s; }
+  details.card-box[open] summary::after { transform: rotate(-135deg); }
+  details.card-box .more { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .color { min-height: 40px; border-radius: 10px; }
+  .color.red { background: var(--red); } .color.green { background: var(--green); }
+  .color.yellow { background: var(--yellow); } .color.blue { background: var(--blue); }
+  .pill.small { min-height: 42px; background: var(--surface-2); font-size: 14px; }
+  .account { display: flex; justify-content: center; gap: 16px; color: var(--muted); font-size: 13px; padding-top: 4px; }
+  .account { flex-wrap: wrap; }
+  .account button { color: var(--muted); text-decoration: underline; }
+  .account a { color: var(--accent); }
+  .account select { min-height: 0; padding: 2px 6px; font-size: 13px; border-radius: 8px; color: var(--muted); background: transparent; }
+
+  /* Sign-in */
+  .login { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; padding: 24px 16px; z-index: 10; }
+  .login form { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
+  .login img { width: 72px; height: 72px; align-self: center; border-radius: 16px; }
+  .login h1 { font-size: 20px; margin: 0; text-align: center; }
+  .login p { margin: 0; color: var(--muted); font-size: 14px; text-align: center; }
+  .login label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
+  .login input { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .login input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .login .submit { min-height: 48px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 650; }
+  .login .error { color: var(--danger); min-height: 20px; }
+
+  /* Additions 0.10 */
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .dlogo { display: block; max-width: 100%; max-height: 66px; object-fit: contain; object-position: left bottom; margin-bottom: 8px; }
+  .vb.aud { color: #8fe3cf; border-color: rgba(100, 220, 190, .35); background: rgba(100, 220, 190, .07); }
+  .cb { position: absolute; left: 6px; bottom: 9px; display: flex; gap: 3px; }
+  .cb span { font-size: 10px; font-weight: 800; letter-spacing: .2px; padding: 2px 4px; border-radius: 4px; background: rgba(0, 0, 0, .75); color: #fff; }
+  .cb .dv { color: #d4b8ff; } .cb .hdr { color: #f3d35b; }
+  .row-btns { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 14px; }
+  .pill.fav.on { color: #ff6b8a; }
+  .crew { color: var(--muted); font-size: 14px; margin: 0 0 4px; }
+  .crew b { color: var(--text-2); font-weight: 600; }
+  .people { grid-auto-columns: 84px; }
+  .person { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: inherit; scroll-snap-align: start; min-width: 0; }
+  .person img, .person .pph { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--surface-2); }
+  .person .pn { font-size: 12px; line-height: 1.2; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .person .pr { font-size: 11px; color: var(--muted); text-align: center; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .toolbar { flex-wrap: wrap; }
+  .toggle svg { width: 18px; height: 18px; display: inline-block; vertical-align: -4px; margin-right: 4px; }
+  .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 0 14px; }
+  .filters .field { font-size: 12px; }
+  .search-box { display: flex; gap: 8px; }
+  .search-box input { flex: 1; min-width: 0; }
+  .mic.listening { background: var(--danger); color: #fff; }
+  .lib-btn.alt svg { color: #f3d35b; }
+  .pperson { display: flex; align-items: center; gap: 14px; margin: 8px 0 18px; }
+  .pperson img, .pperson .pph { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; background: var(--surface-2); }
+  .pperson h1 { font-size: 21px; margin: 0; }
+
+  /* 0.11: playback screen, chapters, sleep timer */
+  #player { position: relative; z-index: 0; }
+  .p-bg { position: fixed; inset: 0; z-index: -1; background-size: cover; background-position: center; filter: blur(22px) brightness(.32) saturate(1.2); transform: scale(1.12); opacity: 0; transition: opacity .6s; pointer-events: none; }
+  .p-bg.on { opacity: 1; }
+  .now { background: rgba(24, 26, 32, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .now .p-poster { width: 84px; height: 126px; }
+  .p-logo { display: block; max-width: 100%; max-height: 48px; object-fit: contain; object-position: left; margin-bottom: 4px; }
+  .p-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .p-badges .vb { font-size: 11px; padding: 4px 6px; }
+  .chap-row { grid-auto-columns: 150px; }
+  .chap { display: flex; flex-direction: column; gap: 4px; text-align: left; scroll-snap-align: start; }
+  .chap .thumb { display: block; position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: var(--surface-2); border: 2px solid transparent; }
+  .chap .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .chap.current .thumb { border-color: var(--accent); }
+  .chap .cbar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0, 0, 0, .55); display: none; }
+  .chap .cbar span { display: block; height: 100%; width: 0; background: var(--accent); }
+  .chap.current .cbar { display: block; }
+  .chap .ct { display: block; font-size: 12px; color: var(--muted); }
+  .chap.current .ct { color: var(--accent); font-weight: 600; }
+  .out-box { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; }
+  .out-box dt { color: var(--muted); }
+  .out-box dd { margin: 0; font-weight: 600; color: var(--text-2); }
+  .sleep-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sleep-status { color: var(--muted); font-size: 13px; text-align: center; }
+  .pill.on { color: var(--accent); }
+
+  /* 0.11: two-column item page and remote alongside, on landscape tablets */
+  @media (min-width: 900px) and (orientation: landscape) {
+    .dcols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 28px; align-items: start; }
+    .dcols .dcol-r { padding-top: 18px; }
+  }
+  @media (min-width: 1100px) and (orientation: landscape) {
+    #player, #player[hidden] {
+      display: flex !important; position: fixed; top: var(--appbar-h); right: 0; bottom: 0; width: 400px; max-width: none;
+      overflow-y: auto; margin: 0; padding: 12px 16px 24px; border-left: 1px solid var(--line); background: var(--bg);
+    }
+    #player .p-bg { position: absolute; }
+    #views { margin-right: 400px; }
+    .mini { display: none !important; }
+    #nav-player { display: none !important; }
+    body.has-mini .view { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+  }
+
+  /* 0.12.1: compact playback screen */
+  .appbar { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: 4px; }
+  .appbar .icon-btn { width: 40px; height: 40px; }
+  .appbar-title { font-size: 17px; }
+  #player { gap: 10px; }
+  #player .status-row { display: none; }
+  #nav-power.off { color: var(--danger); }
+  .now { padding: 10px 12px; gap: 8px; }
+  .now .p-poster { width: 64px; height: 96px; }
+  .now-top { gap: 12px; min-height: 0; }
+  .p-logo { max-height: 34px; margin-bottom: 2px; }
+  .p-title { font-size: 16px; }
+  .now .sub { font-size: 13px; gap: 6px; margin-top: 0; align-items: center; }
+  .now .sub .dot { width: 8px; height: 8px; }
+  .p-badges { margin-top: 4px; }
+  .p-out { font-size: 12.5px; color: var(--text-2); line-height: 1.35; }
+  .p-out b { color: var(--muted); font-weight: 500; }
+  .bar { height: 20px; }
+  .transport .t-btn { width: 48px; height: 48px; }
+  .transport .t-btn.main { width: 60px; height: 60px; }
+  .transport .t-btn.main svg { width: 30px; height: 30px; }
+  .row3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .row3 .pill { min-height: 40px; padding: 0 6px; font-size: 14px; gap: 5px; }
+  .row3 .pill svg { width: 16px; height: 16px; }
+  #chap-box { padding: 8px 12px 10px; }
+  #chap-box h2 { margin-bottom: 6px; }
+  .chap-row { grid-auto-columns: 128px; }
+  @media (min-width: 1100px) and (orientation: landscape) {
+    #player .status-row { display: flex; }
+    #nav-power { display: none !important; }
+  }
+
+  .toast { position: fixed; left: 50%; bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px); transform: translate(-50%, 20px); opacity: 0; background: var(--surface-3); color: var(--text); padding: 10px 16px; border-radius: 12px; font-size: 14px; transition: opacity .2s, transform .2s; pointer-events: none; max-width: calc(100% - 32px); z-index: 20; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (min-width: 700px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .hrow { grid-auto-columns: 140px; }
+    .detail .dposter { width: 150px; }
+    .detail .dhead { margin-top: -110px; }
+    .actions { flex-direction: row; }
+    .actions .btn { flex: 1; }
+  }
+  @media (max-width: 360px) {
+    .pad { width: 176px; height: 176px; }
+    .pad .arrow { width: 58px; height: 58px; }
+    .pad .up, .pad .down { left: 59px; } .pad .left, .pad .right { top: 59px; }
+    .pad .ok { inset: 52px; }
+    .labelled { width: 56px; }
+    .t-btn { width: 48px; height: 48px; }
+    .t-btn.main { width: 64px; height: 64px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6z"/></symbol>
+  <symbol id="i-rew" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6zm.5-6 8.5 6V6z"/></symbol>
+  <symbol id="i-ff" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6zm9-12v12l8.5-6z"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M7.4 15.4 12 10.8l4.6 4.6L18 14l-6-6-6 6z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M8.6 16.6 13.2 12 8.6 7.4 10 6l6 6-6 6z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></symbol>
+  <symbol id="i-disc" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 13a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M13 3h-2v10h2zm4.8 2.2-1.4 1.4A7 7 0 1 1 7.6 6.6L6.2 5.2A9 9 0 1 0 17.8 5.2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></symbol>
+  <symbol id="i-remote" viewBox="0 0 24 24"><path d="M15 2H9a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3zm1 17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1zM12 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm-2 9h4v2h-4z"/></symbol>
+  <symbol id="i-fs" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7zm-2-4h2V7h3V5H5zm12 7h-3v2h5v-5h-2zM14 5v2h3v3h2V5z"/></symbol>
+  <symbol id="i-fs-exit" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5zm3-8H5v2h5V5H8zm6 11h2v-3h3v-2h-5zm2-11V5h-2v5h5V8z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54z"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04z"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M10 18h4v-2h-4zM3 6v2h18V6zm3 7h12v-2H6z"/></symbol>
+  <symbol id="i-seance" viewBox="0 0 24 24"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V4z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3zM8 17H6v-2h2zm0-4H6v-2h2zm0-4H6V7h2zm10 8h-2v-2h2zm0-4h-2v-2h2zm0-4h-2V7h2z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M12 3v10.6A4 4 0 1 0 14 17V7h4V3z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z"/></symbol>
+</svg>
+
+<header class="appbar" id="appbar">
+  <button class="icon-btn" id="nav-back" aria-label="Back" data-i18n-aria="back" hidden><svg><use href="#i-back"/></svg></button>
+  <div class="appbar-title" id="appbar-title">OPPO</div>
+  <button class="icon-btn" id="nav-power" aria-label="Turn the OPPO on or off" data-i18n-aria="power_toggle" hidden><svg><use href="#i-power"/></svg></button>
+  <button class="icon-btn" id="nav-fs" aria-label="Full screen" data-i18n-aria="fullscreen" hidden><svg><use href="#i-fs" id="fs-icon"/></svg></button>
+  <button class="icon-btn" id="nav-search" aria-label="Search" data-i18n-aria="search"><svg><use href="#i-search"/></svg></button>
+  <button class="icon-btn" id="nav-player" aria-label="Remote" data-i18n-aria="remote"><svg><use href="#i-remote"/></svg></button>
+</header>
+
+<div id="views"></div>
+
+<main class="view" id="player" hidden>
+  <div class="p-bg" id="p-bg" aria-hidden="true"></div>
+  <div class="status-row">
+    <div class="dev"><span class="dot" id="dot" aria-hidden="true"></span><span id="device">OPPO</span></div>
+    <button class="icon-btn" id="power" aria-label="Turn the OPPO on or off" data-i18n-aria="power_toggle"><svg><use href="#i-power"/></svg></button>
+  </div>
+
+  <div class="now" aria-live="polite">
+    <div class="now-top">
+      <img class="p-poster" id="p-poster" alt="" hidden>
+      <div class="now-text">
+        <img class="p-logo" id="p-logo" alt="" hidden>
+        <div class="p-title" id="p-title" data-i18n="connecting">Connecting…</div>
+        <div class="sub"><span class="dot" id="dot2" aria-hidden="true"></span><span id="p-state"></span><span id="p-chapter"></span><span id="p-end"></span></div>
+        <div class="p-badges" id="p-badges"></div>
+      </div>
+    </div>
+    <div class="p-out" id="p-out" hidden></div>
+    <div class="progress" id="progress" hidden>
+      <div class="bar" id="bar" role="slider" aria-label="Playback position" data-i18n-aria="seek_bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+        <div class="track"><div class="fill" id="fill"></div></div>
+      </div>
+      <div class="times"><span id="pos">0:00</span><span id="dur">0:00</span></div>
+    </div>
+  </div>
+
+  <div class="transport">
+    <button class="t-btn" data-key="PRE" aria-label="Previous chapter" data-i18n-aria="prev_chapter"><svg><use href="#i-prev"/></svg></button>
+    <button class="t-btn" data-key="REV" aria-label="Rewind" data-i18n-aria="rewind"><svg><use href="#i-rew"/></svg></button>
+    <button class="t-btn main" id="playpause" aria-label="Play / pause" data-i18n-aria="play_pause"><svg><use href="#i-play" class="pp-icon"/></svg></button>
+    <button class="t-btn" data-key="FWD" aria-label="Fast forward" data-i18n-aria="ffwd"><svg><use href="#i-ff"/></svg></button>
+    <button class="t-btn" data-key="NXT" aria-label="Next chapter" data-i18n-aria="next_chapter"><svg><use href="#i-next"/></svg></button>
+  </div>
+
+  <div class="row row3">
+    <button class="pill" id="back30" type="button">−30 s</button>
+    <button class="pill stop" data-key="STP"><svg><use href="#i-stop"/></svg>Stop</button>
+    <button class="pill" id="fwd30" type="button">+30 s</button>
+  </div>
+
+  <section class="card-box" id="chap-box" hidden>
+    <h2 data-i18n="chapters">Chapters</h2>
+    <div class="hrow chap-row" id="chapters"></div>
+  </section>
+
+  <div class="nav">
+    <div class="side left">
+      <div class="labelled" data-i18n="back"><button class="icon-btn" data-key="RET" aria-label="Back" data-i18n-aria="back"><svg><use href="#i-back"/></svg></button>Back</div>
+      <div class="labelled" data-i18n="disc_menu"><button class="icon-btn" data-key="TTL" aria-label="Disc menu" data-i18n-aria="disc_menu_aria"><svg><use href="#i-disc"/></svg></button>Disc menu</div>
+    </div>
+    <div class="pad">
+      <button class="arrow up" data-key="NUP" aria-label="Up" data-i18n-aria="up"><svg><use href="#i-up"/></svg></button>
+      <button class="arrow left" data-key="NLT" aria-label="Left" data-i18n-aria="left"><svg><use href="#i-left"/></svg></button>
+      <button class="ok" data-key="SEL" aria-label="OK">OK</button>
+      <button class="arrow right" data-key="NRT" aria-label="Right" data-i18n-aria="right"><svg><use href="#i-right"/></svg></button>
+      <button class="arrow down" data-key="NDN" aria-label="Down" data-i18n-aria="down"><svg><use href="#i-down"/></svg></button>
+    </div>
+    <div class="side right">
+      <div class="labelled"><button class="icon-btn" data-key="OSD" aria-label="Info"><svg><use href="#i-info"/></svg></button>Info</div>
+      <div class="labelled" data-i18n="popup_menu"><button class="icon-btn" data-key="MNU" aria-label="Pop-up menu" data-i18n-aria="popup_menu"><svg><use href="#i-menu"/></svg></button>Pop-up menu</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="pill" id="seance-on" type="button" data-i18n="showtime"><svg><use href="#i-seance"/></svg>Showtime</button>
+    <button class="pill" id="seance-off" type="button" data-i18n="all_off"><svg><use href="#i-power"/></svg>All off</button>
+    <button class="pill" data-key="HOM" aria-label="OPPO home menu" data-i18n-aria="oppo_home" data-i18n="home"><svg><use href="#i-home"/></svg>Home</button>
+  </div>
+  <section class="card-box">
+    <h2>Audio</h2>
+    <div class="chips" id="audio"><span class="empty" data-i18n="during_playback">Available during playback</span></div>
+  </section>
+
+  <section class="card-box">
+    <h2 data-i18n="subtitles">Subtitles</h2>
+    <div class="chips" id="subtitles"><span class="empty" data-i18n="during_playback">Available during playback</span></div>
+  </section>
+
+  <details class="card-box">
+    <summary data-i18n="more_keys">More buttons</summary>
+    <div class="more">
+      <div class="row">
+        <button class="color red" data-key="RED" aria-label="Red button" data-i18n-aria="key_red"></button>
+        <button class="color green" data-key="GRN" aria-label="Green button" data-i18n-aria="key_green"></button>
+        <button class="color yellow" data-key="YLW" aria-label="Yellow button" data-i18n-aria="key_yellow"></button>
+        <button class="color blue" data-key="BLU" aria-label="Blue button" data-i18n-aria="key_blue"></button>
+      </div>
+      <div class="row">
+        <button class="pill small" data-key="OPT"><svg><use href="#i-more"/></svg>Option</button>
+        <button class="pill small" data-key="PUP">Page −</button>
+        <button class="pill small" data-key="PDN">Page +</button>
+      </div>
+      <div class="row">
+        <button class="pill small" data-key="AUD">Audio</button>
+        <button class="pill small" data-key="SUB" data-i18n="subtitles">Subtitles</button>
+        <button class="pill small" data-key="ANG">Angle</button>
+      </div>
+      <div class="row">
+        <button class="pill small" data-key="ZOM">Zoom</button>
+        <button class="pill small" data-key="RPT" data-i18n="repeat">Repeat</button>
+      </div>
+    </div>
+  </details>
+
+  <div class="account"><span id="who"></span><button id="logout" type="button" data-i18n="logout">Sign out</button><button id="change-server" type="button" hidden data-i18n="change_server">Change server</button><select id="lang-select" aria-label="Language" data-i18n-aria="language"><option value="" data-i18n="lang_auto">Auto</option><option value="en">English</option><option value="fr">Français</option></select><a id="get-app" hidden download data-i18n="get_app">Install the Android app</a></div>
+</main>
+
+<div class="mini" id="mini" role="button" tabindex="0" aria-label="Open the remote" data-i18n-aria="open_remote" hidden>
+  <img id="m-poster" alt="" hidden><div class="m-ph" id="m-ph"></div>
+  <div class="m-text"><div class="m-title" id="m-title"></div><div class="m-state" id="m-state"></div></div>
+  <button class="icon-btn" id="m-pp" aria-label="Play / pause" data-i18n-aria="play_pause"><svg><use href="#i-play" class="pp-icon"/></svg></button>
+</div>
+
+<div class="login" id="login" hidden>
+  <form id="login-form" autocomplete="on">
+    <img src="Remote/icon192.png" alt="" id="login-icon">
+    <h1>OPPO</h1>
+    <p data-i18n="login_intro">Sign in with your Emby account. You won’t be asked again on this device.</p>
+    <label data-i18n="username">Username<input id="user" name="username" autocomplete="username" autocapitalize="none" required></label>
+    <label data-i18n="password">Password<input id="pw" name="password" type="password" autocomplete="current-password"></label>
+    <div class="error" id="login-error" role="alert"></div>
+    <button class="submit" type="submit" data-i18n="sign_in">Sign in</button>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ------------------------------------------------------------ Translations
+
+  var I18N = {
+    en: {
+      back: 'Back', power_toggle: 'Turn the OPPO on or off', fullscreen: 'Full screen', search: 'Search', remote: 'Remote',
+      connecting: 'Connecting…', seek_bar: 'Playback position', prev_chapter: 'Previous chapter', rewind: 'Rewind',
+      play_pause: 'Play / pause', ffwd: 'Fast forward', next_chapter: 'Next chapter', chapters: 'Chapters',
+      disc_menu_aria: 'Disc menu', disc_menu: 'Disc menu', up: 'Up', left: 'Left', right: 'Right', down: 'Down',
+      popup_menu: 'Pop-up menu', showtime: 'Showtime', all_off: 'All off', oppo_home: 'OPPO home menu', home: 'Home',
+      subtitles: 'Subtitles', during_playback: 'Available during playback', more_keys: 'More buttons',
+      key_red: 'Red button', key_green: 'Green button', key_yellow: 'Yellow button', key_blue: 'Blue button', repeat: 'Repeat',
+      logout: 'Sign out', change_server: 'Change server', get_app: 'Install the Android app', open_remote: 'Open the remote',
+      login_intro: 'Sign in with your Emby account. You won’t be asked again on this device.',
+      username: 'Username', password: 'Password', sign_in: 'Sign in', language: 'Language', lang_auto: 'Auto',
+      err_status: 'Error {0}', emby_down: 'Emby is not responding', login_bad: 'Incorrect username or password.',
+      login_failed_code: 'Unable to sign in ({0}).', login_failed: 'Unable to sign in.', browser: 'Browser',
+      rt_hm: '{0}h {1}m', rt_m: '{0} min',
+      confirm_all_off: 'Turn everything off: OPPO, TV and amplifier?',
+      showtime_on: 'Showtime: turning on the OPPO, TV and amplifier…', showtime_off: 'Turning off the OPPO, TV and amplifier…',
+      no_unwatched: 'No unwatched title matches', unknown_lang: 'Unknown language', stereo: 'stereo', mono: 'mono',
+      n_channels: '{0} channels', forced: ' (forced)', sdh: ' (SDH)', fps: '{0} fps',
+      libraries: 'Libraries', recently_added_in: 'Recently added · {0}', cant_reach_emby: 'Unable to reach Emby.',
+      surprise: 'Surprise me', install_app: 'Install the app', resume: 'Resume', favorites: 'Favorites', see_all: 'See all',
+      sort_name: 'Name', sort_added: 'Recently added', sort_year: 'Year', sort_rating: 'Rating', sort_by: 'Sort by',
+      unwatched: 'Unwatched', filters: 'Filters', filters_n: 'Filters ({0})', random_title: 'A random title', loading: 'Loading…',
+      genre: 'Genre', decade: 'Decade', all_m: 'All', all_f: 'All', decade_label: '{1}s', before_1950: 'Before 1950',
+      picture: 'Picture', hdr_all: 'HDR (all)', favorites_only: 'Favorites only', era: 'Era',
+      cant_load_lib: 'Unable to load this library.', n_titles: '{0} titles', n_title: '{0} title', no_titles: 'No titles',
+      search_title: 'Search', search_placeholder: 'Movie or concert title', voice_search: 'Voice search',
+      heard_nothing: 'Didn’t catch that', mic_unavailable: 'Microphone unavailable', mic_denied: 'Microphone blocked: allow it in Chrome',
+      searching: 'Searching…', no_results: 'No results', cant_load_item: 'Unable to load this title.',
+      n_discs: '{0} discs', ends_around: 'Ends around {0}', if_resuming: ' if resumed', video_format: 'Video format',
+      disc: 'Disc', disc_n: 'Disc {0}', version: 'Version', version_n: 'Version {0}', audio: 'Audio', none: 'None',
+      discs_chain: 'Discs play one after another, starting from the one selected.',
+      resume_at: 'Resume at {0}', resume_disc: ' · disc {0}', play_disc_from_start: 'Play disc {0} from the beginning',
+      play_from_start: 'Play from the beginning', play_disc_on: 'Play disc {0} on {1}', play_on: 'Play on {0}',
+      watched: 'Watched', mark_watched: 'Mark as watched', favorite: 'Favorite', add_favorite: 'Add to favorites',
+      directed_by: 'Directed by ', cast: 'Cast', n_titles_lib: '{0} titles in your library', n_title_lib: '{0} title in your library',
+      cant_load_titles: 'Unable to load titles.', the_oppo: 'the OPPO', launching_on: 'Starting on {0}…',
+      no_session: 'The OPPO is not registered in Emby yet', launch_failed: 'Unable to start playback',
+      power_off_oppo: 'Turn off the OPPO', power_on_oppo: 'Turn on the OPPO', off_or_offline: 'Off or offline',
+      launching_state: 'Starting… ({0})', output: 'Output ', subs_short: ' · Subs ', no_film: 'Nothing started from Emby',
+      oppo_unreachable: 'OPPO unreachable', chapter_n: 'Chapter {0}', go_chapter: 'Go to chapter {0}', seek_refused: 'Seek refused',
+      ends_at: 'ends at {0}', playing_on: 'Playing on {0}', track_n: 'Track {0}', no_subs_here: 'No subtitles on this title',
+      no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
+      during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', powering_on: 'Turning on the OPPO…',
+      signed_in_as: 'Signed in as {0}',
+      states: {
+        'PLAY': 'Playing', 'PAUSE': 'Paused', 'STOP': 'Stopped', 'DISC MENU': 'Disc menu',
+        'HOME MENU': 'OPPO home menu', 'MEDIA CENTER': 'Media center', 'SCREEN SAVER': 'Screen saver',
+        'NO DISC': 'No disc', 'LOADING': 'Loading…', 'SETUP': 'Setup',
+        'FFWD': 'Fast forward', 'FREV': 'Rewind', 'SFWD': 'Slow forward', 'SREV': 'Slow reverse',
+        'STEP': 'Frame by frame', 'OPEN': 'Tray open', 'CLOSE': 'Closing tray'
+      }
+    },
+    fr: {
+      back: 'Retour', power_toggle: 'Allumer ou éteindre l\'OPPO', fullscreen: 'Plein écran', search: 'Rechercher', remote: 'Télécommande',
+      connecting: 'Connexion…', seek_bar: 'Position dans le film', prev_chapter: 'Chapitre précédent', rewind: 'Retour rapide',
+      play_pause: 'Lecture / pause', ffwd: 'Avance rapide', next_chapter: 'Chapitre suivant', chapters: 'Chapitres',
+      disc_menu_aria: 'Menu du disque', disc_menu: 'Menu disque', up: 'Haut', left: 'Gauche', right: 'Droite', down: 'Bas',
+      popup_menu: 'Menu pop-up', showtime: 'Séance', all_off: 'Tout éteindre', oppo_home: 'Accueil de l\'OPPO', home: 'Accueil',
+      subtitles: 'Sous-titres', during_playback: 'Disponible pendant la lecture', more_keys: 'Plus de touches',
+      key_red: 'Touche rouge', key_green: 'Touche verte', key_yellow: 'Touche jaune', key_blue: 'Touche bleue', repeat: 'Répétition',
+      logout: 'Se déconnecter', change_server: 'Changer de serveur', get_app: 'Installer l\'appli Android', open_remote: 'Ouvrir la télécommande',
+      login_intro: 'Connecte-toi avec ton compte Emby. Il ne sera plus demandé sur cet appareil.',
+      username: 'Utilisateur', password: 'Mot de passe', sign_in: 'Se connecter', language: 'Langue', lang_auto: 'Auto',
+      err_status: 'Erreur {0}', emby_down: 'Emby ne répond pas', login_bad: 'Identifiant ou mot de passe incorrect.',
+      login_failed_code: 'Connexion impossible ({0}).', login_failed: 'Connexion impossible.', browser: 'Navigateur',
+      rt_hm: '{0} h {1}', rt_m: '{0} min',
+      confirm_all_off: 'Tout éteindre : OPPO, TV et ampli ?',
+      showtime_on: 'Séance : allumage de l’OPPO, de la TV et de l’ampli…', showtime_off: 'Extinction de l’OPPO, de la TV et de l’ampli…',
+      no_unwatched: 'Aucun titre non vu ne correspond', unknown_lang: 'Langue inconnue', stereo: 'stéréo', mono: 'mono',
+      n_channels: '{0} canaux', forced: ' (forcés)', sdh: ' (malentendants)', fps: '{0} i/s',
+      libraries: 'Bibliothèques', recently_added_in: 'Ajouts récents · {0}', cant_reach_emby: 'Impossible de joindre Emby.',
+      surprise: 'Surprends-moi', install_app: 'Installer l’appli', resume: 'Reprendre', favorites: 'Favoris', see_all: 'Tout voir',
+      sort_name: 'Nom', sort_added: 'Ajouts récents', sort_year: 'Année', sort_rating: 'Note', sort_by: 'Trier par',
+      unwatched: 'Non vus', filters: 'Filtres', filters_n: 'Filtres ({0})', random_title: 'Un titre au hasard', loading: 'Chargement…',
+      genre: 'Genre', decade: 'Décennie', all_m: 'Tous', all_f: 'Toutes', decade_label: 'Années {0}', before_1950: 'Avant 1950',
+      picture: 'Image', hdr_all: 'HDR (tous)', favorites_only: 'Favoris seulement', era: 'Époque',
+      cant_load_lib: 'Impossible de charger cette bibliothèque.', n_titles: '{0} titres', n_title: '{0} titre', no_titles: 'Aucun titre',
+      search_title: 'Recherche', search_placeholder: 'Titre d’un film ou d’un concert', voice_search: 'Recherche vocale',
+      heard_nothing: 'Rien entendu', mic_unavailable: 'Micro indisponible', mic_denied: 'Micro refusé : autorise-le dans Chrome',
+      searching: 'Recherche…', no_results: 'Aucun résultat', cant_load_item: 'Impossible de charger ce titre.',
+      n_discs: '{0} disques', ends_around: 'Fin vers {0}', if_resuming: ' en reprenant', video_format: 'Format vidéo',
+      disc: 'Disque', disc_n: 'Disque {0}', version: 'Version', version_n: 'Version {0}', audio: 'Audio', none: 'Aucun',
+      discs_chain: 'Les disques s’enchaînent automatiquement à partir de celui choisi.',
+      resume_at: 'Reprendre à {0}', resume_disc: ' · disque {0}', play_disc_from_start: 'Lire le disque {0} depuis le début',
+      play_from_start: 'Lire depuis le début', play_disc_on: 'Lire le disque {0} sur {1}', play_on: 'Lire sur {0}',
+      watched: 'Vu', mark_watched: 'Marquer comme vu', favorite: 'Favori', add_favorite: 'Ajouter aux favoris',
+      directed_by: 'Réalisation : ', cast: 'Distribution', n_titles_lib: '{0} titres dans ta bibliothèque', n_title_lib: '{0} titre dans ta bibliothèque',
+      cant_load_titles: 'Impossible de charger les titres.', the_oppo: 'l’OPPO', launching_on: 'Lancement sur {0}…',
+      no_session: 'L’OPPO n’est pas encore déclaré dans Emby', launch_failed: 'Lancement impossible',
+      power_off_oppo: 'Éteindre l’OPPO', power_on_oppo: 'Allumer l’OPPO', off_or_offline: 'Éteint ou hors réseau',
+      launching_state: 'Lancement… ({0})', output: 'Sortie ', subs_short: ' · ST ', no_film: 'Aucun film lancé depuis Emby',
+      oppo_unreachable: 'OPPO injoignable', chapter_n: 'Chapitre {0}', go_chapter: 'Aller au chapitre {0}', seek_refused: 'Saut refusé',
+      ends_at: 'fin à {0}', playing_on: 'Lecture sur {0}', track_n: 'Piste {0}', no_subs_here: 'Aucun sous-titre sur ce titre',
+      no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
+      during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', powering_on: 'Allumage de l’OPPO…',
+      signed_in_as: 'Connecté : {0}',
+      states: {
+        'PLAY': 'Lecture', 'PAUSE': 'Pause', 'STOP': 'Arrêt', 'DISC MENU': 'Menu du disque',
+        'HOME MENU': 'Accueil de l’OPPO', 'MEDIA CENTER': 'Centre multimédia', 'SCREEN SAVER': 'Économiseur d’écran',
+        'NO DISC': 'Pas de disque', 'LOADING': 'Chargement…', 'SETUP': 'Configuration',
+        'FFWD': 'Avance rapide', 'FREV': 'Retour rapide', 'SFWD': 'Ralenti avant', 'SREV': 'Ralenti arrière',
+        'STEP': 'Image par image', 'OPEN': 'Tiroir ouvert', 'CLOSE': 'Fermeture du tiroir'
+      }
+    }
+  };
+
+  // Language: explicit choice stored on this device, otherwise the browser language (French or English).
+  var LANG_KEY = 'oppoRemote.lang';
+  var LANG = (function () {
+    var saved = null;
+    try { saved = localStorage.getItem(LANG_KEY); } catch (e) { /* storage unavailable */ }
+    if (saved === 'en' || saved === 'fr') return saved;
+    return /^fr/i.test(navigator.language || '') ? 'fr' : 'en';
+  })();
+  var LOCALE = LANG === 'fr' ? 'fr-FR' : (/^en/i.test(navigator.language || '') ? navigator.language : 'en-US');
+  document.documentElement.lang = LANG;
+
+  function t(key) {
+    var text = I18N[LANG][key];
+    if (text === undefined) text = I18N.en[key];
+    if (text === undefined) return key;
+    var args = arguments;
+    return String(text).replace(/\{(\d+)\}/g, function (m, i) { var v = args[+i + 1]; return v === undefined ? m : String(v); });
+  }
+
+  /** Translates the static markup: text (last text node, so icons are kept), aria-label, title, placeholder. */
+  function applyI18n(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-i18n]'), function (n) {
+      var text = t(n.getAttribute('data-i18n'));
+      var nodes = Array.prototype.filter.call(n.childNodes, function (c) { return c.nodeType === 3 && c.nodeValue.trim(); });
+      if (nodes.length) nodes[nodes.length - 1].nodeValue = text; else n.insertBefore(document.createTextNode(text), n.querySelector('input'));
+    });
+    [['data-i18n-aria', 'aria-label'], ['data-i18n-title', 'title'], ['data-i18n-placeholder', 'placeholder']].forEach(function (p) {
+      Array.prototype.forEach.call(root.querySelectorAll('[' + p[0] + ']'), function (n) { n.setAttribute(p[1], t(n.getAttribute(p[0]))); });
+    });
+  }
+  applyI18n(document);
+
+  // Paths relative to the page address (…/emby/Oppo/Remote), with or without a trailing slash.
+  var BASE = location.pathname.replace(/\/Oppo\/Remote\/?$/i, '');
+  var API = BASE + '/Oppo/Remote';
+  var VERSION = '0.13.0';
+  var STORE = 'oppoRemote.auth';
+  var FIELDS = 'PrimaryImageAspectRatio,ProductionYear';
+  var STATES = I18N[LANG].states;
+  var PLAYING = ['PLAY', 'PAUSE', 'FFWD', 'FREV', 'SFWD', 'SREV', 'STEP'];
+  var BUSY = PLAYING.concat(['DISC MENU', 'LOADING', 'STOP']);
+
+  var $ = function (id) { return document.getElementById(id); };
+  ['manifest', 'favicon', 'touchicon'].forEach(function (id) {
+    var el = $(id); el.href = API + '/' + el.getAttribute('href').replace(/^Remote\//, '');
+  });
+  $('login-icon').src = API + '/icon192.png';
+
+  // ------------------------------------------------------------ Helpers
+
+  function el(tag, attrs, children) {
+    var n = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v === null || v === undefined || v === false) return;
+      if (k === 'text') n.textContent = v;
+      else if (k === 'html') n.innerHTML = v;
+      else n.setAttribute(k, v === true ? '' : v);
+    });
+    (children || []).forEach(function (c) {
+      if (c !== null && c !== undefined) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    });
+    return n;
+  }
+  function icon(name) { return '<svg><use href="#i-' + name + '"/></svg>'; }
+
+  function qs(q) {
+    if (!q) return '';
+    var parts = [];
+    Object.keys(q).forEach(function (k) {
+      var v = q[k];
+      if (v === undefined || v === null || v === '') return;
+      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
+    });
+    return parts.length ? '?' + parts.join('&') : '';
+  }
+
+  function fmt(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+  }
+  function runtime(ticks) {
+    var min = Math.round(ticks / 600000000);
+    var h = Math.floor(min / 60), m = min % 60;
+    return h ? t('rt_hm', h, String(m).padStart(2, '0')) : t('rt_m', m);
+  }
+
+  var toastTimer;
+  function toast(text) {
+    var t = $('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2800);
+  }
+  function buzz() { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) { /* no vibration motor */ } }
+
+  // ------------------------------------------------------------ Emby sign-in
+
+  function readAuth() {
+    try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; }
+  }
+  function writeAuth(a) {
+    try { localStorage.setItem(STORE, JSON.stringify(a)); } catch (e) { /* storage unavailable: this session only */ }
+  }
+  var auth = readAuth();
+  if (!auth.deviceId) {
+    auth.deviceId = 'oppo-remote-' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+    writeAuth(auth);
+  }
+  function uid() { return auth.userId; }
+
+  function deviceName() {
+    var ua = navigator.userAgent;
+    return /Android/i.test(ua) ? 'Android' : /iPhone|iPad/i.test(ua) ? 'iOS' : t('browser');
+  }
+  function authHeader(withToken) {
+    var h = 'Emby UserId="' + (auth.userId || '') + '", Client="OPPO Remote", Device="' + deviceName() +
+      '", DeviceId="' + auth.deviceId + '", Version="' + VERSION + '"';
+    if (withToken && auth.token) h += ', Token="' + auth.token + '"';
+    return h;
+  }
+
+  function AuthError() { this.auth = true; }
+
+  function request(url, method) {
+    return fetch(url, {
+      method: method || 'GET',
+      headers: { 'X-Emby-Authorization': authHeader(true), 'Accept': 'application/json', 'Accept-Language': LANG },
+      cache: 'no-store'
+    }).then(function (r) {
+      if (r.status === 401) { showLogin(); throw new AuthError(); }
+      if (!r.ok) throw new Error(t('err_status', r.status));
+      if (r.status === 204) return null;
+      return (r.headers.get('content-type') || '').indexOf('json') >= 0 ? r.json() : null;
+    });
+  }
+  function emby(path, query, method) { return request(BASE + path + qs(query), method); }
+  function remote(path, query, method) { return request(API + path + qs(query), method); }
+
+  function onError(err) {
+    if (err && err.auth) return;
+    toast(t('emby_down'));
+  }
+
+  function showLogin(message) {
+    started = false;
+    stopPolling();
+    $('login').hidden = false;
+    $('login-error').textContent = message || '';
+    if (auth.userName) $('user').value = auth.userName;
+    setTimeout(function () { ($('user').value ? $('pw') : $('user')).focus(); }, 50);
+  }
+
+  $('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = $('user').value.trim();
+    $('login-error').textContent = '';
+    fetch(BASE + '/Users/AuthenticateByName', {
+      method: 'POST',
+      headers: { 'X-Emby-Authorization': authHeader(false), 'Content-Type': 'application/json', 'Accept': 'application/json', 'Accept-Language': LANG },
+      body: JSON.stringify({ Username: name, Pw: $('pw').value })
+    }).then(function (r) {
+      if (!r.ok) throw new Error(r.status === 401 ? t('login_bad') : t('login_failed_code', r.status));
+      return r.json();
+    }).then(function (res) {
+      auth.token = res.AccessToken;
+      auth.userId = res.User && res.User.Id;
+      auth.userName = res.User && res.User.Name;
+      writeAuth(auth);
+      $('pw').value = '';
+      $('login').hidden = true;
+      user = null; libs = null;
+      start();
+    }).catch(function (err) {
+      $('login-error').textContent = err.message || t('login_failed');
+    });
+  });
+
+  // Language selector: Auto (browser language) / English / French; the page reloads to apply it.
+  $('lang-select').value = (function () { try { var v = localStorage.getItem(LANG_KEY); return v === 'en' || v === 'fr' ? v : ''; } catch (e) { return ''; } })();
+  $('lang-select').addEventListener('change', function () {
+    var v = this.value;
+    try { if (v) localStorage.setItem(LANG_KEY, v); else localStorage.removeItem(LANG_KEY); } catch (e) { /* storage unavailable */ }
+    location.reload();
+  });
+
+  $('logout').addEventListener('click', function () {
+    delete auth.token; delete auth.userId;
+    writeAuth(auth);
+    cache.forEach(function (v) { v.node.remove(); });
+    cache.clear();
+    showLogin();
+  });
+
+  // ------------------------------------------------------------ Emby data
+
+  var user = null, libs = null;
+  function getUser() {
+    return user ? Promise.resolve(user) : emby('/Users/' + uid()).then(function (u) { user = u; return u; });
+  }
+  function getLibs() {
+    return libs ? Promise.resolve(libs) : emby('/Users/' + uid() + '/Views').then(function (r) {
+      libs = (r.Items || []).filter(function (l) {
+        return ['movies', 'musicvideos', 'boxsets', 'tvshows', 'homevideos', 'mixed', undefined, null].indexOf(l.CollectionType) >= 0;
+      });
+      return libs;
+    });
+  }
+  function typesFor(collectionType) {
+    switch (collectionType) {
+      case 'movies': return 'Movie';
+      case 'musicvideos': return 'MusicVideo';
+      case 'boxsets': return 'BoxSet';
+      case 'tvshows': return 'Series';
+      case 'homevideos': return 'Video';
+      default: return 'Movie,MusicVideo,Video,BoxSet';
+    }
+  }
+  function libIcon(collectionType) {
+    return collectionType === 'musicvideos' ? 'music' : collectionType === 'boxsets' ? 'folder' : 'film';
+  }
+
+  function image(item, type, size) {
+    if (type === 'Backdrop') {
+      var tags = item.BackdropImageTags, id = item.Id;
+      if ((!tags || !tags.length) && item.ParentBackdropItemId) { tags = item.ParentBackdropImageTags; id = item.ParentBackdropItemId; }
+      return tags && tags.length ? BASE + '/Items/' + id + '/Images/Backdrop/0?maxWidth=' + size + '&quality=80&tag=' + tags[0] : null;
+    }
+    var tag = item.ImageTags && item.ImageTags[type];
+    return tag ? BASE + '/Items/' + item.Id + '/Images/' + type + '?maxHeight=' + size + '&quality=85&tag=' + tag : null;
+  }
+
+  function isFolder(item) { return item.IsFolder || item.Type === 'BoxSet'; }
+
+  function card(item) {
+    var a = el('a', { 'class': 'card', href: (isFolder(item) ? '#/lib/' : '#/item/') + item.Id, 'data-id': item.Id });
+    var poster = el('div', { 'class': 'poster' });
+    var src = image(item, 'Primary', 360);
+    if (src) poster.appendChild(el('img', { src: src, loading: 'lazy', alt: '' }));
+    else poster.appendChild(el('span', { 'class': 'ph', text: item.Name }));
+    var ud = item.UserData || {};
+    if (ud.Played) poster.appendChild(el('span', { 'class': 'badge', html: icon('check') }));
+    if (ud.PlayedPercentage > 0 && ud.PlayedPercentage < 100) {
+      poster.appendChild(el('span', { 'class': 'bar-mini' }, [el('span', { style: 'width:' + ud.PlayedPercentage.toFixed(1) + '%' })]));
+    }
+    a.appendChild(poster);
+    a.appendChild(el('div', { 'class': 'name', text: item.Name }));
+    if (item.ProductionYear) a.appendChild(el('div', { 'class': 'year', text: String(item.ProductionYear) }));
+    return a;
+  }
+
+  function clock(date) {
+    if (LANG === 'fr') return date.getHours() + ' h ' + String(date.getMinutes()).padStart(2, '0');
+    try { return date.toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' }); }
+    catch (e) { return date.getHours() + ':' + String(date.getMinutes()).padStart(2, '0'); }
+  }
+
+  /** 4K / Dolby Vision / HDR labels on the posters of a list (asked from the plugin, in batches). */
+  function decorate(container) {
+    var cards = Array.prototype.filter.call(container.querySelectorAll('.card[data-id]:not([data-b])'), function (c) {
+      c.setAttribute('data-b', '1');
+      return c.getAttribute('href').indexOf('#/item/') === 0;
+    });
+    for (var i = 0; i < cards.length; i += 60) {
+      (function (chunk) {
+        remote('/Badges', { Ids: chunk.map(function (c) { return c.getAttribute('data-id'); }).join(',') }).then(function (list) {
+          (list || []).forEach(function (b) {
+            var tags = [];
+            if (b.Resolution === '4K') tags.push({ t: '4K', c: '' });
+            if (b.Hdr === 'DV') tags.push({ t: 'DV', c: 'dv' });
+            else if (b.Hdr) tags.push({ t: b.Hdr, c: 'hdr' });
+            if (!tags.length) return;
+            container.querySelectorAll('.card[data-id="' + b.Id + '"] .poster').forEach(function (p) {
+              if (p.querySelector('.cb')) return;
+              p.appendChild(el('span', { 'class': 'cb' }, tags.map(function (x) { return el('span', { 'class': x.c, text: x.t }); })));
+            });
+          });
+        }).catch(function () { /* labels are optional */ });
+      })(cards.slice(i, i + 60));
+    }
+  }
+
+  /** Labels for the selected audio track: format and channels, Atmos / DTS:X when the track mentions it. */
+  function audioBadges(stream) {
+    if (!stream) return [];
+    var out = [];
+    var text = [stream.Profile, stream.Title, stream.DisplayTitle].join(' ');
+    var codec = stream.Profile || CODECS[(stream.Codec || '').toLowerCase()] || (/^pcm/i.test(stream.Codec || '') ? 'PCM' : (stream.Codec || '').toUpperCase());
+    if (/dts[\s:-]*x\b/i.test(text)) codec = 'DTS:X';
+    out.push([codec, stream.ChannelLayout === 'stereo' ? '2.0' : stream.ChannelLayout === 'mono' ? '1.0' : (stream.ChannelLayout || '')].join(' ').trim());
+    if (/atmos/i.test(text)) out.push('Atmos');
+    return out;
+  }
+
+  function seance(on) {
+    if (!on && !confirm(t('confirm_all_off'))) return;
+    buzz();
+    remote('/Seance', { On: on }, 'POST').then(function (r) {
+      toast(r && r.Message ? r.Message : on ? t('showtime_on') : t('showtime_off'));
+      schedule(1500);
+    }).catch(onError);
+  }
+
+  /** A random unwatched title (with the library filters, if any). */
+  function surprise(query) {
+    buzz();
+    var q = Object.assign({ Recursive: true, IncludeItemTypes: 'Movie,MusicVideo', Filters: 'IsUnplayed', SortBy: 'Random', Limit: 1, ImageTypeLimit: 0 }, query || {});
+    q.SortBy = 'Random'; q.Limit = 1; q.StartIndex = 0; q.Filters = 'IsUnplayed';
+    emby('/Users/' + uid() + '/Items', q).then(function (r) {
+      var item = r && r.Items && r.Items[0];
+      if (item) location.hash = '#/item/' + item.Id; else toast(t('no_unwatched'));
+    }).catch(onError);
+  }
+
+  /** Updates a title's "watched" badge in lists already displayed. */
+  function markCards(id, played) {
+    document.querySelectorAll('.card[data-id="' + id + '"] .poster').forEach(function (p) {
+      var badge = p.querySelector('.badge');
+      if (played && !badge) p.appendChild(el('span', { 'class': 'badge', html: icon('check') }));
+      if (!played && badge) badge.remove();
+    });
+  }
+
+  // Languages and tracks
+
+  var LANG2 = { fra: 'fr', fre: 'fr', eng: 'en', deu: 'de', ger: 'de', spa: 'es', ita: 'it', jpn: 'ja', por: 'pt', nld: 'nl', dut: 'nl',
+    rus: 'ru', pol: 'pl', swe: 'sv', dan: 'da', fin: 'fi', nor: 'no', nob: 'no', ces: 'cs', cze: 'cs', hun: 'hu', tur: 'tr', ell: 'el',
+    gre: 'el', heb: 'he', ara: 'ar', chi: 'zh', zho: 'zh', kor: 'ko', tha: 'th', hin: 'hi', ukr: 'uk', ron: 'ro', rum: 'ro', hrv: 'hr',
+    slk: 'sk', slo: 'sk', slv: 'sl', srp: 'sr', bul: 'bg', est: 'et', lav: 'lv', lit: 'lt', isl: 'is', ice: 'is', cat: 'ca', ind: 'id',
+    msa: 'ms', may: 'ms', vie: 'vi', tam: 'ta', tel: 'te' };
+  function lang2(code) {
+    if (!code) return '';
+    code = String(code).toLowerCase();
+    return LANG2[code] || code;
+  }
+  var langNames = null;
+  try { langNames = new Intl.DisplayNames([LANG], { type: 'language' }); } catch (e) { langNames = null; }
+  function langLabel(stream) {
+    var code = lang2(stream.Language);
+    var name = '';
+    if (code && code !== 'und') { try { name = langNames ? langNames.of(code) : ''; } catch (e) { name = ''; } }
+    if (!name || name === code) name = stream.DisplayLanguage || (code && code !== 'und' ? code.toUpperCase() : t('unknown_lang'));
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+  var CODECS = { truehd: 'TrueHD', ac3: 'Dolby Digital', eac3: 'Dolby Digital+', dts: 'DTS', aac: 'AAC', flac: 'FLAC', mp2: 'MP2', mp3: 'MP3', opus: 'Opus', vorbis: 'Vorbis' };
+  function audioLabel(s) {
+    var codec = s.Profile || CODECS[(s.Codec || '').toLowerCase()] || (/^pcm/i.test(s.Codec || '') ? 'PCM' : (s.Codec || '').toUpperCase());
+    var layout = s.ChannelLayout === 'stereo' ? t('stereo') : s.ChannelLayout === 'mono' ? t('mono') : (s.ChannelLayout || (s.Channels ? t('n_channels', s.Channels) : ''));
+    var parts = [langLabel(s), [codec, layout].filter(Boolean).join(' ')];
+    if (s.Title && !/^(stereo|surround|5\.1|7\.1)$/i.test(s.Title)) parts.push(s.Title);
+    return parts.filter(Boolean).join(' · ');
+  }
+  function subtitleLabel(s) {
+    var label = langLabel(s);
+    if (s.IsForced) label += t('forced');
+    if (s.IsHearingImpaired) label += t('sdh');
+    if (s.Title) label += ' · ' + s.Title;
+    return label;
+  }
+  /** Track labels, numbered when several are identical ("French 1", "French 2"…). */
+  function numbered(list, labeler) {
+    var labels = list.map(labeler), totals = {}, seen = {};
+    labels.forEach(function (l) { totals[l] = (totals[l] || 0) + 1; });
+    return list.map(function (s, i) {
+      var l = labels[i];
+      if (totals[l] > 1) { seen[l] = (seen[l] || 0) + 1; l += ' ' + seen[l]; }
+      return { stream: s, label: l };
+    });
+  }
+  function streams(source, type) {
+    return ((source && source.MediaStreams) || []).filter(function (s) { return s.Type === type; });
+  }
+
+  /**
+   * Video format labels: resolution, dynamic range (Dolby Vision, plus HDR10 when the disc is
+   * compatible: profiles 6.1, 7.6 of UHD Blu-ray and 8.1), 3D, high frame rate.
+   */
+  function videoBadges(source, item) {
+    var out = [];
+    var v = streams(source, 'Video')[0];
+    if (v) {
+      var w = v.Width || 0, h = v.Height || 0, scan = v.IsInterlaced ? 'i' : 'p';
+      var res = w >= 3800 || h >= 2100 ? '4K'
+        : w >= 2500 || h >= 1400 ? '1440' + scan
+        : w >= 1900 || h >= 1000 ? '1080' + scan
+        : w >= 1200 || h >= 700 ? '720' + scan
+        : h ? (h >= 560 ? '576' : '480') + scan : '';
+      if (res) out.push({ text: res, cls: 'res' });
+      var type = v.ExtendedVideoType || '', sub = v.ExtendedVideoSubType || '';
+      if (type === 'DolbyVision') {
+        out.push({ text: 'Dolby Vision', cls: 'dv' });
+        if (/^DoviProfile(61|76|81)$/.test(sub)) out.push({ text: 'HDR10', cls: 'hdr' });
+        else if (sub === 'DoviProfile84') out.push({ text: 'HLG', cls: 'hdr' });
+      }
+      else if (type === 'Hdr10Plus') out.push({ text: 'HDR10+', cls: 'hdr' });
+      else if (type === 'Hdr10') out.push({ text: 'HDR10', cls: 'hdr' });
+      else if (type === 'HyperLogGamma') out.push({ text: 'HLG', cls: 'hdr' });
+      else if (/hdr/i.test(v.VideoRange || '')) out.push({ text: 'HDR', cls: 'hdr' });
+      var fps = v.RealFrameRate || v.AverageFrameRate || 0;
+      if (fps >= 47) out.push({ text: t('fps', Math.round(fps)), cls: '' });
+    }
+    var name = (source && (source.Name || source.Path)) || item.Path || '';
+    if (item.Video3DFormat || /(^|[\s\[(._-])3D($|[\s\]).,_-])/i.test(name)) out.push({ text: '3D', cls: '' });
+    return out;
+  }
+
+  var formats = {};
+  function discFormat(q) {
+    var key = q.Id + '|' + (q.MediaSourceId || '');
+    if (!formats[key]) formats[key] = remote('/Format', q).catch(function (err) { delete formats[key]; throw err; });
+    return formats[key];
+  }
+
+  /** Default audio track: the Emby user's preferred language, otherwise the disc's default. */
+  function defaultAudio(source) {
+    var list = streams(source, 'Audio');
+    if (!list.length) return null;
+    var cfg = (user && user.Configuration) || {};
+    var pref = lang2(cfg.AudioLanguagePreference || LANG);
+    if (!cfg.PlayDefaultAudioTrack) {
+      var match = list.filter(function (s) { return lang2(s.Language) === pref; })[0];
+      if (match) return match.Index;
+    }
+    if (source.DefaultAudioStreamIndex !== null && source.DefaultAudioStreamIndex !== undefined) return source.DefaultAudioStreamIndex;
+    return list[0].Index;
+  }
+
+  /** Default subtitles according to the mode chosen in Emby ("smart": only when the audio is in a foreign language). */
+  function defaultSubtitle(source, audioStream) {
+    var list = streams(source, 'Subtitle');
+    var cfg = (user && user.Configuration) || {};
+    var audioPref = lang2(cfg.AudioLanguagePreference || LANG);
+    var subPref = lang2(cfg.SubtitleLanguagePreference || cfg.AudioLanguagePreference || LANG);
+    var inPref = list.filter(function (s) { return lang2(s.Language) === subPref; });
+    var full = inPref.filter(function (s) { return !s.IsForced; })[0] || inPref[0];
+    var forced = inPref.filter(function (s) { return s.IsForced; })[0];
+    switch (cfg.SubtitleMode) {
+      case 'None': return -1;
+      case 'Always': return full ? full.Index : -1;
+      case 'OnlyForced': return forced ? forced.Index : -1;
+      case 'Default':
+        var d = list.filter(function (s) { return s.IsDefault; })[0] || list.filter(function (s) { return s.IsForced; })[0];
+        return d ? d.Index : -1;
+      default:
+        if (!audioStream || lang2(audioStream.Language) === audioPref) return forced ? forced.Index : -1;
+        return full ? full.Index : -1;
+    }
+  }
+
+  // ------------------------------------------------------------ Navigation
+
+  var cache = new Map();          // views kept in memory (scroll position preserved)
+  var currentKey = null, currentRoute = null, started = false;
+  var stack = [];                 // stack for the "back" button
+
+  function parseRoute() {
+    var h = location.hash.replace(/^#/, '') || '/';
+    var m;
+    if ((m = h.match(/^\/item\/([^/?#]+)/))) return { name: 'item', id: m[1], key: '/item/' + m[1] };
+    if ((m = h.match(/^\/lib\/([^/?#]+)/))) return { name: 'lib', id: m[1], key: '/lib/' + m[1] };
+    if ((m = h.match(/^\/person\/([^/?#]+)/))) return { name: 'person', id: m[1], key: '/person/' + m[1] };
+    if (h.indexOf('/search') === 0) return { name: 'search', key: '/search' };
+    if (h.indexOf('/player') === 0) return { name: 'player', key: '/player' };
+    return { name: 'home', key: '/' };
+  }
+
+  function setTitle(text) { $('appbar-title').textContent = text || 'OPPO'; }
+
+  function onRoute() {
+    if (!started) return;
+    var r = parseRoute();
+    if (stack.length > 1 && stack[stack.length - 2] === r.key) stack.pop();
+    else if (stack[stack.length - 1] !== r.key) stack.push(r.key);
+    show(r);
+  }
+  window.addEventListener('hashchange', onRoute);
+
+  $('nav-back').addEventListener('click', function () {
+    if (stack.length > 1) history.back(); else location.hash = '#/';
+  });
+  $('nav-search').addEventListener('click', function () { location.hash = '#/search'; });
+  $('nav-player').addEventListener('click', function () { location.hash = '#/player'; });
+
+  function show(r) {
+    if (currentKey && cache.has(currentKey)) cache.get(currentKey).scroll = window.scrollY;
+    cache.forEach(function (v) { v.node.hidden = true; });
+    $('player').hidden = true;
+    currentKey = r.key;
+    currentRoute = r;
+    $('nav-back').hidden = r.name === 'home';
+    $('nav-search').hidden = r.name === 'search';
+    $('nav-player').hidden = r.name === 'player';
+    $('nav-power').hidden = r.name !== 'player';
+
+    if (r.name === 'player' && wide()) { location.replace('#/'); return; }
+    if (r.name === 'player') {
+      $('player').hidden = false;
+      setTitle(t('remote'));
+      window.scrollTo(0, 0);
+      updateMini();
+      wantTracks = true;
+      schedule(30);
+      return;
+    }
+
+    var entry = cache.get(r.key);
+    if (entry && r.name === 'item') { entry.node.remove(); cache.delete(r.key); entry = null; } // item page always fresh
+    if (!entry) {
+      entry = { key: r.key, node: null, scroll: 0, title: '' };
+      entry.node = build(r, entry);
+      $('views').appendChild(entry.node);
+      cache.set(r.key, entry);
+      trimCache();
+    } else {
+      entry.node.hidden = false;
+      if (entry.onShow) entry.onShow();
+    }
+    setTitle(entry.title);
+    var y = entry.scroll || 0;
+    window.scrollTo(0, y);
+    requestAnimationFrame(function () { window.scrollTo(0, y); });
+    updateMini();
+    schedule(300);
+  }
+
+  function trimCache() {
+    if (cache.size <= 12) return;
+    var keys = Array.from(cache.keys());
+    for (var i = 0; i < keys.length && cache.size > 12; i++) {
+      if (keys[i] !== currentKey && keys[i] !== '/') { cache.get(keys[i]).node.remove(); cache.delete(keys[i]); }
+    }
+  }
+
+  function retitle(entry, text) {
+    entry.title = text;
+    if (currentKey === entry.key) setTitle(text);
+  }
+
+  function build(r, entry) {
+    switch (r.name) {
+      case 'lib': return buildLibrary(entry, r.id);
+      case 'person': return buildPerson(entry, r.id);
+      case 'item': return buildItem(entry, r.id);
+      case 'search': return buildSearch(entry);
+      default: return buildHome(entry);
+    }
+  }
+
+  // ------------------------------------------------------------ Home
+
+  function buildHome(entry) {
+    entry.title = '';
+    var libsBox = el('nav', { 'class': 'libs', 'aria-label': t('libraries') });
+    var resume = el('section');
+    var latest = el('div');
+    var node = el('div', { 'class': 'view' }, [libsBox, resume, latest]);
+    getLibs().then(function (list) {
+      list.forEach(function (lib) {
+        libsBox.appendChild(el('a', { 'class': 'lib-btn', href: '#/lib/' + lib.Id, html: icon(libIcon(lib.CollectionType)) }, [lib.Name]));
+      });
+      list.filter(function (l) { return l.CollectionType !== 'boxsets'; }).forEach(function (lib) {
+        var sec = el('section');
+        latest.appendChild(sec);
+        emby('/Users/' + uid() + '/Items/Latest', { ParentId: lib.Id, Limit: 16, Fields: FIELDS, ImageTypeLimit: 1, EnableImageTypes: 'Primary' })
+          .then(function (items) { if (items && items.length) fillRow(sec, t('recently_added_in', lib.Name), '#/lib/' + lib.Id, items); })
+          .catch(function () { /* section skipped */ });
+      });
+    }).catch(function (err) {
+      if (err && err.auth) return;
+      libsBox.appendChild(el('div', { 'class': 'loading', text: t('cant_reach_emby') }));
+    });
+    var favorites = el('section');
+    node.insertBefore(favorites, latest);
+    var surpriseBtn = el('button', { 'class': 'lib-btn alt', type: 'button', html: icon('dice') }, [t('surprise')]);
+    surpriseBtn.addEventListener('click', function () { surprise(); });
+    var seanceBtn = el('button', { 'class': 'lib-btn alt', type: 'button', html: icon('seance') }, [t('showtime')]);
+    seanceBtn.addEventListener('click', function () { seance(true); });
+    libsBox.appendChild(surpriseBtn);
+    libsBox.appendChild(seanceBtn);
+    if (!window.OppoAndroid && /Android/i.test(navigator.userAgent)) {
+      libsBox.appendChild(el('a', { 'class': 'lib-btn alt', href: API + '/oppo.apk', download: 'OPPO.apk', html: icon('remote') }, [t('install_app')]));
+    }
+    function loadResume() {
+      emby('/Users/' + uid() + '/Items/Resume', { Limit: 12, MediaTypes: 'Video', Fields: FIELDS, ImageTypeLimit: 1, EnableImageTypes: 'Primary' })
+        .then(function (r) {
+          resume.textContent = '';
+          if (r && r.Items && r.Items.length) fillRow(resume, t('resume'), null, r.Items);
+        }).catch(function () { /* section skipped */ });
+      emby('/Users/' + uid() + '/Items', { Filters: 'IsFavorite', Recursive: true, IncludeItemTypes: 'Movie,MusicVideo,BoxSet', SortBy: 'SortName',
+        Limit: 30, Fields: FIELDS, ImageTypeLimit: 1, EnableImageTypes: 'Primary' })
+        .then(function (r) {
+          favorites.textContent = '';
+          if (r && r.Items && r.Items.length) fillRow(favorites, t('favorites'), null, r.Items);
+        }).catch(function () { /* section skipped */ });
+    }
+    loadResume();
+    entry.onShow = loadResume;
+    return node;
+  }
+
+  function fillRow(section, title, more, items) {
+    section.textContent = '';
+    var h = el('h2', { 'class': 'section' }, [el('span', { text: title })]);
+    if (more) h.appendChild(el('a', { href: more, text: t('see_all') }));
+    var row = el('div', { 'class': 'hrow' });
+    items.forEach(function (i) { row.appendChild(card(i)); });
+    section.appendChild(h);
+    section.appendChild(row);
+    decorate(row);
+  }
+
+  // ------------------------------------------------------------ Library / collection
+
+  var SORTS = [
+    { id: 'name', label: t('sort_name'), by: 'SortName', order: 'Ascending' },
+    { id: 'added', label: t('sort_added'), by: 'DateCreated,SortName', order: 'Descending' },
+    { id: 'year', label: t('sort_year'), by: 'ProductionYear,SortName', order: 'Descending' },
+    { id: 'rating', label: t('sort_rating'), by: 'CommunityRating,SortName', order: 'Descending' }
+  ];
+
+  function buildLibrary(entry, id) {
+    var sort = el('select', { 'aria-label': t('sort_by') });
+    SORTS.forEach(function (s) { sort.appendChild(el('option', { value: s.id, text: s.label })); });
+    var unplayed = el('button', { 'class': 'toggle', type: 'button', 'aria-pressed': 'false', text: t('unwatched') });
+    var filterBtn = el('button', { 'class': 'toggle', type: 'button', 'aria-pressed': 'false', 'aria-label': t('filters'), html: icon('filter') + '<span>' + t('filters') + '</span>' });
+    var diceBtn = el('button', { 'class': 'toggle', type: 'button', 'aria-label': t('random_title'), html: icon('dice') });
+    var count = el('span', { 'class': 'count' });
+    var grid = el('div', { 'class': 'grid' });
+    var status = el('div', { 'class': 'loading', text: t('loading') });
+    var sentinel = el('div', { style: 'height:1px' });
+
+    // Filters (applied by Emby): genre, decade, picture, favorites.
+    var genreSel = el('select', { 'aria-label': t('genre') }, [el('option', { value: '', text: t('all_m') })]);
+    var decadeSel = el('select', { 'aria-label': t('decade') }, [el('option', { value: '', text: t('all_f') })]);
+    [2020, 2010, 2000, 1990, 1980, 1970, 1960, 1950].forEach(function (d) { decadeSel.appendChild(el('option', { value: String(d), text: t('decade_label', d >= 2000 ? d : String(d).slice(2), d) })); });
+    decadeSel.appendChild(el('option', { value: 'old', text: t('before_1950') }));
+    var imageSel = el('select', { 'aria-label': t('picture') }, [
+      el('option', { value: '', text: t('all_f') }), el('option', { value: '4k', text: '4K' }),
+      el('option', { value: 'dv', text: 'Dolby Vision' }), el('option', { value: 'hdr', text: t('hdr_all') })]);
+    var favSel = el('select', { 'aria-label': t('favorites') }, [el('option', { value: '', text: t('all_m') }), el('option', { value: '1', text: t('favorites_only') })]);
+    var filters = el('div', { 'class': 'filters', hidden: true }, [field(t('genre'), genreSel), field(t('era'), decadeSel), field(t('picture'), imageSel), field(t('favorites'), favSel)]);
+    var node = el('div', { 'class': 'view' }, [el('div', { 'class': 'toolbar' }, [sort, unplayed, filterBtn, diceBtn, count]), filters, grid, status, sentinel]);
+    emby('/Genres', { ParentId: id, UserId: uid(), SortBy: 'SortName' }).then(function (r) {
+      ((r && r.Items) || []).forEach(function (g) { genreSel.appendChild(el('option', { value: g.Name, text: g.Name })); });
+    }).catch(function () { /* no genres */ });
+    filterBtn.addEventListener('click', function () {
+      filters.hidden = !filters.hidden;
+      filterBtn.setAttribute('aria-pressed', filters.hidden && !activeFilters() ? 'false' : 'true');
+    });
+    function activeFilters() { return [genreSel, decadeSel, imageSel, favSel].filter(function (x) { return x.value; }).length; }
+    [genreSel, decadeSel, imageSel, favSel].forEach(function (x) {
+      x.addEventListener('change', function () {
+        var n = activeFilters();
+        filterBtn.querySelector('span').textContent = n ? t('filters_n', n) : t('filters');
+        reset();
+      });
+    });
+    function applyFilters(q) {
+      if (genreSel.value) q.Genres = genreSel.value;
+      if (decadeSel.value === 'old') { var y = []; for (var a = 1900; a < 1950; a++) y.push(a); q.Years = y.join(','); }
+      else if (decadeSel.value) { var d0 = +decadeSel.value, ys = []; for (var b = d0; b < d0 + 10; b++) ys.push(b); q.Years = ys.join(','); }
+      if (imageSel.value === '4k') q.MinWidth = 3800;
+      if (imageSel.value === 'dv') q.ExtendedVideoTypes = 'DolbyVision';
+      if (imageSel.value === 'hdr') q.ExtendedVideoTypes = 'Hdr10,Hdr10Plus,HyperLogGamma,DolbyVision';
+      if (favSel.value) q.IsFavorite = true;
+      return q;
+    }
+    diceBtn.addEventListener('click', function () {
+      if (!parent) return;
+      var q = applyFilters({ ParentId: id });
+      if (parent.Type === 'CollectionFolder' || parent.Type === 'UserView') q.IncludeItemTypes = typesFor(parent.CollectionType) === 'BoxSet' ? 'Movie' : typesFor(parent.CollectionType);
+      surprise(q);
+    });
+
+    var prefKey = 'oppoRemote.sort.' + id;
+    var saved = null;
+    try { saved = localStorage.getItem(prefKey); } catch (e) { /* preference not saved */ }
+
+    var parent = null;
+    var st = { start: 0, total: null, loading: false, gen: 0 };
+
+    emby('/Users/' + uid() + '/Items/' + id).then(function (p) {
+      parent = p;
+      retitle(entry, p.Name);
+      sort.value = saved || (p.Type === 'BoxSet' ? 'year' : 'name');   // a saga is watched in order
+      reset();
+    }).catch(function (err) {
+      if (err && err.auth) return;
+      status.textContent = t('cant_load_lib');
+    });
+
+    function query() {
+      var s = SORTS.filter(function (x) { return x.id === sort.value; })[0] || SORTS[0];
+      var order = parent.Type === 'BoxSet' && s.id === 'year' ? 'Ascending' : s.order;
+      var q = { ParentId: id, SortBy: s.by, SortOrder: order, StartIndex: st.start, Limit: 60, Fields: FIELDS,
+                ImageTypeLimit: 1, EnableImageTypes: 'Primary', EnableTotalRecordCount: true };
+      if (parent.Type === 'CollectionFolder' || parent.Type === 'UserView') {
+        q.Recursive = true;
+        q.IncludeItemTypes = typesFor(parent.CollectionType);
+      }
+      if (unplayed.getAttribute('aria-pressed') === 'true') q.Filters = 'IsUnplayed';
+      return applyFilters(q);
+    }
+    function reset() {
+      st.gen++; st.start = 0; st.total = null; st.loading = false;
+      grid.textContent = '';
+      count.textContent = '';
+      more();
+    }
+    function more() {
+      if (!parent || st.loading || (st.total !== null && st.start >= st.total)) return;
+      st.loading = true;
+      var gen = st.gen;
+      status.hidden = false;
+      status.textContent = t('loading');
+      emby('/Users/' + uid() + '/Items', query()).then(function (r) {
+        if (gen !== st.gen) return;
+        var items = r.Items || [];
+        st.total = items.length ? r.TotalRecordCount : st.start;
+        st.start += items.length;
+        items.forEach(function (i) { grid.appendChild(card(i)); });
+        decorate(grid);
+        count.textContent = r.TotalRecordCount > 1 ? t('n_titles', r.TotalRecordCount) : t('n_title', r.TotalRecordCount);
+      }).catch(function (err) {
+        if (gen === st.gen && !(err && err.auth)) { st.total = st.start; toast(t('emby_down')); }
+      }).then(function () {
+        if (gen !== st.gen) return;
+        st.loading = false;
+        status.hidden = st.total !== 0;
+        if (st.total === 0) status.textContent = t('no_titles');
+        if (!node.hidden && sentinel.getBoundingClientRect().top < window.innerHeight + 900) more();
+      });
+    }
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { if (es[0].isIntersecting) more(); }, { rootMargin: '900px 0px' }).observe(sentinel);
+    } else {
+      window.addEventListener('scroll', function () { if (!node.hidden && sentinel.getBoundingClientRect().top < window.innerHeight + 900) more(); });
+    }
+    sort.addEventListener('change', function () {
+      try { localStorage.setItem(prefKey, sort.value); } catch (e) { /* preference not saved */ }
+      reset();
+    });
+    unplayed.addEventListener('click', function () {
+      unplayed.setAttribute('aria-pressed', unplayed.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      reset();
+    });
+    return node;
+  }
+
+  // ------------------------------------------------------------ Search
+
+  function buildSearch(entry) {
+    entry.title = t('search_title');
+    var input = el('input', { type: 'search', placeholder: t('search_placeholder'), autocomplete: 'off', enterkeyhint: 'search', 'aria-label': t('search') });
+    var status = el('div', { 'class': 'loading', text: '' });
+    var grid = el('div', { 'class': 'grid' });
+    var box = el('div', { 'class': 'search-box' }, [input]);
+    var node = el('div', { 'class': 'view' }, [box, status, grid]);
+    var timer, gen = 0;
+    var Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (window.OppoAndroid && window.OppoAndroid.canListen()) {
+      var amic = el('button', { 'class': 'icon-btn mic', type: 'button', 'aria-label': t('voice_search'), html: icon('mic') });
+      box.appendChild(amic);
+      amic.addEventListener('click', function () {
+        buzz();
+        window.oppoVoiceResult = function (text) {
+          if (!text) { toast(t('heard_nothing')); return; }
+          input.value = text.replace(/[.?!]+$/, '');
+          run();
+        };
+        window.OppoAndroid.listen();
+      });
+    } else if (Speech) {
+      var mic = el('button', { 'class': 'icon-btn mic', type: 'button', 'aria-label': t('voice_search'), html: icon('mic') });
+      box.appendChild(mic);
+      mic.addEventListener('click', function () {
+        var rec;
+        try { rec = new Speech(); } catch (e) { toast(t('mic_unavailable')); return; }
+        rec.lang = LANG === 'fr' ? 'fr-FR' : 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
+        rec.onresult = function (ev) { input.value = ev.results[0][0].transcript.replace(/[.?!]+$/, ''); run(); };
+        rec.onerror = function (ev) { toast(ev.error === 'not-allowed' ? t('mic_denied') : t('heard_nothing')); };
+        rec.onend = function () { mic.classList.remove('listening'); };
+        mic.classList.add('listening');
+        buzz();
+        try { rec.start(); } catch (e) { mic.classList.remove('listening'); }
+      });
+    }
+    input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(run, 300); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') input.blur(); });
+    function run() {
+      var q = input.value.trim();
+      var g = ++gen;
+      if (q.length < 2) { grid.textContent = ''; status.textContent = ''; return; }
+      status.textContent = t('searching');
+      emby('/Users/' + uid() + '/Items', { SearchTerm: q, Recursive: true, IncludeItemTypes: 'Movie,MusicVideo,BoxSet,Series,Video',
+        Limit: 60, Fields: FIELDS, ImageTypeLimit: 1, EnableImageTypes: 'Primary' })
+        .then(function (r) {
+          if (g !== gen) return;
+          grid.textContent = '';
+          var items = r.Items || [];
+          status.textContent = items.length ? '' : t('no_results');
+          items.forEach(function (i) { grid.appendChild(card(i)); });
+          decorate(grid);
+        }).catch(function (err) { if (g === gen) { status.textContent = ''; onError(err); } });
+    }
+    entry.onShow = function () { if (!input.value) setTimeout(function () { input.focus(); }, 80); };
+    setTimeout(function () { input.focus(); }, 80);
+    return node;
+  }
+
+  // ------------------------------------------------------------ Item page
+
+  function buildItem(entry, id) {
+    var node = el('div', { 'class': 'view detail' }, [el('div', { 'class': 'loading', text: t('loading') })]);
+    Promise.all([
+      emby('/Users/' + uid() + '/Items/' + id, { Fields: 'MediaSources,Overview,Genres,PartCount,CommunityRating,OfficialRating,ProductionYear,People' }),
+      getUser()
+    ]).then(function (res) {
+      var item = res[0];
+      if (isFolder(item)) { location.replace('#/lib/' + item.Id); return; }
+      retitle(entry, item.Name);
+      node.textContent = '';
+      renderItem(node, item);
+    }).catch(function (err) {
+      if (err && err.auth) return;
+      node.textContent = '';
+      node.appendChild(el('div', { 'class': 'loading', text: t('cant_load_item') }));
+    });
+    return node;
+  }
+
+  function field(label, control) {
+    return el('label', { 'class': 'field' }, [label, control]);
+  }
+
+  function renderItem(node, item) {
+    var backdrop = image(item, 'Backdrop', 1100);
+    var poster = image(item, 'Primary', 420);
+    node.appendChild(el('div', { 'class': 'hero' }, backdrop ? [el('img', { src: backdrop, alt: '' })] : []));
+
+    var meta = [];
+    if (item.ProductionYear) meta.push(String(item.ProductionYear));
+    if (item.RunTimeTicks) meta.push(runtime(item.RunTimeTicks));
+    if (item.PartCount > 1) meta.push(t('n_discs', item.PartCount));
+    if (item.CommunityRating) meta.push('★ ' + (LANG === 'fr' ? item.CommunityRating.toFixed(1).replace('.', ',') : item.CommunityRating.toFixed(1)));
+    if (item.OfficialRating) meta.push(item.OfficialRating);
+    var logo = image(item, 'Logo', 200);
+    var startPos = (item.UserData && item.UserData.PlaybackPositionTicks) || 0;
+    var endLine = item.RunTimeTicks && !(item.PartCount > 1)
+      ? t('ends_around', clock(new Date(Date.now() + (item.RunTimeTicks - startPos) / 1e4))) + (startPos > 0 ? t('if_resuming') : '')
+      : null;
+    node.appendChild(el('div', { 'class': 'dhead' }, [
+      poster ? el('img', { 'class': 'dposter', src: poster, alt: '' }) : el('div', { 'class': 'dposter' }),
+      el('div', { 'class': 'dtitle' }, [
+        logo ? el('img', { 'class': 'dlogo', src: logo, alt: '' }) : null,
+        el('h1', { 'class': logo ? 'sr' : null, text: item.Name }),
+        el('div', { 'class': 'meta', text: meta.join(' · ') }),
+        item.Genres && item.Genres.length ? el('div', { 'class': 'meta', text: item.Genres.slice(0, 3).join(', ') }) : null,
+        endLine ? el('div', { 'class': 'meta', text: endLine }) : null
+      ])
+    ]));
+
+    var sources = item.MediaSources || [];
+    var badges = el('div', { 'class': 'badges', 'aria-label': t('video_format') });
+    var actions = el('div', { 'class': 'actions' });
+    var fields = el('div', { 'class': 'fields' });
+    // Two columns on landscape tablets (stacked on phones).
+    var head = node.lastChild;
+    var colL = el('div', { 'class': 'dcol-l' }), colR = el('div', { 'class': 'dcol-r' });
+    node.appendChild(el('div', { 'class': 'dcols' }, [colL, colR]));
+    colL.appendChild(head);
+    colL.appendChild(badges);
+    colL.appendChild(actions);
+    colL.appendChild(fields);
+
+    // Multi-disc item: choice of the starting disc (the following ones then play in sequence).
+    var discs = null, discSel = null;
+    if (item.PartCount > 1) {
+      discs = [item];
+      discSel = el('select');
+      discSel.appendChild(el('option', { value: '0', text: discLabel(0, item) }));
+      fields.appendChild(field(t('disc'), discSel));
+      emby('/Videos/' + item.Id + '/AdditionalParts', { UserId: uid(), Fields: 'MediaSources' }).then(function (r) {
+        ((r && r.Items) || []).forEach(function (part) {
+          discs.push(part);
+          discSel.appendChild(el('option', { value: String(discs.length - 1), text: discLabel(discs.length - 1, part) }));
+        });
+        drawActions();
+      }).catch(function () { /* following discs unknown: play from the first one */ });
+      discSel.addEventListener('change', function () { fillTracks(); drawActions(); });
+    }
+    function disc() { return discSel ? +discSel.value : 0; }
+    function discLabel(i, part) { return t('disc_n', i + 1) + (part.RunTimeTicks ? ' · ' + runtime(part.RunTimeTicks) : ''); }
+
+    var sourceSel = null;
+    if (sources.length > 1) {
+      sourceSel = el('select');
+      sources.forEach(function (s, i) { sourceSel.appendChild(el('option', { value: String(i), text: s.Name || t('version_n', i + 1) })); });
+      fields.appendChild(field(t('version'), sourceSel));
+    }
+    var audioSel = el('select'), subSel = el('select');
+    var audioField = field(t('audio'), audioSel), subField = field(t('subtitles'), subSel);
+    fields.appendChild(audioField);
+    fields.appendChild(subField);
+
+    function source() {
+      var d = disc();
+      if (d > 0 && discs[d] && discs[d].MediaSources && discs[d].MediaSources.length) return discs[d].MediaSources[0];
+      return sources[sourceSel ? +sourceSel.value : 0] || null;
+    }
+    function fillTracks() {
+      var s = source();
+      badges.textContent = '';
+      videoBadges(s, item).forEach(function (b) { badges.appendChild(el('span', { 'class': 'vb ' + b.cls, text: b.text })); });
+      // Disc format (Blu-ray, UHD Blu-ray, DVD, MKV…), asked from the plugin, which reads the file.
+      var d = disc(), ask = d > 0 && discs[d] ? { Id: discs[d].Id } : { Id: item.Id, MediaSourceId: sourceSel ? sources[+sourceSel.value].Id : null };
+      var mark = badges.dataset.mark = String(Math.random());
+      discFormat(ask).then(function (f) {
+        if (!f || !f.Label || badges.dataset.mark !== mark) return;
+        badges.insertBefore(el('span', { 'class': 'vb src ' + (f.Kind || 'file'), text: f.Label }), badges.firstChild);
+      }).catch(function () { /* unknown format: no label */ });
+      var audio = streams(s, 'Audio'), subs = streams(s, 'Subtitle');
+      audioSel.textContent = '';
+      subSel.textContent = '';
+      numbered(audio, audioLabel).forEach(function (o) { audioSel.appendChild(el('option', { value: String(o.stream.Index), text: o.label })); });
+      audioField.hidden = !audio.length;
+      var da = defaultAudio(s);
+      if (da !== null) audioSel.value = String(da);
+      subSel.appendChild(el('option', { value: '-1', text: t('none') }));
+      numbered(subs, subtitleLabel).forEach(function (o) { subSel.appendChild(el('option', { value: String(o.stream.Index), text: o.label })); });
+      subField.hidden = !subs.length;
+      var current = audio.filter(function (a) { return String(a.Index) === audioSel.value; })[0];
+      subSel.value = String(defaultSubtitle(s, current));
+      drawAudioBadges(current);
+    }
+    function drawAudioBadges(stream) {
+      Array.prototype.forEach.call(badges.querySelectorAll('.vb.aud'), function (b) { b.remove(); });
+      audioBadges(stream).forEach(function (t) { badges.appendChild(el('span', { 'class': 'vb aud', text: t })); });
+    }
+    if (sourceSel) sourceSel.addEventListener('change', fillTracks);
+    audioSel.addEventListener('change', function () {
+      var s = source();
+      var current = streams(s, 'Audio').filter(function (a) { return String(a.Index) === audioSel.value; })[0];
+      subSel.value = String(defaultSubtitle(s, current));
+      drawAudioBadges(current);
+    });
+    fillTracks();
+    if (item.PartCount > 1) fields.appendChild(el('p', { 'class': 'note', text: t('discs_chain') }));
+
+    function go(startTicks, startIndex) {
+      buzz();
+      launch(item, {
+        MediaSourceId: sourceSel ? sources[+sourceSel.value].Id : null,
+        AudioStreamIndex: audioField.hidden ? null : audioSel.value,
+        SubtitleStreamIndex: subField.hidden ? null : subSel.value,
+        StartPositionTicks: startTicks,
+        StartIndex: startIndex
+      });
+    }
+    function button(cls, iconName, text, onClick) {
+      var b = el('button', { 'class': 'btn ' + cls, type: 'button', html: iconName ? icon(iconName) : '' }, [el('span', { text: text })]);
+      b.addEventListener('click', onClick);
+      return b;
+    }
+    var pos = (item.UserData && item.UserData.PlaybackPositionTicks) || 0;
+    /** Resume disc and position (same computation as the plugin: based on each disc's runtime). */
+    function resumePoint() {
+      var part = 0, offset = 0;
+      if (discs && discs.length > 1) {
+        for (var i = 0; i < discs.length - 1; i++) {
+          var d = discs[i].RunTimeTicks || 0;
+          if (d <= 0 || pos < offset + d) break;
+          offset += d;
+          part = i + 1;
+        }
+      }
+      return { part: part, inner: pos - offset };
+    }
+    function drawActions() {
+      actions.textContent = '';
+      var d = disc(), multi = !!discSel;
+      if (pos > 0) {
+        var rp = resumePoint();
+        actions.appendChild(button('primary', 'play', t('resume_at', fmt(rp.inner / 1e7)) + (multi ? t('resume_disc', rp.part + 1) : ''), function () { go(pos, null); }));
+        actions.appendChild(button('secondary', null, d > 0 ? t('play_disc_from_start', d + 1) : t('play_from_start'), function () { go(0, multi ? d : null); }));
+      } else {
+        actions.appendChild(button('primary', 'play', d > 0 ? t('play_disc_on', d + 1, deviceLabel()) : t('play_on', deviceLabel()), function () { go(0, multi ? d : null); }));
+      }
+    }
+    drawActions();
+
+    if (item.Overview) {
+      var ov = el('p', { 'class': 'overview clamp', text: item.Overview });
+      ov.addEventListener('click', function () { ov.classList.toggle('clamp'); });
+      colR.appendChild(ov);
+    }
+
+    var played = !!(item.UserData && item.UserData.Played);
+    var playedBtn = el('button', { 'class': 'pill', type: 'button' });
+    function drawPlayed() {
+      playedBtn.innerHTML = icon('check');
+      playedBtn.appendChild(el('span', { text: played ? t('watched') : t('mark_watched') }));
+      playedBtn.classList.toggle('on', played);
+      playedBtn.setAttribute('aria-pressed', played ? 'true' : 'false');
+    }
+    drawPlayed();
+    playedBtn.addEventListener('click', function () {
+      emby('/Users/' + uid() + '/PlayedItems/' + item.Id, null, played ? 'DELETE' : 'POST').then(function () {
+        played = !played;
+        drawPlayed();
+        markCards(item.Id, played);
+      }).catch(onError);
+    });
+    var fav = !!(item.UserData && item.UserData.IsFavorite);
+    var favBtn = el('button', { 'class': 'pill fav', type: 'button' });
+    function drawFav() {
+      favBtn.innerHTML = icon('heart');
+      favBtn.appendChild(el('span', { text: fav ? t('favorite') : t('add_favorite') }));
+      favBtn.classList.toggle('on', fav);
+      favBtn.setAttribute('aria-pressed', fav ? 'true' : 'false');
+    }
+    drawFav();
+    favBtn.addEventListener('click', function () {
+      buzz();
+      emby('/Users/' + uid() + '/FavoriteItems/' + item.Id, null, fav ? 'DELETE' : 'POST').then(function () {
+        fav = !fav;
+        drawFav();
+      }).catch(onError);
+    });
+    colL.appendChild(el('div', { 'class': 'row-btns' }, [playedBtn, favBtn]));
+
+    // Director and cast (a tap opens the person's other movies).
+    var people = item.People || [];
+    var directors = people.filter(function (x) { return x.Type === 'Director'; }).slice(0, 3);
+    if (directors.length) {
+      var crew = el('p', { 'class': 'crew' }, [t('directed_by')]);
+      directors.forEach(function (d, i) {
+        if (i) crew.appendChild(document.createTextNode(', '));
+        crew.appendChild(el('a', { href: '#/person/' + d.Id }, [el('b', { text: d.Name })]));
+      });
+      colR.appendChild(crew);
+    }
+    var cast = people.filter(function (x) { return x.Type === 'Actor'; }).slice(0, 20);
+    if (cast.length) {
+      var row = el('div', { 'class': 'hrow people' });
+      cast.forEach(function (a) {
+        var img = a.PrimaryImageTag
+          ? el('img', { src: BASE + '/Items/' + a.Id + '/Images/Primary?maxHeight=160&quality=85&tag=' + a.PrimaryImageTag, loading: 'lazy', alt: '' })
+          : el('span', { 'class': 'pph' });
+        row.appendChild(el('a', { 'class': 'person', href: '#/person/' + a.Id }, [img, el('span', { 'class': 'pn', text: a.Name }), a.Role ? el('span', { 'class': 'pr', text: a.Role }) : null]));
+      });
+      colR.appendChild(el('h2', { 'class': 'section' }, [el('span', { text: t('cast') })]));
+      colR.appendChild(row);
+    }
+  }
+
+  // ------------------------------------------------------------ Person page
+
+  function buildPerson(entry, id) {
+    var head = el('div', { 'class': 'pperson' });
+    var grid = el('div', { 'class': 'grid' });
+    var status = el('div', { 'class': 'loading', text: t('loading') });
+    var node = el('div', { 'class': 'view' }, [head, status, grid]);
+    emby('/Users/' + uid() + '/Items/' + id).then(function (p) {
+      retitle(entry, p.Name);
+      var tag = p.ImageTags && p.ImageTags.Primary;
+      head.appendChild(tag ? el('img', { src: BASE + '/Items/' + p.Id + '/Images/Primary?maxHeight=200&quality=85&tag=' + tag, alt: '' }) : el('span', { 'class': 'pph' }));
+      head.appendChild(el('h1', { text: p.Name }));
+    }).catch(function () { /* name unknown */ });
+    emby('/Users/' + uid() + '/Items', { PersonIds: id, Recursive: true, IncludeItemTypes: 'Movie,MusicVideo', SortBy: 'ProductionYear,SortName',
+      SortOrder: 'Descending', Fields: FIELDS, ImageTypeLimit: 1, EnableImageTypes: 'Primary', Limit: 200 }).then(function (r) {
+      var items = (r && r.Items) || [];
+      status.textContent = items.length ? (items.length > 1 ? t('n_titles_lib', items.length) : t('n_title_lib', items.length)) : t('no_titles');
+      items.forEach(function (i) { grid.appendChild(card(i)); });
+      decorate(grid);
+    }).catch(function (err) { if (!(err && err.auth)) status.textContent = t('cant_load_titles'); });
+    return node;
+  }
+
+  function deviceLabel() { return last.deviceName || t('the_oppo'); }
+
+  var pending = null;   // movie being started (before the OPPO confirms it)
+
+  function launch(item, options) {
+    function send(sessionId) {
+      if (!sessionId) throw new Error('nosession');
+      var q = { ItemIds: item.Id, PlayCommand: 'PlayNow', StartPositionTicks: options.StartPositionTicks || 0 };
+      if (options.MediaSourceId) q.MediaSourceId = options.MediaSourceId;
+      if (options.AudioStreamIndex !== null && options.AudioStreamIndex !== undefined) q.AudioStreamIndex = options.AudioStreamIndex;
+      if (options.SubtitleStreamIndex !== null && options.SubtitleStreamIndex !== undefined) q.SubtitleStreamIndex = options.SubtitleStreamIndex;
+      if (options.StartIndex !== null && options.StartIndex !== undefined) q.StartIndex = options.StartIndex;
+      return emby('/Sessions/' + sessionId + '/Playing', q, 'POST');
+    }
+    (last.sessionId ? Promise.resolve(last.sessionId) : remote('/State').then(function (s) { render(s); return s.SessionId; }))
+      .then(send)
+      .then(function () {
+        pending = { at: Date.now(), Title: item.Name, ItemId: item.Id, ImageTag: item.ImageTags && item.ImageTags.Primary };
+        toast(t('launching_on', deviceLabel()));
+        location.hash = '#/player';
+      })
+      .catch(function (err) {
+        if (err && err.auth) return;
+        toast(err && err.message === 'nosession' ? t('no_session') : t('launch_failed'));
+      });
+  }
+
+  // ------------------------------------------------------------ Remote
+
+  var last = { state: '', reachable: false, position: 0, duration: 0, at: 0, sessionId: null, deviceName: null, title: null };
+
+  function setOnline(on) {
+    $('dot').classList.toggle('on', on);
+    $('dot').classList.toggle('off', !on);
+  }
+
+  function setPoster(img, itemId, tag, size) {
+    if (itemId && tag) {
+      var src = BASE + '/Items/' + encodeURIComponent(itemId) + '/Images/Primary?maxHeight=' + size + '&quality=90&tag=' + encodeURIComponent(tag);
+      if (img.getAttribute('src') !== src) img.src = src;
+      img.hidden = false;
+      return true;
+    }
+    img.hidden = true;
+    img.removeAttribute('src');
+    return false;
+  }
+
+  function render(s) {
+    var state = (s.State || '').toUpperCase();
+    var playing = PLAYING.indexOf(state) >= 0;
+    last.state = state;
+    last.reachable = !!s.Reachable;
+    last.sessionId = s.SessionId || last.sessionId;
+    last.deviceName = s.DeviceName || last.deviceName;
+    $('device').textContent = last.deviceName || 'OPPO';
+    setOnline(!!s.Reachable);
+    $('power').classList.toggle('off', !s.Reachable);
+    $('power').setAttribute('aria-label', s.Reachable ? t('power_off_oppo') : t('power_on_oppo'));
+
+    var title = s.Title, itemId = s.ItemId, tag = s.ImageTag;
+    var stateText = s.Reachable ? (STATES[state] || state) : t('off_or_offline');
+    if (s.Title) pending = null;
+    if (!title && pending && Date.now() - pending.at < 120000) {
+      title = pending.Title; itemId = pending.ItemId; tag = pending.ImageTag;
+      stateText = t('launching_state', stateText.toLowerCase());
+    }
+    last.title = title || null;
+    last.itemId = itemId; last.imageTag = tag; last.stateText = stateText;
+
+    loadPlayerItem(itemId);
+    drawSleep(s);
+    if (!playing) $('p-out').hidden = true;
+    else if (s.OutputVideo !== undefined || s.OutputAudio !== undefined) {
+      var out = $('p-out');
+      out.textContent = '';
+      [[t('output'), s.OutputVideo], [' · ', s.OutputAudio], [t('subs_short'), s.OutputSubtitle ? s.OutputSubtitle.toLowerCase() : '']].forEach(function (x) {
+        if (!x[1]) return;
+        out.appendChild(el('b', { text: out.childNodes.length ? x[0] : t('output') }));
+        out.appendChild(document.createTextNode(x[1]));
+      });
+      out.hidden = !out.childNodes.length;
+    }
+    $('dot2').classList.toggle('on', !!s.Reachable);
+    $('dot2').classList.toggle('off', !s.Reachable);
+    $('nav-power').classList.toggle('off', !s.Reachable);
+    markChapter(playing ? s.Chapter : null);
+    $('p-title').textContent = title || (s.Reachable ? t('no_film') : t('oppo_unreachable'));
+    $('p-state').textContent = stateText;
+    $('p-chapter').textContent = playing && s.Chapter ? t('chapter_n', s.Chapter) : '';
+    setPoster($('p-poster'), itemId, tag, 252);
+
+    var pp = state === 'PLAY' || state === 'FFWD' || state === 'FREV' ? '#i-pause' : '#i-play';
+    document.querySelectorAll('.pp-icon').forEach(function (u) { u.setAttribute('href', pp); });
+
+    if (playing && s.Duration > 0) {
+      last.position = s.Position; last.duration = s.Duration; last.at = Date.now();
+      $('progress').hidden = false;
+      drawProgress();
+    } else {
+      $('progress').hidden = true;
+      $('p-end').textContent = '';
+      last.duration = 0;
+    }
+
+    if (!playing) {
+      emptyTracks('audio'); emptyTracks('subtitles');
+    } else {
+      if (s.Audio) drawTracks('audio', s.Audio, false);
+      if (s.Subtitles) drawTracks('subtitles', s.Subtitles, true);
+    }
+    updateMini();
+  }
+
+  // ---------- Current movie: backdrop, logo, format, chapters
+
+  var playerItemId = null;
+  var chapterTimes = [];   // start of each chapter (s), for the current thumbnail's bar
+  function loadPlayerItem(itemId) {
+    if ((itemId || null) === playerItemId) return;
+    playerItemId = itemId || null;
+    var bg = $('p-bg'), logo = $('p-logo'), badgeBox = $('p-badges'), box = $('chap-box'), row = $('chapters');
+    bg.classList.remove('on'); logo.hidden = true; $('p-title').hidden = false;
+    badgeBox.textContent = ''; row.textContent = ''; box.hidden = true; chapterTimes = [];
+    if (!itemId || !uid()) return;
+    emby('/Users/' + uid() + '/Items/' + itemId, { Fields: 'MediaSources,PartCount' }).then(function (item) {
+      if (playerItemId !== itemId) return;
+      var back = image(item, 'Backdrop', 1100);
+      if (back) { bg.style.backgroundImage = 'url("' + back + '")'; bg.classList.add('on'); }
+      var lg = image(item, 'Logo', 160);
+      if (lg) { logo.src = lg; logo.hidden = false; $('p-title').hidden = true; }
+      var src = (item.MediaSources || [])[0];
+      videoBadges(src, item).forEach(function (b) { badgeBox.appendChild(el('span', { 'class': 'vb ' + b.cls, text: b.text })); });
+      discFormat({ Id: item.Id }).then(function (f) {
+        if (f && f.Label && playerItemId === itemId) badgeBox.insertBefore(el('span', { 'class': 'vb src ' + (f.Kind || 'file'), text: f.Label }), badgeBox.firstChild);
+      }).catch(function () { /* unknown format */ });
+      if (item.PartCount > 1) return;   // multi-disc concerts: chapters of the current disc unknown
+      return remote('/Chapters', { Id: item.Id }).then(function (list) {
+        if (playerItemId !== itemId || !list || list.length < 2) return;
+        list.forEach(function (c) {
+          var b = el('button', { 'class': 'chap', type: 'button', 'data-index': String(c.Index), 'aria-label': t('go_chapter', c.Index + 1) }, [
+            el('span', { 'class': 'thumb' }, [
+              el('img', { src: API + '/ChapterImage?Id=' + encodeURIComponent(item.Id) + '&Index=' + c.Index, loading: 'lazy', alt: '' }),
+              el('span', { 'class': 'cbar' }, [el('span')])
+            ]),
+            el('span', { 'class': 'ct', text: (c.Index + 1) + ' · ' + fmt(c.Seconds) })
+          ]);
+          b.addEventListener('click', function () {
+            buzz();
+            last.position = c.Seconds; last.at = Date.now(); drawProgress();
+            remote('/Seek', { Seconds: Math.floor(c.Seconds) }, 'POST').then(function (r) {
+              if (r && !r.Ok) toast(r.Message || t('seek_refused'));
+              schedule(800);
+            }).catch(onError);
+          });
+          row.appendChild(b);
+        });
+        chapterTimes = list.map(function (c) { return c.Seconds; });
+        box.hidden = false;
+        markChapter(last.chapterText, true);
+      });
+    }).catch(function () { /* item unavailable: plain display */ });
+  }
+
+  function markChapter(text, force) {
+    if (text === last.chapterText && !force) return;
+    last.chapterText = text;
+    var m = /^(\d+)/.exec(text || '');
+    var current = m ? +m[1] - 1 : -1;
+    Array.prototype.forEach.call($('chapters').children, function (c) {
+      var on = +c.getAttribute('data-index') === current;
+      c.classList.toggle('current', on);
+      if (on && !$('chap-box').hidden && !document.hidden) {
+        var row = $('chapters');
+        row.scrollTo({ left: Math.max(0, c.offsetLeft - row.clientWidth / 2 + c.clientWidth / 2), behavior: 'smooth' });
+      }
+    });
+  }
+
+  // ---------- Sleep timer
+
+  function drawSleep() { /* sleep timer removed from the UI (0.12.2) */ }
+
+  function updateMini() {
+    var show = started && !!currentRoute && currentRoute.name !== 'player' &&
+      (!!last.title || BUSY.indexOf(last.state) >= 0);
+    $('mini').hidden = !show;
+    document.body.classList.toggle('has-mini', show);
+    if (!show) return;
+    $('m-title').textContent = last.title || t('playing_on', deviceLabel());
+    $('m-state').textContent = last.stateText || '';
+    $('m-ph').hidden = setPoster($('m-poster'), last.itemId, last.imageTag, 120);
+  }
+
+  $('mini').addEventListener('click', function (e) {
+    if (e.target.closest('#m-pp')) return;
+    location.hash = '#/player';
+  });
+  $('mini').addEventListener('keydown', function (e) { if (e.key === 'Enter') location.hash = '#/player'; });
+  $('m-pp').addEventListener('click', function () { sendKey(last.state === 'PLAY' ? 'PAU' : 'PLA'); });
+
+  function currentPosition() {
+    var pos = last.position;
+    if (last.state === 'PLAY' && last.at) pos += (Date.now() - last.at) / 1000;
+    return Math.min(pos, last.duration || pos);
+  }
+  function drawProgress() {
+    if (!last.duration || ($('player').hidden && !wide())) return;
+    var pos = currentPosition();
+    var pct = Math.max(0, Math.min(100, pos / last.duration * 100));
+    $('fill').style.width = pct + '%';
+    $('bar').setAttribute('aria-valuenow', Math.round(pct));
+    $('pos').textContent = fmt(pos);
+    $('dur').textContent = '-' + fmt(last.duration - pos);
+    $('p-end').textContent = t('ends_at', clock(new Date(Date.now() + (last.duration - pos) * 1000)));
+    // Bar of the current thumbnail: progress within the chapter.
+    var cur = document.querySelector('#chapters .chap.current');
+    if (cur && chapterTimes.length) {
+      var i = +cur.getAttribute('data-index');
+      var start = chapterTimes[i], end = i + 1 < chapterTimes.length ? chapterTimes[i + 1] : last.duration;
+      var cp = end > start ? Math.max(0, Math.min(100, (pos - start) / (end - start) * 100)) : 0;
+      cur.querySelector('.cbar span').style.width = cp + '%';
+    }
+  }
+  setInterval(drawProgress, 500);
+
+  function emptyTracks(id) {
+    var box = $(id);
+    if (box.dataset.empty === '1') return;
+    box.dataset.empty = '1';
+    box.textContent = '';
+    box.appendChild(el('span', { 'class': 'empty', text: t('during_playback') }));
+  }
+  function oppoTrackLabel(track, subtitles) {
+    if (subtitles && track.Index === 0) return t('none');
+    return (track.Name || t('track_n', track.Index)).replace(/^\s*\d+\s*\/\s*\d+\s*/, '');
+  }
+  function drawTracks(id, list, subtitles) {
+    var box = $(id);
+    box.dataset.empty = '0';
+    box.textContent = '';
+    if (!list.length) {
+      box.appendChild(el('span', { 'class': 'empty', text: subtitles ? t('no_subs_here') : t('no_tracks_here') }));
+      return;
+    }
+    list.forEach(function (track) {
+      var b = el('button', { 'class': 'chip' + (track.Selected ? ' selected' : ''), type: 'button', 'aria-pressed': track.Selected ? 'true' : 'false', text: oppoTrackLabel(track, subtitles) });
+      b.addEventListener('click', function () {
+        buzz();
+        Array.prototype.forEach.call(box.children, function (c) { c.classList.remove('selected'); });
+        b.classList.add('selected');
+        remote(subtitles ? '/Subtitle' : '/Audio', { Index: track.Index }, 'POST').then(function (r) {
+          if (r && !r.Ok) toast(r.Message || t('refused_by_oppo'));
+          wantTracks = true; schedule(1200);
+        }).catch(onError);
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function sendKey(code) {
+    buzz();
+    return remote('/Key', { Code: code }, 'POST').then(function (r) {
+      if (r && !r.Ok) toast(r.Message || t('key_refused'));
+      schedule(400);
+    }).catch(onError);
+  }
+
+  document.addEventListener('click', function (e) {
+    var k = e.target.closest('[data-key]');
+    if (k) sendKey(k.getAttribute('data-key'));
+  });
+  function jump(seconds) {
+    if (!last.duration) { toast(t('during_film')); return; }
+    var target = Math.max(0, Math.min(last.duration - 5, Math.floor(currentPosition() + seconds)));
+    buzz();
+    last.position = target; last.at = Date.now(); drawProgress();
+    remote('/Seek', { Seconds: target }, 'POST').then(function (r) {
+      if (r && !r.Ok) toast(r.Message || t('seek_refused'));
+      schedule(800);
+    }).catch(onError);
+  }
+  $('back30').addEventListener('click', function () { jump(-30); });
+  $('fwd30').addEventListener('click', function () { jump(30); });
+  $('seance-on').addEventListener('click', function () { seance(true); });
+  $('seance-off').addEventListener('click', function () { seance(false); });
+
+  $('playpause').addEventListener('click', function () { sendKey(last.state === 'PLAY' ? 'PAU' : 'PLA'); });
+  $('nav-power').addEventListener('click', function () { $('power').click(); });
+  $('power').addEventListener('click', function () {
+    if (last.reachable) {
+      if (confirm(t('confirm_power_off'))) sendKey('POF');
+    } else {
+      toast(t('powering_on'));
+      sendKey('PON');
+    }
+  });
+  $('bar').addEventListener('click', function (e) {
+    if (!last.duration) return;
+    var rect = e.currentTarget.getBoundingClientRect();
+    var target = Math.floor(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * last.duration);
+    buzz();
+    last.position = target; last.at = Date.now(); drawProgress();
+    remote('/Seek', { Seconds: target }, 'POST').then(function (r) {
+      if (r && !r.Ok) toast(r.Message || t('seek_refused'));
+      schedule(800);
+    }).catch(onError);
+  });
+
+  // ------------------------------------------------------------ OPPO state polling
+
+  var pollTimer = null, polling = false, again = false, count = 0, wantTracks = true;
+
+  var wideQuery = window.matchMedia ? window.matchMedia('(min-width: 1100px) and (orientation: landscape)') : null;
+  function wide() { return !!(wideQuery && wideQuery.matches); }
+  if (wideQuery && wideQuery.addEventListener) wideQuery.addEventListener('change', function () {
+    if (wide() && currentRoute && currentRoute.name === 'player') location.replace('#/');
+    updateMini(); schedule(100);
+  });
+  function onPlayer() { return wide() || (!!currentRoute && currentRoute.name === 'player'); }
+
+  function poll() {
+    if (!started) return;
+    if (polling) { again = true; return; }
+    polling = true;
+    var tracks = onPlayer() && (wantTracks || count % 4 === 0);
+    if (tracks) wantTracks = false;
+    count++;
+    remote('/State', { Tracks: tracks }).then(render).catch(function (err) {
+      if (err && err.auth) return;
+      setOnline(false);
+      $('p-state').textContent = t('emby_down');
+    }).then(function () {
+      polling = false;
+      if (again) { again = false; schedule(100); } else schedule(onPlayer() ? 2000 : 5000);
+    });
+  }
+  function schedule(delay) {
+    clearTimeout(pollTimer);
+    if (!started || document.hidden) return;
+    pollTimer = setTimeout(poll, delay);
+  }
+  function stopPolling() { clearTimeout(pollTimer); }
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && started) { wantTracks = true; poll(); }
+  });
+
+  // ------------------------------------------------------------ Startup
+
+  function measureAppbar() {
+    document.documentElement.style.setProperty('--appbar-h', $('appbar').offsetHeight + 'px');
+  }
+  window.addEventListener('resize', measureAppbar);
+
+  function start() {
+    $('who').textContent = auth.userName ? t('signed_in_as', auth.userName) : '';
+    started = true;
+    measureAppbar();
+    getUser().catch(function () { /* default preferences */ });
+    stack = [];
+    onRoute();
+    poll();
+  }
+
+  // Full screen: Chrome keeps its address bar as long as the page is not served over HTTPS. The top-bar
+  // button switches to full screen; the choice is remembered and re-applied on the first touch (the
+  // browser requires a gesture) every time the app is opened or returned to.
+  var FS_KEY = 'oppoRemote.fullscreen';
+  function fsWanted() { try { return localStorage.getItem(FS_KEY) === '1'; } catch (e) { return false; } }
+  function fsRemember(on) { try { localStorage.setItem(FS_KEY, on ? '1' : '0'); } catch (e) { /* not remembered */ } }
+  function fsEnter() {
+    var root = document.documentElement;
+    if (document.fullscreenElement || !root.requestFullscreen) return;
+    root.requestFullscreen({ navigationUI: 'hide' }).catch(function () { /* refused */ });
+  }
+  var inApp = !!window.OppoAndroid;
+  if (document.fullscreenEnabled && !inApp) $('nav-fs').hidden = false;
+  if (inApp) {
+    $('change-server').hidden = false;
+    $('change-server').addEventListener('click', function () { window.OppoAndroid.changeServer(); });
+  } else if (/Android/i.test(navigator.userAgent)) {
+    $('get-app').href = API + '/oppo.apk';
+    $('get-app').hidden = false;
+  }
+  $('nav-fs').addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (document.fullscreenElement) { fsRemember(false); document.exitFullscreen().catch(function () {}); }
+    else { fsRemember(true); fsEnter(); }
+  });
+  document.addEventListener('fullscreenchange', function () {
+    $('fs-icon').setAttribute('href', document.fullscreenElement ? '#i-fs-exit' : '#i-fs');
+    setTimeout(measureAppbar, 300);
+  });
+  document.addEventListener('click', function () { if (fsWanted()) fsEnter(); }, true);
+
+  // Service worker: required for Chrome to offer "Install app" (page served over HTTPS,
+  // or address allowed in chrome://flags). No effect elsewhere.
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register(API + '/sw.js', { scope: BASE + '/Oppo/' }).catch(function () { /* installation not possible */ });
+  }
+
+  if (auth.token) start(); else showLogin();
+})();
+</script>
+</body>
+</html>

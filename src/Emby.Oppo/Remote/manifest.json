@@ -1,0 +1,17 @@
+{
+  "name": "OPPO",
+  "short_name": "OPPO",
+  "description": "Remote control for the OPPO player, provided by the \"OPPO\" Emby plugin.",
+  "id": "../Remote",
+  "start_url": "../Remote",
+  "scope": "../Remote",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e0f12",
+  "theme_color": "#0e0f12",
+  "lang": "en",
+  "icons": [
+    { "src": "icon192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

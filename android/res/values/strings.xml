@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OPPO</string>
+    <string name="dialog_title">OPPO</string>
+    <string name="server_prompt">Emby server address (with the port):</string>
+    <string name="server_error">The server is not responding (%1$s). Check the address:</string>
+    <string name="connect">Connect</string>
+    <string name="voice_prompt">Movie or concert title</string>
+</resources>

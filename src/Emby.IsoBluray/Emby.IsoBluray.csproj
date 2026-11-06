@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- "ISO Blu-ray" Emby plugin: analyses Blu-ray ISOs (UDF 2.50) so that Emby shows the
+       audio/video/subtitle tracks and lets the user pick them. -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Emby.IsoBluray</RootNamespace>
+    <AssemblyName>Emby.IsoBluray</AssemblyName>
+    <Version>0.4.0</Version>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Emby public API (compile only, nothing is copied into the plugin). -->
+    <PackageReference Include="MediaBrowser.Server.Core" Version="4.9.1.90" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+</Project>

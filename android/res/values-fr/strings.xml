@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="server_prompt">Adresse du serveur Emby (avec le port) :</string>
+    <string name="server_error">Le serveur ne répond pas (%1$s). Vérifie l\'adresse :</string>
+    <string name="connect">Se connecter</string>
+    <string name="voice_prompt">Titre du film ou du concert</string>
+</resources>

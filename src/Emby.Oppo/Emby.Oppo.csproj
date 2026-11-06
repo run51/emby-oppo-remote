@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- "OPPO" Emby plugin: registers the OPPO 205 as an Emby playback device ("Play on…" menu),
+       makes it play the original file over NFS/SMB and reports playback progress back to Emby.
+       Written from the OPPO protocol and Emby's public API (no HCC code). -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Emby.Oppo</RootNamespace>
+    <AssemblyName>Emby.Oppo</AssemblyName>
+    <Version>0.14.0</Version>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Emby public API (compile only, nothing is copied into the plugin). -->
+    <PackageReference Include="MediaBrowser.Server.Core" Version="4.9.1.90" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- UDF reader shared with the ISO Blu-ray plugin (Blu-ray / DVD detection inside ISO images). -->
+    <Compile Include="..\Emby.IsoBluray\Udf\UdfImage.cs" Link="Udf\UdfImage.cs" />
+    <Compile Include="..\Emby.IsoBluray\Bluray\Playlist.cs" Link="Bluray\Playlist.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Configuration\oppo.html" LogicalName="Emby.Oppo.Configuration.oppo.html" />
+    <EmbeddedResource Include="Configuration\oppo.js" LogicalName="Emby.Oppo.Configuration.oppo.js" />
+    <EmbeddedResource Include="Remote\remote.html" LogicalName="Emby.Oppo.Remote.remote.html" />
+    <EmbeddedResource Include="Remote\manifest.json" LogicalName="Emby.Oppo.Remote.manifest.json" />
+    <EmbeddedResource Include="Remote\sw.js" LogicalName="Emby.Oppo.Remote.sw.js" />
+    <!-- Android APK (built by android/build.sh): embedded only if present. -->
+    <EmbeddedResource Include="Remote\oppo.apk" LogicalName="Emby.Oppo.Remote.oppo.apk" Condition="Exists('Remote\oppo.apk')" />
+    <EmbeddedResource Include="Remote\icon192.png" LogicalName="Emby.Oppo.Remote.icon192.png" />
+    <EmbeddedResource Include="Remote\icon512.png" LogicalName="Emby.Oppo.Remote.icon512.png" />
+  </ItemGroup>
+
+</Project>
