@@ -70,6 +70,17 @@ final class MediaControls {
     };
     private String artLoading;
 
+    /** While the notification is shown, the app asks the plugin for the state itself: in the background the page stops reporting it. */
+    private static final long POLL_MS = 5000;
+    private final Runnable poll = new Runnable() {
+        @Override public void run() {
+            if (!shown) return;
+            refresh();
+            MAIN.postDelayed(this, POLL_MS);
+        }
+    };
+    private boolean polling;
+
     private MediaControls(Context context) {
         app = context.getApplicationContext();
     }
@@ -142,6 +153,8 @@ final class MediaControls {
     /** Removes the notification, releases the session and forgets the token. */
     void hide() {
         shown = false;
+        polling = false;
+        MAIN.removeCallbacks(poll);
         NotificationManager nm = (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.cancel(NOTIFICATION_ID);
         if (session != null) {
@@ -157,6 +170,7 @@ final class MediaControls {
 
     private void render() {
         shown = true;
+        if (!polling) { polling = true; MAIN.postDelayed(poll, POLL_MS); }
         ensureSession();
         Bitmap art = image.isEmpty() ? null : artCache.get(image);
         if (art == null && !image.isEmpty()) loadArt(image);
@@ -296,6 +310,60 @@ final class MediaControls {
         });
     }
 
+    /** Reads the player state from the plugin (worker thread) and applies it (main thread). */
+    void refresh() {
+        IO.execute(() -> {
+            final String json = fetchState(app);
+            if (json != null) MAIN.post(() -> update(json));
+        });
+    }
+
+    /**
+     * GET {base}/emby/Oppo/Remote/State, converted to the mediaState JSON contract. Worker thread only.
+     * Returns null if the server cannot be reached (the display is then left as it is).
+     */
+    static String fetchState(Context context) {
+        SharedPreferences p = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        final String b = p.getString(KEY_BASE, ""), k = p.getString(KEY_TOKEN, "");
+        if (b.isEmpty() || k.isEmpty()) return null;
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL(b + "/emby/Oppo/Remote/State").openConnection();
+            c.setConnectTimeout(5000);
+            c.setReadTimeout(8000);
+            c.setRequestProperty("X-Emby-Token", k);
+            c.setRequestProperty("Accept", "application/json");
+            c.setRequestProperty("Accept-Language", java.util.Locale.getDefault().getLanguage());
+            if (c.getResponseCode() != 200) return null;
+            StringBuilder sb = new StringBuilder();
+            try (InputStream in = c.getInputStream()) {
+                byte[] buf = new byte[4096];
+                int n;
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                sb.append(out.toString("UTF-8"));
+            }
+            JSONObject s = new JSONObject(sb.toString());
+            boolean reachable = s.optBoolean("Reachable", false);
+            String itemId = s.optString("ItemId", ""), tag = s.optString("ImageTag", "");
+            JSONObject o = new JSONObject();
+            o.put("base", b);
+            o.put("token", k);
+            o.put("state", reachable ? s.optString("State", "") : "");
+            o.put("title", s.optString("Title", ""));
+            o.put("chapter", s.optString("Chapter", ""));
+            o.put("position", Math.round(s.optDouble("Position", 0)));
+            o.put("duration", Math.round(s.optDouble("Duration", 0)));
+            o.put("image", !itemId.isEmpty() && !tag.isEmpty() && !"null".equals(tag)
+                    ? b + "/emby/Items/" + itemId + "/Images/Primary?maxHeight=300&quality=85&tag=" + tag : "");
+            return o.toString();
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (c != null) c.disconnect();
+        }
+    }
+
     // ---------------------------------------------------------------- commands
 
     /** Allowed command codes. */
@@ -330,8 +398,17 @@ final class MediaControls {
                 // server unreachable: the next state from the page corrects the display
             } finally {
                 if (c != null) c.disconnect();
-                if (done != null) done.run();
             }
+            // Show the result (new chapter, position) right away, even with the app in the background.
+            try { Thread.sleep(900); } catch (InterruptedException ignored) { }
+            final String json = fetchState(context);
+            if (json != null) {
+                MAIN.post(() -> {
+                    MediaControls controls = peek();
+                    if (controls != null && controls.shown) controls.update(json);
+                });
+            }
+            if (done != null) done.run();
         });
     }
 }

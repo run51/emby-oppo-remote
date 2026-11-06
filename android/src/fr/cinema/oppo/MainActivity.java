@@ -70,7 +70,7 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setSupportZoom(false);
-        s.setUserAgentString(s.getUserAgentString() + " OppoAndroid/1.1");
+        s.setUserAgentString(s.getUserAgentString() + " OppoAndroid/1.2");
         web.addJavascriptInterface(new Bridge(), "OppoAndroid");
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new WebViewClient() {
@@ -231,7 +231,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String version() {
-            return "1.1";
+            return "1.2";
         }
 
         /**

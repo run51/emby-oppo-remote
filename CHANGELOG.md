@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.15.1
+
+- **Android app 1.2:** the lock-screen / notification controls now refresh on their own, so the chapter and the progress update after "next chapter" or "previous chapter" even when the app is in the background. Before, they only refreshed when the app was reopened.
+- Emby.Oppo 0.15.1 (embeds app 1.2), Emby.IsoBluray 0.5.0 (unchanged).
+
 ## v0.15.0
 
 - **Android app 1.1:** lock-screen and notification media controls while a movie plays on the OPPO (previous chapter, play/pause, next chapter, stop), with the title, chapter and poster. Allow notifications when Android asks. Update the app from the "Install the app" button or from this release.
