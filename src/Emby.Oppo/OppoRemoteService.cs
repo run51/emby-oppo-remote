@@ -83,7 +83,7 @@ namespace Emby.Oppo
         public string MediaSourceId { get; set; }
     }
 
-    [Route("/Oppo/Remote/Badges", "GET", Summary = "Resolution and HDR of a list of movies (poster badges)")]
+    [Route("/Oppo/Remote/Badges", "GET", Summary = "Resolution, HDR and 3D of a list of movies (poster badges)")]
     public sealed class RemoteBadges : IReturn<RemoteBadge[]>
     {
         /// <summary>Comma-separated Emby IDs.</summary>
@@ -97,6 +97,8 @@ namespace Emby.Oppo
         public string Resolution { get; set; }
         /// <summary>DV, HDR10+, HDR10, HLG or empty.</summary>
         public string Hdr { get; set; }
+        /// <summary>Stereoscopic 3D movie (Emby's 3D format is set).</summary>
+        public bool Is3D { get; set; }
     }
 
     [Route("/Oppo/Remote/Seance", "POST", Summary = "Start or end of a movie session: OPPO + home-automation webhook (TV, amplifier)")]
@@ -349,6 +351,7 @@ namespace Emby.Oppo
                         case ExtendedVideoTypes.HyperLogGamma: badge.Hdr = "HLG"; break;
                     }
                 }
+                badge.Is3D = _libraryManager.GetItemById(id) is Video movie && movie.Video3DFormat.HasValue;
                 BadgeCache[id] = (DateTime.UtcNow, badge);
                 result.Add(badge);
             }

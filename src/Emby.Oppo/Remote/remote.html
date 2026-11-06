@@ -903,7 +903,7 @@
     catch (e) { return date.getHours() + ':' + String(date.getMinutes()).padStart(2, '0'); }
   }
 
-  /** 4K / Dolby Vision / HDR labels on the posters of a list (asked from the plugin, in batches). */
+  /** 4K / Dolby Vision / HDR / 3D labels on the posters of a list (asked from the plugin, in batches). */
   function decorate(container) {
     var cards = Array.prototype.filter.call(container.querySelectorAll('.card[data-id]:not([data-b])'), function (c) {
       c.setAttribute('data-b', '1');
@@ -917,6 +917,7 @@
             if (b.Resolution === '4K') tags.push({ t: '4K', c: '' });
             if (b.Hdr === 'DV') tags.push({ t: 'DV', c: 'dv' });
             else if (b.Hdr) tags.push({ t: b.Hdr, c: 'hdr' });
+            if (b.Is3D) tags.push({ t: '3D', c: '' });
             if (!tags.length) return;
             container.querySelectorAll('.card[data-id="' + b.Id + '"] .poster').forEach(function (p) {
               if (p.querySelector('.cb')) return;
