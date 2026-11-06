@@ -83,3 +83,9 @@ cp android/build/oppo.apk src/Emby.Oppo/Remote/     # embed it in the plugin, th
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+## Releasing (maintainers)
+
+1. Bump `<Version>` in the csproj files and add a `## vX.Y.Z` section to `CHANGELOG.md`.
+2. If the Android app changed: `bash android/build.sh && cp android/build/oppo.apk src/Emby.Oppo/Remote/` (signed with the private key) and commit the APK.
+3. `git tag vX.Y.Z && git push origin vX.Y.Z`. GitHub Actions builds the plugins and publishes the release.
