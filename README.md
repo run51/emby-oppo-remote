@@ -86,7 +86,7 @@ node tools/make_icons.js
 ## Credits
 
 - This project is inspired by [Xnoppo](https://github.com/siberian-git/Xnoppo) by siberian-git, the original bridge that turned Emby into a library front end for the OPPO 203/205. Thanks also to jandrop for its [Docker image](https://hub.docker.com/r/jandrop/xnoppo).
-- Many thanks to **Trevor Doyle**, who wrote the scripts I used to launch movies from my Synology NAS with Kodi. They were the starting point of this setup.
+- Many thanks to **doylet8456**, who wrote the scripts I used to launch movies from my Synology NAS with Kodi. They were the starting point of this setup.
 - OPPO is a trademark of its owner. This is an unofficial project, not affiliated with or endorsed by OPPO.
 
 ## Licence
