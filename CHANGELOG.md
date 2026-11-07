@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.15.2
+
+- **New icon** for the Android app and the web remote: an "OPPO" wordmark on black.
+- **README:** credits to Xnoppo (the project that inspired this one) and to Trevor Doyle.
+- Emby.Oppo 0.15.2 (embeds Android app 1.2.1), Emby.IsoBluray 0.5.0 (unchanged).
+
 ## v0.15.1
 
 - **Android app 1.2:** the lock-screen / notification controls now refresh on their own, so the chapter and the progress update after "next chapter" or "previous chapter" even when the app is in the background. Before, they only refreshed when the app was reopened.

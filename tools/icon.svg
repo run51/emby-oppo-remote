@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- App icon: "OPPO" wordmark (plain bold type, not the official logo) on a black rounded square. -->
+  <rect width="512" height="512" rx="112" fill="#000"/>
+  <text x="256" y="284" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-weight="700"
+        font-size="104" letter-spacing="1" fill="#fff">OPPO</text>
+  <rect x="196" y="318" width="120" height="12" rx="6" fill="#3ea6ff"/>
+</svg>

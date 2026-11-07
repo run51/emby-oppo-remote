@@ -73,12 +73,21 @@ dotnet build src/Emby.Oppo -c Release
 # Android app (no Gradle). Needs Android SDK build-tools 35 and platform 34 in ~/android/sdk.
 bash android/build.sh                               # creates a signing key on first run
 cp android/build/oppo.apk src/Emby.Oppo/Remote/     # embed it in the plugin, then rebuild Emby.Oppo
+
+# Icons (Android launcher + web remote) from tools/icon.svg. Needs Node.js and Playwright.
+node tools/make_icons.js
 ```
 
 ## Known limitations
 
 - On discs with BD-J menus, the OPPO cannot jump straight to the main movie, so the disc menu is shown.
 - The file must be reachable by the OPPO over NFS or SMB. The player does not play Emby's transcoded streams.
+
+## Credits
+
+- This project is inspired by [Xnoppo](https://github.com/siberian-git/Xnoppo) by siberian-git, the original bridge that turned Emby into a library front end for the OPPO 203/205. Thanks also to jandrop for its [Docker image](https://hub.docker.com/r/jandrop/xnoppo).
+- Many thanks to **Trevor Doyle**, who wrote the scripts I used to launch movies from my Synology NAS with Kodi. They were the starting point of this setup.
+- OPPO is a trademark of its owner. This is an unofficial project, not affiliated with or endorsed by OPPO.
 
 ## Licence
 
