@@ -10,6 +10,9 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Icon;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.VolumeProvider;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -33,6 +36,8 @@ import java.util.concurrent.Executors;
  * The web page pushes the player state through window.OppoAndroid.mediaState(json);
  * this class mirrors it in a MediaSession and a MediaStyle notification.
  * Commands (buttons, headset, lock screen) are sent to the Emby plugin over HTTP.
+ * Home edition: while a title plays and the amplifier is reachable, the session is a "remote playback"
+ * session whose volume is the amplifier's, so the phone's volume keys drive it, also with the screen locked.
  * All state changes run on the main thread.
  */
 final class MediaControls {
@@ -60,6 +65,13 @@ final class MediaControls {
     private boolean playing;
     private boolean buffering;
     private long positionMs, durationMs;
+    /** Amplifier volume 0-1, or -1 if no amplifier (standard edition, not configured, off or unreachable). */
+    private double ampVolume = -1;
+    private VolumeProvider ampProvider;
+    private boolean ampBusy;
+    private int ampPendingLevel = -1;
+    /** Volume key presses received while a command was running (+ up, - down), sent together afterwards. */
+    private int ampPendingSteps;
 
     // Small artwork cache (URL -> bitmap)
     private final Map<String, Bitmap> artCache = new LinkedHashMap<String, Bitmap>(4, 0.75f, true) {
@@ -133,6 +145,9 @@ final class MediaControls {
         image = o.optString("image", "").trim();
         positionMs = Math.max(0, o.optLong("position", 0)) * 1000L;
         durationMs = Math.max(0, o.optLong("duration", 0)) * 1000L;
+        JSONObject amp = o.optJSONObject("amp");
+        double v = amp != null && homeEdition() && !amp.isNull("volume") ? amp.optDouble("volume", -1) : -1;
+        ampVolume = v < 0 ? -1 : Math.min(1, v);
         buffering = state.equals("LOADING");
         if (state.equals("PLAY")) playing = true;
         else if (!buffering) playing = false;
@@ -157,6 +172,10 @@ final class MediaControls {
         MAIN.removeCallbacks(poll);
         NotificationManager nm = (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.cancel(NOTIFICATION_ID);
+        ampProvider = null;
+        ampVolume = -1;
+        ampPendingSteps = 0;
+        ampPendingLevel = -1;
         if (session != null) {
             session.setActive(false);
             session.release();
@@ -194,6 +213,7 @@ final class MediaControls {
                 .addCustomAction(new PlaybackState.CustomAction.Builder(CUSTOM_STOP, app.getString(R.string.media_stop), R.drawable.ic_media_stop).build())
                 .setState(st, positionMs, playing ? 1f : 0f, SystemClock.elapsedRealtime())
                 .build());
+        applyVolumeRouting();
         session.setActive(true);
 
         Notification.Builder nb = Build.VERSION.SDK_INT >= 26
@@ -354,6 +374,13 @@ final class MediaControls {
             o.put("chapter", s.optString("Chapter", ""));
             o.put("position", Math.round(s.optDouble("Position", 0)));
             o.put("duration", Math.round(s.optDouble("Duration", 0)));
+            JSONObject a = s.optJSONObject("Amp");
+            if (a != null && a.optBoolean("Available") && a.optBoolean("On") && !a.isNull("Volume")) {
+                JSONObject amp = new JSONObject();
+                amp.put("volume", a.optDouble("Volume", 0));
+                amp.put("muted", a.optBoolean("Muted"));
+                o.put("amp", amp);
+            }
             o.put("image", !itemId.isEmpty() && !tag.isEmpty() && !"null".equals(tag)
                     ? b + "/emby/Items/" + itemId + "/Images/Primary?maxHeight=300&quality=85&tag=" + tag : "");
             return o.toString();
@@ -362,6 +389,116 @@ final class MediaControls {
         } finally {
             if (c != null) c.disconnect();
         }
+    }
+
+    // ---------------------------------------------------------------- amplifier volume (home edition)
+
+    private static final int AMP_STEPS = 100;
+
+    private boolean homeEdition() {
+        return "home".equals(app.getString(R.string.edition));
+    }
+
+    /** Remote volume (the amplifier) when available, otherwise the phone's own media volume. Main thread. */
+    private void applyVolumeRouting() {
+        if (session == null) return;
+        if (ampVolume < 0) {
+            if (ampProvider != null) {
+                ampProvider = null;
+                session.setPlaybackToLocal(new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build());
+            }
+            return;
+        }
+        int current = (int) Math.round(ampVolume * AMP_STEPS);
+        if (ampProvider == null) {
+            ampProvider = new VolumeProvider(VolumeProvider.VOLUME_CONTROL_ABSOLUTE, AMP_STEPS, current) {
+                @Override public void onAdjustVolume(int direction) {
+                    if (direction == AudioManager.ADJUST_RAISE) ampStep(1);
+                    else if (direction == AudioManager.ADJUST_LOWER) ampStep(-1);
+                    else if (direction == AudioManager.ADJUST_TOGGLE_MUTE || direction == AudioManager.ADJUST_MUTE
+                            || direction == AudioManager.ADJUST_UNMUTE) ampCommand("mute", -1);
+                }
+                @Override public void onSetVolumeTo(int volume) {
+                    // Slider dragged in the system volume panel: only the last position is sent.
+                    setCurrentVolume(volume);
+                    ampCommand("set", Math.max(0, Math.min(AMP_STEPS, volume)));
+                }
+            };
+            session.setPlaybackToRemote(ampProvider);
+        } else if (!ampBusy && ampProvider.getCurrentVolume() != current) {
+            ampProvider.setCurrentVolume(current);
+        }
+    }
+
+    /** One volume step up (+1) or down (-1); steps arriving while a command runs are grouped. Main thread. */
+    private void ampStep(int direction) {
+        if (ampBusy) { ampPendingSteps += direction; return; }
+        ampCommand(direction > 0 ? "up" : "down", -1, 1);
+    }
+
+    private void ampCommand(String action, int level) {
+        ampCommand(action, level, 1);
+    }
+
+    /** Sends an amplifier command, one at a time. Main thread. */
+    private void ampCommand(final String action, final int level, final int steps) {
+        if (ampBusy) {
+            if ("set".equals(action)) ampPendingLevel = level;
+            return;
+        }
+        SharedPreferences p = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        final String b = p.getString(KEY_BASE, ""), k = p.getString(KEY_TOKEN, "");
+        if (b.isEmpty() || k.isEmpty()) return;
+        ampBusy = true;
+        IO.execute(() -> {
+            double volume = -1;
+            HttpURLConnection c = null;
+            try {
+                String q = "Action=" + action + (steps > 1 ? "&Steps=" + steps : "") + (level >= 0 ? "&Level=" + String.format(java.util.Locale.ROOT, "%.3f", level / (double) AMP_STEPS) : "");
+                c = (HttpURLConnection) new URL(b + "/emby/Oppo/Remote/Amp?" + q).openConnection();
+                c.setRequestMethod("POST");
+                c.setConnectTimeout(4000);
+                c.setReadTimeout(8000);
+                c.setRequestProperty("X-Emby-Token", k);
+                c.setRequestProperty("Accept", "application/json");
+                c.setDoOutput(true);
+                c.setFixedLengthStreamingMode(0);
+                c.getOutputStream().close();
+                if (c.getResponseCode() == 200) {
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                    try (InputStream in = c.getInputStream()) {
+                        byte[] buf = new byte[2048];
+                        int n;
+                        while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                    }
+                    JSONObject r = new JSONObject(out.toString("UTF-8"));
+                    if (r.optBoolean("Available") && !r.isNull("Volume")) volume = r.optDouble("Volume", -1);
+                }
+            } catch (Exception e) {
+                // amplifier unreachable: the next state poll corrects the display
+            } finally {
+                if (c != null) c.disconnect();
+            }
+            final double v = volume;
+            MAIN.post(() -> {
+                ampBusy = false;
+                if (v >= 0 && ampProvider != null) {
+                    ampVolume = v;
+                    ampProvider.setCurrentVolume((int) Math.round(v * AMP_STEPS));
+                }
+                if (ampPendingLevel >= 0) {
+                    int next = ampPendingLevel;
+                    ampPendingLevel = -1;
+                    ampPendingSteps = 0;
+                    ampCommand("set", next);
+                } else if (ampPendingSteps != 0) {
+                    int n = ampPendingSteps;
+                    ampPendingSteps = 0;
+                    ampCommand(n > 0 ? "up" : "down", -1, Math.min(10, Math.abs(n)));
+                }
+            });
+        });
     }
 
     // ---------------------------------------------------------------- commands

@@ -43,6 +43,10 @@ namespace Emby.Oppo
     [Unauthenticated]
     public sealed class RemoteApk { }
 
+    [Route("/Oppo/Remote/oppo-home.apk", "GET", Summary = "Android app for the remote, home-automation edition")]
+    [Unauthenticated]
+    public sealed class RemoteHomeApk { }
+
     [Route("/Oppo/Remote/icon512.png", "GET")]
     [Unauthenticated]
     public sealed class RemoteIcon512 { }
@@ -129,6 +133,18 @@ namespace Emby.Oppo
         public int Minutes { get; set; }
     }
 
+    [Route("/Oppo/Remote/Amp", "GET", Summary = "Amplifier volume and mute (Home Assistant)")]
+    public sealed class RemoteAmp : IReturn<AmpState> { }
+
+    [Route("/Oppo/Remote/Amp", "POST", Summary = "Amplifier: Action = up, down (Steps 1-10), mute (toggle) or set (Level 0-1)")]
+    public sealed class RemoteAmpAction : IReturn<AmpState>
+    {
+        public string Action { get; set; }
+        public double? Level { get; set; }
+        /// <summary>up / down: number of steps (volume key held down), 1 by default.</summary>
+        public int Steps { get; set; }
+    }
+
     [Route("/Oppo/Remote/Seek", "POST", Summary = "Seeks to a time in the current title")]
     public sealed class RemoteSeek : IReturn<RemoteActionResult>
     {
@@ -165,6 +181,10 @@ namespace Emby.Oppo
         /// <summary>Scheduled power-off time (UTC, ISO 8601), or null.</summary>
         public string SleepAt { get; set; }
         public bool SleepEndOfFilm { get; set; }
+        /// <summary>True if home automation is set up (webhook, Unfolded Circle remote or Home Assistant).</summary>
+        public bool HomeAutomation { get; set; }
+        /// <summary>Amplifier volume and mute, or null if no amplifier is configured.</summary>
+        public AmpState Amp { get; set; }
     }
 
     public sealed class RemoteActionResult
@@ -266,6 +286,9 @@ namespace Emby.Oppo
         public object Get(RemoteApk request) => Embedded("oppo.apk", "application/vnd.android.package-archive",
             new Dictionary<string, string> { ["Content-Disposition"] = "attachment; filename=\"OPPO.apk\"" });
 
+        public object Get(RemoteHomeApk request) => Embedded("oppo-home.apk", "application/vnd.android.package-archive",
+            new Dictionary<string, string> { ["Content-Disposition"] = "attachment; filename=\"OPPO-Home.apk\"" });
+
         public object Get(RemotePage request) => Embedded("remote.html", "text/html; charset=utf-8");
 
         public object Get(RemoteManifest request) => Embedded("manifest.json", "application/manifest+json");
@@ -293,6 +316,9 @@ namespace Emby.Oppo
                 result.DeviceName = Plugin.Instance.Configuration.DeviceName;
                 result.SleepAt = SleepTimer.At?.ToString("o", CultureInfo.InvariantCulture);
                 result.SleepEndOfFilm = SleepTimer.EndOfFilm;
+                var config = Plugin.Instance.Configuration;
+                result.HomeAutomation = !string.IsNullOrWhiteSpace(config.WebhookUrl) || !string.IsNullOrWhiteSpace(config.RemoteAddress) || Amplifier.Configured;
+                var amp = Amplifier.GetState(_json, _logger);
                 var now = session?.NowPlayingItem;
                 if (now != null)
                 {
@@ -321,8 +347,21 @@ namespace Emby.Oppo
                             .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
                     }
                 }
+                result.Amp = await amp.ConfigureAwait(false);
             }
             return result;
+        }
+
+        public async Task<object> Get(RemoteAmp request) =>
+            await Amplifier.GetState(_json, _logger).ConfigureAwait(false) ?? new AmpState();
+
+        public async Task<object> Post(RemoteAmpAction request)
+        {
+            if (!await Amplifier.Act(request.Action, request.Level, Math.Max(1, Math.Min(10, request.Steps)), _json, _logger).ConfigureAwait(false))
+                throw new ArgumentException(L10n.T(Fr, "The amplifier did not respond (Home Assistant).", "L'ampli ne répond pas (Home Assistant)."));
+            // Give the receiver a moment to apply the change before reading it back.
+            await Task.Delay(250).ConfigureAwait(false);
+            return await Amplifier.GetState(_json, _logger, true).ConfigureAwait(false) ?? new AmpState();
         }
 
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, (DateTime At, RemoteBadge Badge)> BadgeCache =

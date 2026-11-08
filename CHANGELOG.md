@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.16.0
+
+- **Two Android apps (1.3.1):**
+  - **OPPO**: the remote without home-automation buttons, for setups without home automation.
+  - **OPPO Home**: adds Showtime, All off and the amplifier volume. It replaces the previous app (same package), so an update keeps your settings.
+  - Both can be installed side by side.
+- **Amplifier volume and mute** through Home Assistant: new settings for the Home Assistant address, a long-lived access token and the amplifier's `media_player` entity. The remote shows the volume (in dB when the receiver reports it), with buttons for volume down, volume up and mute.
+- In **OPPO Home**, the phone's volume keys control the amplifier:
+  - while the app is open and the amplifier is on;
+  - while a title is playing, even with the app in the background or the screen locked. Android shows its volume slider for the amplifier, like with a Chromecast.
+  - Holding a key down groups the steps, so the volume follows quickly.
+- The browser remote offers both apps to download.
+- Emby.Oppo 0.16.0 (embeds both apps), Emby.IsoBluray 0.5.0 (unchanged).
+
 ## v0.15.2
 
 - **New icon** for the Android app and the web remote: an "OPPO" wordmark on black.

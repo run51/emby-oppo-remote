@@ -12,7 +12,7 @@ The interface is available in **English and French**. The language follows the d
 |---|---|
 | **Emby.Oppo** (plugin) | **Playback:** adds the OPPO to Emby's "Play on…" menu. The player mounts your share over NFS or SMB and opens the original file. Position is reported back to Emby, so resume and watched status work.<br>**Playback options:** audio and subtitle track selection, multi-disc titles, optional webhook for home automation.<br>**Web remote:** browse your libraries, open a title page, then control playback: chapter thumbnails, live OPPO output info (resolution, HDR, audio format), transport keys, a D-pad and a "Showtime" power scene. |
 | **Emby.IsoBluray** (plugin) | Reads inside Blu-ray ISOs and BDMV folders (UDF 2.50, MPLS playlists). Emby then shows the real audio and subtitle tracks, the correct runtime and the format (UHD, HDR…). Blu-ray 3D discs are marked as 3D. |
-| **Android app** | Fullscreen app for the web remote, with voice search and lock-screen media controls. The interface is served by the plugin, so it updates without reinstalling the app. |
+| **Android apps** | Fullscreen app for the web remote, with voice search and lock-screen media controls. It comes in two editions:<ul><li>**OPPO**: no home automation.</li><li>**OPPO Home**: adds Showtime, All off and the amplifier volume. The phone's volume keys control the amplifier while the app is open, and while a movie plays even with the screen locked.</li></ul>The interface is served by the plugin, so it updates without reinstalling the app. |
 
 ## Installing the plugins
 
@@ -46,6 +46,9 @@ Developed and tested with Emby Server 4.10. The plugins are built against the 4.
 - **Unfolded Circle remote** (optional)
   - Enter its address, API key and the TV's `media_player` entity.
   - The TV is then switched on over the network when a movie starts or when you press "Showtime". This helps when the Emby server cannot reach the TV with Wake-on-LAN.
+- **Amplifier volume** (optional, Home Assistant)
+  - Enter the Home Assistant address (e.g. `http://homeassistant:8123`), a long-lived access token (your profile → Security) and the amplifier's `media_player` entity (e.g. `media_player.denon`).
+  - The remote then shows the volume with buttons for volume down, volume up and mute. In the **OPPO Home** app, the phone's volume keys control the amplifier while the app is open, and while a movie plays even with the screen locked.
 
 Then, from any Emby app: **Play on… → OPPO**.
 
@@ -59,7 +62,7 @@ Run *Dashboard → Scheduled tasks → "Blu-ray: tracks and runtimes"* once afte
   - Open `http://<emby-server>:8096/emby/Oppo/Remote` and sign in with your Emby account.
   - In Chrome, the page can be installed as an app (PWA).
 - **Android app** (Android 7+)
-  - Download `OPPO.apk` from [Releases](../../releases), or use the "Install the app" button on the web remote.
+  - Download `OPPO.apk` (no home automation) or `OPPO-Home.apk` (Showtime, All off, amplifier volume) from [Releases](../../releases), or use the install buttons on the web remote.
   - Allow installs from unknown sources.
   - On first launch, enter your Emby server address (e.g. `http://192.168.1.10:8096`).
 
@@ -71,8 +74,8 @@ dotnet build src/Emby.IsoBluray -c Release
 dotnet build src/Emby.Oppo -c Release
 
 # Android app (no Gradle). Needs Android SDK build-tools 35 and platform 34 in ~/android/sdk.
-bash android/build.sh                               # creates a signing key on first run
-cp android/build/oppo.apk src/Emby.Oppo/Remote/     # embed it in the plugin, then rebuild Emby.Oppo
+bash android/build.sh                               # both editions; creates a signing key on first run
+cp android/build/oppo.apk android/build/oppo-home.apk src/Emby.Oppo/Remote/   # embed them, then rebuild Emby.Oppo
 
 # Icons (Android launcher + web remote) from tools/icon.svg. Needs Node.js and Playwright.
 node tools/make_icons.js
@@ -96,5 +99,5 @@ MIT. See [LICENSE](LICENSE).
 ## Releasing (maintainers)
 
 1. Bump `<Version>` in the csproj files and add a `## vX.Y.Z` section to `CHANGELOG.md`.
-2. If the Android app changed: `bash android/build.sh && cp android/build/oppo.apk src/Emby.Oppo/Remote/` (signed with the private key) and commit the APK.
+2. If the Android app changed: `bash android/build.sh && cp android/build/oppo.apk android/build/oppo-home.apk src/Emby.Oppo/Remote/` (signed with the private key) and commit both APKs.
 3. `git tag vX.Y.Z && git push origin vX.Y.Z`. GitHub Actions builds the plugins and publishes the release.

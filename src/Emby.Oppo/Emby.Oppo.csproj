@@ -10,7 +10,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>Emby.Oppo</RootNamespace>
     <AssemblyName>Emby.Oppo</AssemblyName>
-    <Version>0.15.2</Version>
+    <Version>0.16.0</Version>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
@@ -34,6 +34,7 @@
     <EmbeddedResource Include="Remote\sw.js" LogicalName="Emby.Oppo.Remote.sw.js" />
     <!-- Android APK (built by android/build.sh): embedded only if present. -->
     <EmbeddedResource Include="Remote\oppo.apk" LogicalName="Emby.Oppo.Remote.oppo.apk" Condition="Exists('Remote\oppo.apk')" />
+    <EmbeddedResource Include="Remote\oppo-home.apk" LogicalName="Emby.Oppo.Remote.oppo-home.apk" Condition="Exists('Remote\oppo-home.apk')" />
     <EmbeddedResource Include="Remote\icon192.png" LogicalName="Emby.Oppo.Remote.icon192.png" />
     <EmbeddedResource Include="Remote\icon512.png" LogicalName="Emby.Oppo.Remote.icon512.png" />
   </ItemGroup>

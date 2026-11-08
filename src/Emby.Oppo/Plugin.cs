@@ -56,6 +56,14 @@ namespace Emby.Oppo
         public string RemoteApiKey { get; set; } = "";
         public string RemoteTvEntity { get; set; } = "";
 
+        /// <summary>
+        /// Optional: Home Assistant (address such as http://homeassistant:8123, long-lived access token) and the
+        /// amplifier's media_player entity, for the volume and mute buttons of the remote.
+        /// </summary>
+        public string HomeAssistantUrl { get; set; } = "";
+        public string HomeAssistantToken { get; set; } = "";
+        public string AmplifierEntity { get; set; } = "";
+
         /// <summary>Maximum time for playback to start on the OPPO (mount included).</summary>
         public int StartTimeoutSeconds { get; set; } = 60;
 

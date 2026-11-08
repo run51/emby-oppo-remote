@@ -50,6 +50,8 @@ public class MainActivity extends Activity {
 
     private WebView web;
     private boolean errorShown;
+    /** Home edition: true while the page shows a reachable amplifier; the phone's volume keys then drive it. */
+    private volatile boolean ampKeys;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -70,7 +72,7 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setSupportZoom(false);
-        s.setUserAgentString(s.getUserAgentString() + " OppoAndroid/1.2");
+        s.setUserAgentString(s.getUserAgentString() + " OppoAndroid/1.3");
         web.addJavascriptInterface(new Bridge(), "OppoAndroid");
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new WebViewClient() {
@@ -166,6 +168,21 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int code = event.getKeyCode();
+        if (ampKeys && (code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN || code == KeyEvent.KEYCODE_VOLUME_MUTE)) {
+            // Volume keys go to the amplifier instead of the phone (key repeats while held; the page throttles).
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                String action = code == KeyEvent.KEYCODE_VOLUME_UP ? "up" : code == KeyEvent.KEYCODE_VOLUME_DOWN ? "down" : "mute";
+                if (action.equals("mute") && event.getRepeatCount() > 0) return true;
+                web.evaluateJavascript("window.oppoAmpKey && window.oppoAmpKey('" + action + "')", null);
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK && web.canGoBack()) {
             web.goBack();
@@ -231,7 +248,19 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String version() {
-            return "1.2.1";
+            return "1.3.1";
+        }
+
+        /** Called by the page: the amplifier row is shown (true) or hidden (false). */
+        @JavascriptInterface
+        public void ampAvailable(boolean available) {
+            ampKeys = available && "home".equals(getString(R.string.edition));
+        }
+
+        /** "standard" (no home automation) or "home" (Showtime, All off, amplifier volume). */
+        @JavascriptInterface
+        public String edition() {
+            return getString(R.string.edition);
         }
 
         /**

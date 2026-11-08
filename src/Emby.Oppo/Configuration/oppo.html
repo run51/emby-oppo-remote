@@ -47,6 +47,17 @@
             <div class="inputContainer">
                 <input is="emby-input" type="text" id="txtRemoteTvEntity" label="Remote — TV entity (e.g. lgwebos_driver.main.media_player.192.168.1.20):" data-i18n-label="ucTvEntity" />
             </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="url" id="txtHaUrl" label="Home Assistant — address (optional, e.g. http://homeassistant:8123):" data-i18n-label="haUrl" />
+                <div class="fieldDescription" data-i18n="haUrlHelp">Used for the amplifier volume and mute buttons of the remote.</div>
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="password" id="txtHaToken" label="Home Assistant — long-lived access token:" data-i18n-label="haToken" />
+                <div class="fieldDescription" data-i18n="haTokenHelp">Create it in Home Assistant: your profile → Security → Long-lived access tokens.</div>
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="text" id="txtAmpEntity" label="Home Assistant — amplifier entity (e.g. media_player.denon):" data-i18n-label="ampEntity" />
+            </div>
 
             <div style="margin-top:2em;">
                 <button is="emby-button" type="submit" class="raised button-submit block"><span data-i18n="save">Save</span></button>

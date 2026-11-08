@@ -1,6 +1,6 @@
 # Builds the plugins and creates a GitHub release when a version tag (v*) is pushed.
-# The Android app is built and signed locally (private key); its signed APK is committed
-# at src/Emby.Oppo/Remote/oppo.apk, embedded in Emby.Oppo.dll and attached to the release.
+# The Android app is built and signed locally (private key); its two signed APKs (standard and home
+# editions) are committed in src/Emby.Oppo/Remote/, embedded in Emby.Oppo.dll and attached to the release.
 name: Release
 
 "on":
@@ -36,16 +36,17 @@ jobs:
           cp src/Emby.Oppo/bin/Release/netstandard2.0/Emby.Oppo.dll dist/
           cp src/Emby.IsoBluray/bin/Release/netstandard2.0/Emby.IsoBluray.dll dist/
           cp src/Emby.Oppo/Remote/oppo.apk dist/OPPO.apk
+          cp src/Emby.Oppo/Remote/oppo-home.apk dist/OPPO-Home.apk
 
       - name: Extract changelog
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
           awk "/^## v?${VERSION}\$/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "See CHANGELOG.md" > notes.md
-          printf '\n**Install:** copy `Emby.Oppo.dll` and `Emby.IsoBluray.dll` into Emby'"'"'s `plugins` folder and restart Emby. Android app: `OPPO.apk`. See the README.\n' >> notes.md
+          printf '\n**Install:** copy `Emby.Oppo.dll` and `Emby.IsoBluray.dll` into Emby'"'"'s `plugins` folder and restart Emby. Android app: `OPPO.apk`, or `OPPO-Home.apk` with the home-automation buttons. See the README.\n' >> notes.md
           cat notes.md
 
       - uses: ncipollo/release-action@v1
         with:
           bodyFile: notes.md
-          artifacts: "dist/Emby.Oppo.dll,dist/Emby.IsoBluray.dll,dist/OPPO.apk"
+          artifacts: "dist/Emby.Oppo.dll,dist/Emby.IsoBluray.dll,dist/OPPO.apk,dist/OPPO-Home.apk"

@@ -25,6 +25,12 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             ucAddressHelp: 'If set, the Remote 2/3 turns the TV on over the network when a movie starts and with the Showtime button.',
             ucApiKey: 'Remote — API key:',
             ucTvEntity: 'Remote — TV entity (e.g. lgwebos_driver.main.media_player.192.168.1.20):',
+            homeAutomationHelp: 'Optional. The Showtime, All off and amplifier volume buttons are shown in the "OPPO Home" Android app and in the browser remote.',
+            haUrl: 'Home Assistant — address (optional, e.g. http://homeassistant:8123):',
+            haUrlHelp: 'Used for the amplifier volume and mute buttons of the remote.',
+            haToken: 'Home Assistant — long-lived access token:',
+            haTokenHelp: 'Create it in Home Assistant: your profile → Security → Long-lived access tokens.',
+            ampEntity: 'Home Assistant — amplifier entity (e.g. media_player.denon):',
             save: 'Save',
             choose: '— choose —',
             manualEntry: 'Manual entry…',
@@ -63,6 +69,12 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             ucAddressHelp: 'Si renseignée, la Remote 2/3 allume la TV par le réseau au lancement d\'un film et au bouton Séance.',
             ucApiKey: 'Télécommande — clé d\'API :',
             ucTvEntity: 'Télécommande — entité de la TV (ex. lgwebos_driver.main.media_player.192.168.1.20) :',
+            homeAutomationHelp: 'Facultatif. Les boutons Séance, Tout éteindre et le volume de l\'ampli s\'affichent dans l\'application Android « OPPO Home » et dans la télécommande du navigateur.',
+            haUrl: 'Home Assistant — adresse (facultatif, ex. http://homeassistant:8123) :',
+            haUrlHelp: 'Sert aux boutons de volume et de sourdine de l\'ampli dans la télécommande.',
+            haToken: 'Home Assistant — jeton d\'accès longue durée :',
+            haTokenHelp: 'À créer dans Home Assistant : votre profil → Sécurité → Jetons d\'accès longue durée.',
+            ampEntity: 'Home Assistant — entité de l\'ampli (ex. media_player.denon) :',
             save: 'Enregistrer',
             choose: '— choisir —',
             manualEntry: 'Saisie manuelle…',
@@ -273,6 +285,9 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 config.RemoteAddress = view.querySelector('#txtRemoteAddress').value.trim();
                 config.RemoteApiKey = view.querySelector('#txtRemoteApiKey').value.trim();
                 config.RemoteTvEntity = view.querySelector('#txtRemoteTvEntity').value.trim();
+                config.HomeAssistantUrl = view.querySelector('#txtHaUrl').value.trim();
+                config.HomeAssistantToken = view.querySelector('#txtHaToken').value.trim();
+                config.AmplifierEntity = view.querySelector('#txtAmpEntity').value.trim();
                 config.Mappings = readAll();
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
                     loading.hide();
@@ -297,6 +312,9 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtRemoteAddress').value = config.RemoteAddress || '';
                 view.querySelector('#txtRemoteApiKey').value = config.RemoteApiKey || '';
                 view.querySelector('#txtRemoteTvEntity').value = config.RemoteTvEntity || '';
+                view.querySelector('#txtHaUrl').value = config.HomeAssistantUrl || '';
+                view.querySelector('#txtHaToken').value = config.HomeAssistantToken || '';
+                view.querySelector('#txtAmpEntity').value = config.AmplifierEntity || '';
                 state.mappings = config.Mappings || [];
                 var folders = res[1];
                 state.libraries = (folders && folders.Items) ? folders.Items : (folders || []);
