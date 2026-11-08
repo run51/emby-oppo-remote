@@ -61,6 +61,8 @@ Run *Dashboard → Scheduled tasks → "Blu-ray: tracks and runtimes"* once afte
 - **Browser**
   - Open `http://<emby-server>:8096/emby/Oppo/Remote` and sign in with your Emby account.
   - In Chrome, the page can be installed as an app (PWA).
+  - On Linux, GNOME Web can install it as a web application (menu → Install Site as Web Application).
+  - On a slow device, tick **Light mode** at the bottom of the remote: fewer visual effects and smaller images.
 - **Android app** (Android 7+)
   - Download `OPPO.apk` (no home automation) or `OPPO-Home.apk` (Showtime, All off, amplifier volume) from [Releases](../../releases), or use the install buttons on the web remote.
   - Allow installs from unknown sources.

@@ -12,6 +12,7 @@
 <link rel="manifest" href="Remote/app.webmanifest" id="manifest">
 <link rel="icon" href="Remote/icon192.png" id="favicon">
 <link rel="apple-touch-icon" href="Remote/icon192.png" id="touchicon">
+<script>try { if (localStorage.getItem('oppoRemote.lite') === '1') document.documentElement.className += ' lite'; } catch (e) { /* storage unavailable */ }</script>
 <style>
   :root {
     --bg: #0e0f12;
@@ -54,8 +55,7 @@
     position: sticky; top: 0; z-index: 5;
     display: flex; align-items: center; gap: 2px;
     padding: max(8px, env(safe-area-inset-top)) 6px 8px;
-    background: rgba(14, 15, 18, .94);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    background: rgba(14, 15, 18, .97);
   }
   .appbar-title { flex: 1; min-width: 0; font-weight: 650; font-size: 18px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .icon-btn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); flex: none; }
@@ -225,6 +225,12 @@
   .account button { color: var(--muted); text-decoration: underline; }
   .account a { color: var(--accent); }
   .account select { min-height: 0; padding: 2px 6px; font-size: 13px; border-radius: 8px; color: var(--muted); background: transparent; }
+  .account label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .account input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--accent); }
+  /* Light mode for slow devices: no live blur, shadows or animations (all repainted while scrolling). */
+  html.lite *, html.lite *::before, html.lite *::after { transition: none !important; animation: none !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  html.lite .p-bg { display: none; }
+  html.lite .now { background: var(--surface); }
 
   /* Sign-in */
   .login { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; padding: 24px 16px; z-index: 10; }
@@ -524,7 +530,7 @@
     </div>
   </details>
 
-  <div class="account"><span id="who"></span><button id="logout" type="button" data-i18n="logout">Sign out</button><button id="change-server" type="button" hidden data-i18n="change_server">Change server</button><select id="lang-select" aria-label="Language" data-i18n-aria="language"><option value="" data-i18n="lang_auto">Auto</option><option value="en">English</option><option value="fr">Français</option></select><a id="get-app" hidden download data-i18n="get_app">Install the Android app</a><a id="get-app-home" hidden download data-i18n="install_app_home">Install the app (home automation)</a></div>
+  <div class="account"><span id="who"></span><button id="logout" type="button" data-i18n="logout">Sign out</button><button id="change-server" type="button" hidden data-i18n="change_server">Change server</button><select id="lang-select" aria-label="Language" data-i18n-aria="language"><option value="" data-i18n="lang_auto">Auto</option><option value="en">English</option><option value="fr">Français</option></select><label data-i18n-title="lite_hint" title="Fewer visual effects, for slow devices"><input type="checkbox" id="lite-mode"><span data-i18n="lite_mode">Light mode</span></label><a id="get-app" hidden download data-i18n="get_app">Install the Android app</a><a id="get-app-home" hidden download data-i18n="install_app_home">Install the app (home automation)</a></div>
 </main>
 
 <div class="mini" id="mini" role="button" tabindex="0" aria-label="Open the remote" data-i18n-aria="open_remote" hidden>
@@ -565,6 +571,7 @@
       logout: 'Sign out', change_server: 'Change server', get_app: 'Install the Android app', open_remote: 'Open the remote',
       login_intro: 'Sign in with your Emby account. You won’t be asked again on this device.',
       username: 'Username', password: 'Password', sign_in: 'Sign in', language: 'Language', lang_auto: 'Auto',
+      lite_mode: 'Light mode', lite_hint: 'Fewer visual effects, for slow devices',
       err_status: 'Error {0}', emby_down: 'Emby is not responding', login_bad: 'Incorrect username or password.',
       login_failed_code: 'Unable to sign in ({0}).', login_failed: 'Unable to sign in.', browser: 'Browser',
       rt_hm: '{0}h {1}m', rt_m: '{0} min',
@@ -620,6 +627,7 @@
       logout: 'Se déconnecter', change_server: 'Changer de serveur', get_app: 'Installer l\'appli Android', open_remote: 'Ouvrir la télécommande',
       login_intro: 'Connecte-toi avec ton compte Emby. Il ne sera plus demandé sur cet appareil.',
       username: 'Utilisateur', password: 'Mot de passe', sign_in: 'Se connecter', language: 'Langue', lang_auto: 'Auto',
+      lite_mode: 'Mode léger', lite_hint: 'Moins d\'effets visuels, pour les appareils lents',
       err_status: 'Erreur {0}', emby_down: 'Emby ne répond pas', login_bad: 'Identifiant ou mot de passe incorrect.',
       login_failed_code: 'Connexion impossible ({0}).', login_failed: 'Connexion impossible.', browser: 'Navigateur',
       rt_hm: '{0} h {1}', rt_m: '{0} min',
@@ -861,6 +869,13 @@
     location.reload();
   });
 
+  // Light mode: stored on this device, applied at once (and before the first paint on the next load, see <head>).
+  $('lite-mode').checked = document.documentElement.classList.contains('lite');
+  $('lite-mode').addEventListener('change', function () {
+    document.documentElement.classList.toggle('lite', this.checked);
+    try { localStorage.setItem('oppoRemote.lite', this.checked ? '1' : '0'); } catch (e) { /* this session only */ }
+  });
+
   $('logout').addEventListener('click', function () {
     androidMedia('');
     renderAmp(null);
@@ -900,6 +915,8 @@
   }
 
   function image(item, type, size) {
+    // Light mode: smaller images, quicker to decode on slow devices.
+    if (document.documentElement.classList.contains('lite')) size = Math.round(size * 2 / 3);
     if (type === 'Backdrop') {
       var tags = item.BackdropImageTags, id = item.Id;
       if ((!tags || !tags.length) && item.ParentBackdropItemId) { tags = item.ParentBackdropImageTags; id = item.ParentBackdropItemId; }

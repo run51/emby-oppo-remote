@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.16.1
+
+- **Light mode** for slow devices (remote settings, next to the language): turns off the live blur, shadows and animations, hides the blurred backdrop on the playback screen and loads smaller images. The choice is saved on the device.
+- The app bar no longer uses a live blur (it was almost opaque already), which makes scrolling lighter everywhere.
+- Emby.Oppo 0.16.1, Emby.IsoBluray 0.5.0 (unchanged).
+
 ## v0.16.0
 
 - **Two Android apps (1.3.1):**
