@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.17.0
+
+- **IP control through an oppo-multiplexer** (new optional setting "IP control through"): the player
+  accepts a single IP control connection (port 23), so the plugin and another controller (an Unfolded
+  Circle remote, for example) kept disconnecting each other. Enter the address of an
+  [oppo-multiplexer](https://github.com/henrikwidlund/oppo-multiplexer), e.g. `192.168.1.20:23`; the
+  HTTP interface (port 436) still goes to the player.
+- Emby.Oppo 0.17.0, Emby.IsoBluray 0.5.0 (unchanged).
+
 ## v0.16.1
 
 - **Light mode** for slow devices (remote settings, next to the language): turns off the live blur, shadows and animations, hides the blurred backdrop on the playback screen and loads smaller images. The choice is saved on the device.

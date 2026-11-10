@@ -9,6 +9,10 @@
                 <div class="fieldDescription" data-i18n="oppoAddressHelp">UDP-203 / UDP-205 or a compatible clone, on the same network as this server. Enable network standby on the player so that it can be turned on remotely.</div>
             </div>
             <div class="inputContainer">
+                <input is="emby-input" type="text" id="txtIpControlAddress" label="IP control through (optional):" data-i18n-label="ipControlAddress" />
+                <div class="fieldDescription" data-i18n="ipControlAddressHelp">The player accepts a single IP control connection (port 23). If another device controls it too (an Unfolded Circle remote, for example), run an oppo-multiplexer and enter its address, e.g. 192.168.1.20:23. Empty: the player itself.</div>
+            </div>
+            <div class="inputContainer">
                 <input is="emby-input" type="text" id="txtDeviceName" label="Name in the &quot;Play on&quot; menu:" data-i18n-label="deviceName" />
             </div>
             <div class="inputContainer">

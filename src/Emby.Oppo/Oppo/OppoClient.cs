@@ -364,6 +364,22 @@ namespace Emby.Oppo.Oppo
 
         // ---------------------------------------------------------------- IP 23
 
+        /// <summary>
+        /// Where the IP control protocol goes: the player itself (port 23), or the address set in the
+        /// configuration, e.g. an oppo-multiplexer shared with other controllers.
+        /// </summary>
+        private (string Host, int Port) IpControlEndpoint()
+        {
+            string address = (Plugin.Instance?.Configuration?.IpControlAddress ?? "").Trim();
+            if (address.Length == 0) return (_host, 23);
+            int colon = address.LastIndexOf(':');
+            if (colon > 0 && address.IndexOf(':') == colon
+                && int.TryParse(address.Substring(colon + 1), NumberStyles.None, CultureInfo.InvariantCulture, out int port)
+                && port > 0 && port < 65536)
+                return (address.Substring(0, colon), port);
+            return (address, 23);
+        }
+
         /// <summary>Sends an OPPO IP protocol command (e.g. "PAU") and returns the response.</summary>
         public async Task<string> Command(string code, CancellationToken ct, string argument = null)
         {
@@ -372,9 +388,10 @@ namespace Emby.Oppo.Oppo
             {
                 using (var tcp = new TcpClient())
                 {
-                    var connect = tcp.ConnectAsync(_host, 23);
+                    var (ipHost, ipPort) = IpControlEndpoint();
+                    var connect = tcp.ConnectAsync(ipHost, ipPort);
                     if (await Task.WhenAny(connect, Task.Delay(5000, ct)).ConfigureAwait(false) != connect)
-                        throw new TimeoutException("OPPO: port 23 unreachable");
+                        throw new TimeoutException("OPPO: IP control " + ipHost + ":" + ipPort + " unreachable");
                     using (var stream = tcp.GetStream())
                     {
                         var payload = Encoding.ASCII.GetBytes("#" + code + (argument == null ? "" : " " + argument) + "\r");

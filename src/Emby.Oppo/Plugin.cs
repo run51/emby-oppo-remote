@@ -38,6 +38,13 @@ namespace Emby.Oppo
         /// <summary>IP address of the OPPO (UDP-203/205) or of a compatible player.</summary>
         public string OppoAddress { get; set; } = "";
 
+        /// <summary>
+        /// Optional "host[:port]" for the IP control protocol (port 23), e.g. an oppo-multiplexer shared with
+        /// another controller: the player accepts a single IP control connection. Empty: the player itself,
+        /// port 23. The HTTP interface (port 436) always goes to <see cref="OppoAddress"/>.
+        /// </summary>
+        public string IpControlAddress { get; set; } = "";
+
         /// <summary>Name shown in Emby's "Play on…" menu.</summary>
         public string DeviceName { get; set; } = "OPPO";
 

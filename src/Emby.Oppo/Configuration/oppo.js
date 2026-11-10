@@ -9,6 +9,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             player: 'Player',
             oppoAddress: 'OPPO player IP address:',
             oppoAddressHelp: 'UDP-203 / UDP-205 or a compatible clone, on the same network as this server. Enable network standby on the player so that it can be turned on remotely.',
+            ipControlAddress: 'IP control through (optional):',
+            ipControlAddressHelp: 'The player accepts a single IP control connection (port 23). If another device controls it too (an Unfolded Circle remote, for example), run an oppo-multiplexer and enter its address, e.g. 192.168.1.20:23. Empty: the player itself.',
             deviceName: 'Name in the "Play on" menu:',
             startTimeout: 'Start timeout (seconds):',
             remote: 'Remote control',
@@ -53,6 +55,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             player: 'Lecteur',
             oppoAddress: 'Adresse IP du lecteur OPPO :',
             oppoAddressHelp: 'UDP-203 / UDP-205 ou clone compatible, sur le même réseau que ce serveur. Activez sur le lecteur la mise en veille réseau pour qu\'il puisse être allumé à distance.',
+            ipControlAddress: 'Contrôle IP via (facultatif) :',
+            ipControlAddressHelp: 'Le lecteur n\'accepte qu\'une connexion de contrôle IP (port 23). Si un autre appareil le pilote aussi (une télécommande Unfolded Circle, par exemple), lancez un oppo-multiplexer et indiquez son adresse, par ex. 192.168.1.20:23. Vide : le lecteur lui-même.',
             deviceName: 'Nom dans le menu « Lire sur… » :',
             startTimeout: 'Délai de démarrage (secondes) :',
             remote: 'Télécommande',
@@ -279,6 +283,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             loading.show();
             ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                 config.OppoAddress = view.querySelector('#txtOppoAddress').value.trim();
+                config.IpControlAddress = view.querySelector('#txtIpControlAddress').value.trim();
                 config.DeviceName = view.querySelector('#txtDeviceName').value.trim() || 'OPPO';
                 config.StartTimeoutSeconds = parseInt(view.querySelector('#txtStartTimeout').value, 10) || 60;
                 config.WebhookUrl = view.querySelector('#txtWebhookUrl').value.trim();
@@ -306,6 +311,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             Promise.all([ApiClient.getPluginConfiguration(pluginId), ApiClient.getVirtualFolders()]).then(function (res) {
                 var config = res[0];
                 view.querySelector('#txtOppoAddress').value = config.OppoAddress || '';
+                view.querySelector('#txtIpControlAddress').value = config.IpControlAddress || '';
                 view.querySelector('#txtDeviceName').value = config.DeviceName || 'OPPO';
                 view.querySelector('#txtStartTimeout').value = config.StartTimeoutSeconds || 60;
                 view.querySelector('#txtWebhookUrl').value = config.WebhookUrl || '';
