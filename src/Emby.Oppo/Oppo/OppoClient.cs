@@ -200,11 +200,16 @@ namespace Emby.Oppo.Oppo
             return (true, message, names.Take(10).ToList());
         }
 
-        /// <summary>Powers the OPPO on (IP command) and waits for its HTTP interface to respond.</summary>
+        /// <summary>
+        /// Powers the OPPO on (IP command) and waits for its HTTP interface to respond. While it does not,
+        /// the control-app login notice is sent every 2 s: after a power cut the player keeps port 436
+        /// closed until it receives that notice, even when it is on.
+        /// </summary>
         public async Task<bool> WakeAndWait(TimeSpan timeout, CancellationToken ct)
         {
             try { await PowerOn(ct).ConfigureAwait(false); } catch (Exception ex) when (!(ex is OperationCanceledException)) { _logger.Debug("OPPO #PON: {0}", ex.Message); }
             var deadline = DateTime.UtcNow + timeout;
+            bool notified = false;
             while (DateTime.UtcNow < deadline)
             {
                 try
@@ -213,9 +218,29 @@ namespace Emby.Oppo.Oppo
                     if (Success(r)) return true;
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException)) { }
+                if (!notified) _logger.Info("OPPO: HTTP interface (port {0}) not answering, sending the control-app login notice (UDP {1})", 436, 7624);
+                notified = true;
+                NotifyLogin();
                 await Task.Delay(2000, ct).ConfigureAwait(false);
             }
             return false;
+        }
+
+        /// <summary>
+        /// Announces a control app to the OPPO, as the official app does when it starts: the datagram
+        /// "NOTIFY OREMOTE LOGIN" on UDP port 7624. It makes the player open its HTTP interface (port 436).
+        /// </summary>
+        private void NotifyLogin()
+        {
+            try
+            {
+                using (var udp = new UdpClient())
+                {
+                    byte[] message = Encoding.ASCII.GetBytes("NOTIFY OREMOTE LOGIN");
+                    udp.Send(message, message.Length, _host, 7624);
+                }
+            }
+            catch (Exception ex) { _logger.Debug("OPPO login notice: {0}", ex.Message); }
         }
 
         /// <summary>Mounts an SMB/CIFS share; the OPPO then exposes it under /mnt/cifs1.</summary>

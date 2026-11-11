@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.17.1
+
+- **Works again after a power cut of the player:** the OPPO then keeps its HTTP interface (port 436)
+  closed, even when it is on, until a control app announces itself. While waiting for the player, the
+  plugin now sends that announcement (the UDP datagram the official app sends on port 7624), so a film
+  can start without opening another app first.
+- Emby.Oppo 0.17.1, Emby.IsoBluray 0.5.0 (unchanged).
+
 ## v0.17.0
 
 - **IP control through an oppo-multiplexer** (new optional setting "IP control through"): the player

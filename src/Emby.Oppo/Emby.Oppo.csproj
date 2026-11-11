@@ -10,7 +10,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>Emby.Oppo</RootNamespace>
     <AssemblyName>Emby.Oppo</AssemblyName>
-    <Version>0.17.0</Version>
+    <Version>0.17.1</Version>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
