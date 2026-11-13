@@ -574,6 +574,12 @@ namespace Emby.Oppo
                 }
                 if (!string.IsNullOrEmpty(state)) _logger.Info("OPPO: player powered on (state \"{0}\")", state);
             }
+            else if (!await oppo.WaitForHttp(TimeSpan.FromSeconds(20), ct).ConfigureAwait(false))
+            {
+                // On, but restarted: its HTTP interface stays closed until a control app announces itself
+                // (2026-11-11 after the player was restarted: "Connection refused (192.168.2.195:436)").
+                _logger.Info("OPPO: HTTP interface (port {0}) still closed", 436);
+            }
             if (state == "SCREEN SAVER")
             {
                 await oppo.Command("RET", ct).ConfigureAwait(false);

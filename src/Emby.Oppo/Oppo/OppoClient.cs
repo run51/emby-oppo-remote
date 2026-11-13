@@ -208,9 +208,19 @@ namespace Emby.Oppo.Oppo
         public async Task<bool> WakeAndWait(TimeSpan timeout, CancellationToken ct)
         {
             try { await PowerOn(ct).ConfigureAwait(false); } catch (Exception ex) when (!(ex is OperationCanceledException)) { _logger.Debug("OPPO #PON: {0}", ex.Message); }
+            return await WaitForHttp(timeout, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Waits for the HTTP interface (port 436) to respond, sending the control-app login notice every 2 s
+        /// while it does not. Also needed when the player is on: after a power cut or a restart it answers
+        /// IP control but keeps port 436 closed until a control app announces itself.
+        /// </summary>
+        public async Task<bool> WaitForHttp(TimeSpan timeout, CancellationToken ct)
+        {
             var deadline = DateTime.UtcNow + timeout;
             bool notified = false;
-            while (DateTime.UtcNow < deadline)
+            while (true)
             {
                 try
                 {
@@ -218,12 +228,12 @@ namespace Emby.Oppo.Oppo
                     if (Success(r)) return true;
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException)) { }
+                if (DateTime.UtcNow >= deadline) return false;
                 if (!notified) _logger.Info("OPPO: HTTP interface (port {0}) not answering, sending the control-app login notice (UDP {1})", 436, 7624);
                 notified = true;
                 NotifyLogin();
                 await Task.Delay(2000, ct).ConfigureAwait(false);
             }
-            return false;
         }
 
         /// <summary>

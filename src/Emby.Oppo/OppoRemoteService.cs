@@ -333,7 +333,11 @@ namespace Emby.Oppo
                     result.Position = status.Position.TotalSeconds;
                     result.Duration = status.Duration.TotalSeconds;
                     result.Chapter = await oppo.QueryChapter(ct).ConfigureAwait(false);
-                    if (request.Tracks)
+                    // #QHS / #QAT / #QST only during the film itself (a title of more than 5 minutes, playback
+                    // started), like the Oppo driver of the remote: on a disc menu or a short title the OPPO does
+                    // not answer #QHS, each unanswered query holds the oppo-multiplexer 10 s, and the player then
+                    // stops answering IP control for a while (seen on a UHD ISO menu: the web remote's STOP was lost).
+                    if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 0)
                     {
                         string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
                         OppoClient.Events.TryGetValue("UVO", out var uvo);
@@ -341,6 +345,9 @@ namespace Emby.Oppo
                         result.OutputVideo = string.Join(" · ", new[] { HdrLabel(hdr), VideoOutLabel(uvo, fr) }.Where(x => !string.IsNullOrEmpty(x)));
                         result.OutputAudio = TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
                         result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
+                    }
+                    if (request.Tracks)
+                    {
                         result.Audio = (await oppo.GetTrackMenu(true, ct).ConfigureAwait(false))
                             .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
                         result.Subtitles = (await oppo.GetTrackMenu(false, ct).ConfigureAwait(false))

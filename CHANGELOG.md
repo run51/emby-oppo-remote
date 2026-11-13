@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.17.2
+
+- **A film starts after the player was restarted** (power button held, power cut): the player then
+  answers IP control ("HOME MENU") but keeps its HTTP interface closed until a control app announces
+  itself, and the film failed at once with "Connection refused (…:436)". Before a film the plugin now
+  also waits for the HTTP interface when the player is already on, sending the announcement while it
+  is closed (20 s at most).
+- **The web remote no longer upsets the player at the start of a film.** With its player screen open,
+  it asked the OPPO for the HDR status (#QHS), the audio and the subtitle type even on a disc menu
+  (a UHD ISO starts with a title of a few seconds). The OPPO does not answer #QHS there, each unanswered
+  query held the oppo-multiplexer 10 s, and the player then ignored commands for a while (the web
+  remote's STOP was lost). These three queries are now only sent during the film itself (a title of
+  more than 5 minutes, playback started), like the Oppo driver of the Unfolded Circle remote does. The
+  audio and subtitle track lists are still returned at any time.
+- Emby.Oppo 0.17.2, Emby.IsoBluray 0.5.0 (unchanged).
+
 ## v0.17.1
 
 - **Works again after a power cut of the player:** the OPPO then keeps its HTTP interface (port 436)
