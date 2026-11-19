@@ -444,8 +444,13 @@ namespace Emby.Oppo.Oppo
                             if (left <= TimeSpan.Zero || await Task.WhenAny(read, Task.Delay(left, ct)).ConfigureAwait(false) != read || read.Result == 0) break;
                             received.Append(Encoding.ASCII.GetString(buffer, 0, read.Result));
                             CaptureEvents(received.ToString());
+                            // Verbose modes 2/3 answer "@QPL OK PLAY"; modes 0/1 answer "@OK PLAY". Another
+                            // IP-control client (e.g. the Unfolded Circle Oppo driver) may switch the player's
+                            // mode, so accept both and return the long form, which every caller parses.
                             var line = received.ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                                 .Select(l => l.Trim())
+                                .Select(l => l.StartsWith("@OK", StringComparison.OrdinalIgnoreCase) || l.StartsWith("@ER", StringComparison.OrdinalIgnoreCase)
+                                    ? expected + " " + l.Substring(1) : l)
                                 .FirstOrDefault(l => l.StartsWith(expected, StringComparison.OrdinalIgnoreCase));
                             if (line != null)
                             {
@@ -499,6 +504,122 @@ namespace Emby.Oppo.Oppo
                 return "";
             }
         }
+
+        // ---------------------------------------------------------------- DLNA renderer (UPnP AVTransport)
+
+        /// <summary>
+        /// Sends a URL to the player's DLNA renderer and starts it (SetAVTransportURI, then Play). With the
+        /// oppo-dv-mkv mod, a disc image (video/iso, ".iso") is played as a disc, menus included.
+        /// Returns false if the renderer refused or could not be reached.
+        /// </summary>
+        public async Task<bool> PlayDlna(string url, string title, long size, CancellationToken ct, string mime = "video/iso")
+        {
+            try
+            {
+                string control = await AvTransportControlUrl(ct).ConfigureAwait(false);
+                await Soap(control, "Stop", "", ct, logErrors: false).ConfigureAwait(false);
+                await Task.Delay(1000, ct).ConfigureAwait(false);
+                string didl = "<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\">"
+                    + "<item id=\"1\" parentID=\"0\" restricted=\"1\"><dc:title>" + Xml(title) + "</dc:title><upnp:class>object.item.videoItem.movie</upnp:class>"
+                    + "<res protocolInfo=\"http-get:*:" + mime + ":*\"" + (size > 0 ? " size=\"" + size.ToString(CultureInfo.InvariantCulture) + "\"" : "") + ">" + Xml(url) + "</res></item></DIDL-Lite>";
+                if (!await Soap(control, "SetAVTransportURI", "<CurrentURI>" + Xml(url) + "</CurrentURI><CurrentURIMetaData>" + Xml(didl) + "</CurrentURIMetaData>", ct).ConfigureAwait(false))
+                    return false;
+                return await Soap(control, "Play", "<Speed>1</Speed>", ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger.Info("OPPO: DLNA renderer unreachable ({0})", ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>Stops the DLNA renderer (before falling back to the network share).</summary>
+        public async Task StopDlna(CancellationToken ct)
+        {
+            try { await Soap(await AvTransportControlUrl(ct).ConfigureAwait(false), "Stop", "", ct, logErrors: false).ConfigureAwait(false); }
+            catch (Exception ex) when (!(ex is OperationCanceledException)) { }
+        }
+
+        /// <summary>
+        /// State of the DLNA renderer (GetTransportInfo): STOPPED, NO_MEDIA_PRESENT, PLAYING, TRANSITIONING…,
+        /// or null if it does not answer.
+        /// </summary>
+        public async Task<string> DlnaTransportState(CancellationToken ct)
+        {
+            try
+            {
+                string control = await AvTransportControlUrl(ct).ConfigureAwait(false);
+                string body = "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>"
+                    + "<u:GetTransportInfo xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\"><InstanceID>0</InstanceID></u:GetTransportInfo></s:Body></s:Envelope>";
+                string answer = await HttpText(control, body, "\"urn:schemas-upnp-org:service:AVTransport:1#GetTransportInfo\"", TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
+                var m = System.Text.RegularExpressions.Regex.Match(answer, @"<CurrentTransportState>([^<]*)</CurrentTransportState>");
+                return m.Success ? m.Groups[1].Value.Trim() : null;
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger.Debug("OPPO DLNA GetTransportInfo failed: {0}", ex.Message);
+                return null;
+            }
+        }
+
+        private string _avTransportControl;
+
+        /// <summary>AVTransport control URL, read from the renderer's description (port 49152).</summary>
+        private async Task<string> AvTransportControlUrl(CancellationToken ct)
+        {
+            if (_avTransportControl != null) return _avTransportControl;
+            string baseUrl = "http://" + _host + ":49152";
+            string description = await HttpText(baseUrl + "/dmr_oppo.xml", null, null, TimeSpan.FromSeconds(8), ct).ConfigureAwait(false);
+            var m = System.Text.RegularExpressions.Regex.Match(description,
+                @"urn:schemas-upnp-org:service:AVTransport:1</serviceType>.*?<controlURL>([^<]+)</controlURL>",
+                System.Text.RegularExpressions.RegexOptions.Singleline);
+            string path = m.Success ? m.Groups[1].Value.Trim() : "/AVTransport/control";
+            _avTransportControl = path.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? path : baseUrl + (path.StartsWith("/") ? "" : "/") + path;
+            return _avTransportControl;
+        }
+
+        private async Task<bool> Soap(string control, string action, string args, CancellationToken ct, bool logErrors = true)
+        {
+            string body = "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>"
+                + "<u:" + action + " xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\"><InstanceID>0</InstanceID>" + args + "</u:" + action + "></s:Body></s:Envelope>";
+            try
+            {
+                await HttpText(control, body, "\"urn:schemas-upnp-org:service:AVTransport:1#" + action + "\"", TimeSpan.FromSeconds(15), ct).ConfigureAwait(false);
+                _logger.Debug("OPPO DLNA {0} → OK", action);
+                return true;
+            }
+            catch (WebException ex) when (ex.Response is HttpWebResponse r)
+            {
+                string detail;
+                using (var reader = new StreamReader(r.GetResponseStream(), Encoding.UTF8)) detail = reader.ReadToEnd();
+                if (logErrors) _logger.Info("OPPO DLNA {0} → HTTP {1} {2}", action, (int)r.StatusCode, detail.Length > 300 ? detail.Substring(0, 300) : detail);
+                return false;
+            }
+        }
+
+        private static async Task<string> HttpText(string url, string soapBody, string soapAction, TimeSpan timeout, CancellationToken ct)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(url);
+            request.Timeout = (int)timeout.TotalMilliseconds;
+            request.ReadWriteTimeout = request.Timeout;
+            if (soapBody != null)
+            {
+                request.Method = "POST";
+                request.ContentType = "text/xml; charset=\"utf-8\"";
+                request.Headers["SOAPACTION"] = soapAction;
+                byte[] data = Encoding.UTF8.GetBytes(soapBody);
+                request.ContentLength = data.Length;
+                using (ct.Register(request.Abort))
+                using (var stream = await request.GetRequestStreamAsync().ConfigureAwait(false))
+                    await stream.WriteAsync(data, 0, data.Length, ct).ConfigureAwait(false);
+            }
+            using (ct.Register(request.Abort))
+            using (var response = (HttpWebResponse)await request.GetResponseAsync().ConfigureAwait(false))
+            using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                return await reader.ReadToEndAsync().ConfigureAwait(false);
+        }
+
+        private static string Xml(string s) => System.Security.SecurityElement.Escape(s ?? "");
 
         public Task Pause(CancellationToken ct) => Command("PAU", ct);
         public Task Resume(CancellationToken ct) => Command("PLA", ct);

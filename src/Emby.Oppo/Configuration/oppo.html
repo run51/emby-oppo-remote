@@ -35,6 +35,17 @@
             <button is="emby-button" type="button" class="raised btnDiscover"><span data-i18n="discover">Search the OPPO's shares</span></button>
             <div class="discoverStatus fieldDescription" style="margin:1em 0;"></div>
             <div class="oppoMappings"></div>
+            <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:1.5em;">
+                <label>
+                    <input is="emby-checkbox" type="checkbox" id="chkDlnaDiscImages" />
+                    <span data-i18n="dlnaDiscImages">Play over DLNA: ISO files, Blu-ray folders, MKV (oppo-dv-mkv mod)</span>
+                </label>
+                <div class="fieldDescription checkboxFieldDescription" data-i18n="dlnaDiscImagesHelp">Requires the oppo-dv-mkv mod on the player with "DLNA Disc Images" on. The plugin serves the movie itself to the player: an ISO or a Blu-ray folder plays as a disc (menus and Dolby Vision included), an MKV, MP4 or M2TS file as a file. No share is mounted; the share above is only used if the movie does not start.</div>
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="number" id="txtDiscServerPort" label="Disc image server port:" data-i18n-label="discServerPort" min="1025" max="65535" />
+                <div class="fieldDescription" data-i18n="discServerPortHelp">A free port on this server, reachable by the player. Restart Emby after changing it.</div>
+            </div>
 
             <h2 class="sectionTitle" style="margin-top:2em;" data-i18n="homeAutomation">Home automation</h2>
             <div class="inputContainer">

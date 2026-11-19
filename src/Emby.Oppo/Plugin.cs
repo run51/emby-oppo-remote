@@ -71,6 +71,15 @@ namespace Emby.Oppo
         public string HomeAssistantToken { get; set; } = "";
         public string AmplifierEntity { get; set; } = "";
 
+        /// <summary>
+        /// Plays ISO files over DLNA instead of a network share. Requires the oppo-dv-mkv mod on the player
+        /// ("DLNA Disc Images" on); the network share is used if the player does not start within 30 s.
+        /// </summary>
+        public bool DlnaDiscImages { get; set; } = false;
+
+        /// <summary>Port of the plugin's disc image server (must be free on the Emby server and reachable by the OPPO).</summary>
+        public int DiscServerPort { get; set; } = 8099;
+
         /// <summary>Maximum time for playback to start on the OPPO (mount included).</summary>
         public int StartTimeoutSeconds { get; set; } = 60;
 

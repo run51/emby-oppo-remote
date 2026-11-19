@@ -7,6 +7,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Emby.IsoBluray.Bluray;
 using Emby.Oppo.Oppo;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -49,6 +50,21 @@ namespace Emby.Oppo
         private CancellationTokenSource _currentPart;
         private DateTime _requestedAt;
         private string _requestKey;          // to recognise a request sent twice
+        private bool _mainMovie;             // play the main movie as a file, without the disc menus
+
+        // "Movie without menus" asked by the web remote for the next play of an item (valid 60 s).
+        private static long _pendingMainMovie;
+        private static DateTime _pendingMainMovieUntil;
+
+        /// <summary>Chapter marks (s) of the main movie playing as a file (no disc navigation), else null.</summary>
+        internal static double[] MainMovieChapters { get; private set; }
+
+        /// <summary>The next play request for this item plays its main movie directly, without the disc menus.</summary>
+        internal static void RequestMainMovie(long itemId)
+        {
+            _pendingMainMovie = itemId;
+            _pendingMainMovieUntil = DateTime.UtcNow.AddSeconds(60);
+        }
         private int? _requestedPart;          // requested disc (0 = first), null = from the resume point
         private int _startPart;               // disc playback starts with
         private long _startInner;             // start position within that disc
@@ -95,6 +111,7 @@ namespace Emby.Oppo
             if (request.ItemIds == null || request.ItemIds.Length == 0) return;
             var item = _libraryManager.GetItemById(request.ItemIds[0]);
             if (item == null) return;
+            bool mainMovie = DateTime.UtcNow < _pendingMainMovieUntil && _pendingMainMovie == item.InternalId;
             if (!string.IsNullOrEmpty(request.MediaSourceId))
                 item = _libraryManager.GetItemById(item.InternalId.ToString(CultureInfo.InvariantCulture), request.MediaSourceId) ?? item;
 
@@ -111,10 +128,12 @@ namespace Emby.Oppo
                     requestedPart = position + 1;
                 }
             }
+            mainMovie = mainMovie || (DateTime.UtcNow < _pendingMainMovieUntil && _pendingMainMovie == item.InternalId);
+            _pendingMainMovie = 0;
 
             // The Android app sometimes resends the same request a few seconds later:
             // do not restart a movie that is already starting.
-            string key = string.Join("|", item.InternalId, requestedPart, (request.StartPositionTicks ?? 0) / TimeSpan.TicksPerMinute, request.MediaSourceId);
+            string key = string.Join("|", item.InternalId, requestedPart, (request.StartPositionTicks ?? 0) / TimeSpan.TicksPerMinute, request.MediaSourceId, mainMovie);
             var current = _item;
             if (current != null && key == _requestKey && DateTime.UtcNow - _requestedAt < TimeSpan.FromSeconds(90))
             {
@@ -126,6 +145,7 @@ namespace Emby.Oppo
             _requestedAt = DateTime.UtcNow;
             _requestKey = key;
             _requestedPart = requestedPart;
+            _mainMovie = mainMovie;
 
             var cts = new CancellationTokenSource();
             _playback = cts;
@@ -138,10 +158,10 @@ namespace Emby.Oppo
             _paused = false;
             _audioIndex = request.AudioStreamIndex;
             _subtitleIndex = request.SubtitleStreamIndex;
-            _logger.Info("OPPO: play request {0}: audio {1}, subtitles {2}, resume at {3}", item.Name,
+            _logger.Info("OPPO: play request {0}: audio {1}, subtitles {2}, resume at {3}{4}", item.Name,
                 request.AudioStreamIndex?.ToString(CultureInfo.InvariantCulture) ?? "unspecified",
                 request.SubtitleStreamIndex?.ToString(CultureInfo.InvariantCulture) ?? "unspecified",
-                TimeSpan.FromTicks(request.StartPositionTicks ?? 0));
+                TimeSpan.FromTicks(request.StartPositionTicks ?? 0), mainMovie ? ", main movie without menus" : "");
 
             // Session attached to the user who starts the movie (otherwise Emby records neither resume point nor "watched").
             OppoEntryPoint.Current?.AttachUser(request.ControllingUserId);
@@ -236,6 +256,7 @@ namespace Emby.Oppo
             }
             finally
             {
+                MainMovieChapters = null;
                 if (ReferenceEquals(_item, item))
                 {
                     _item = null;
@@ -255,42 +276,16 @@ namespace Emby.Oppo
             string label = _parts.Count > 1 ? " (disc " + (index + 1) + "/" + _parts.Count + ")" : "";   // log only
             try
             {
-                var target = MapPath(part.Path);
-                if (target == null)
-                {
-                    _logger.Error("OPPO: no share configured for {0} (see the OPPO page of the dashboard)", part.Path);
+                // Main movie as a file (no menus), then the disc image over DLNA (oppo-dv-mkv mod), then the
+                // network share: each one is the fallback of the previous one.
+                MainMovieChapters = null;
+                bool started = _mainMovie && IsBluray(part.Path)
+                    && await StartMainMovie(oppo, title, label, part, partCt).ConfigureAwait(false);
+                if (!started)
+                    started = Config.DlnaDiscImages && (IsDiscImage(part.Path) || IsBdmvFolder(part.Path) || DlnaFileMime(part.Path) != null)
+                        && await StartDlna(oppo, title, label, part, partCt).ConfigureAwait(false);
+                if (!started && !await StartFromShare(oppo, title, label, part, partCt).ConfigureAwait(false))
                     return PartEnd.Failed;
-                }
-
-                var map = target.Value.Mapping;
-                bool smb = string.Equals(map.Protocol, "smb", StringComparison.OrdinalIgnoreCase);
-                _logger.Info("OPPO: playing {0}{1} ({2} {3}:/{4}, file {5})", title, label, smb ? "SMB" : "NFS", map.Server, map.Share, target.Value.Relative);
-                await MakeReady(oppo, partCt).ConfigureAwait(false);
-                await oppo.SignIn(_serverAddress, partCt).ConfigureAwait(false);
-                var mountTimeout = TimeSpan.FromSeconds(Config.StartTimeoutSeconds);
-                Func<Task<bool>> mount = () => smb
-                    ? oppo.MountSmb(map.Server, map.Share, map.Username, map.Password, mountTimeout, partCt)
-                    : oppo.MountNfs(map.Server, map.Share, mountTimeout, partCt);
-                bool mountedOk = await mount().ConfigureAwait(false);
-                if (!mountedOk)
-                {
-                    // Typically "bd_is_playing": a disc is still running. Close it and try again.
-                    _logger.Info("OPPO: mount refused, stopping current playback and retrying ({0})", map.Server);
-                    await MakeReady(oppo, partCt, force: true).ConfigureAwait(false);
-                    mountedOk = await mount().ConfigureAwait(false);
-                }
-                if (!mountedOk)
-                {
-                    _logger.Error("OPPO: mount failed {0} {1}:/{2}", smb ? "SMB" : "NFS", map.Server, map.Share);
-                    return PartEnd.Failed;
-                }
-
-                string mounted = (smb ? "/mnt/cifs1/" : "/mnt/nfs1/") + target.Value.Relative;
-                bool isFolder = Directory.Exists(part.Path);
-                bool accepted = isFolder
-                    ? await oppo.PlayBlurayFolder(mounted, partCt).ConfigureAwait(false)
-                    : await oppo.PlayFile(mounted, map.Server, partCt).ConfigureAwait(false);
-                if (!accepted) _logger.Info("OPPO: play command not confirmed, waiting for the player state ({0})", title);
 
                 // Wait for playback: a disc first goes through screens (warnings, menu…) during
                 // which the OPPO reports no video. Rely on the IP state (#QPL).
@@ -350,7 +345,11 @@ namespace Emby.Oppo
                     _paused = state == "PAUSE";
 
                     var status = await oppo.GetStatus(partCt).ConfigureAwait(false);
-                    bool mainTitle = status.Duration.Ticks >= minimumMovieTicks;
+                    // Main movie played as a file: tracks and resume point only once the file really plays (known
+                    // duration, 2 s in); sent earlier, the player accepted them, then applied its own defaults (2026-11-20).
+                    bool mainTitle = MainMovieChapters != null
+                        ? status.Duration.Ticks > 0 && status.Position >= TimeSpan.FromSeconds(2)
+                        : status.Duration.Ticks >= minimumMovieTicks;
                     if (mainTitle && state == "PLAY" && !tracksApplied)
                     {
                         tracksApplied = true;
@@ -378,6 +377,251 @@ namespace Emby.Oppo
             }
         }
 
+        private static bool IsDiscImage(string path) =>
+            !string.IsNullOrEmpty(path) && File.Exists(path) && string.Equals(Path.GetExtension(path), ".iso", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Sends the disc image to the player's DLNA renderer (oppo-dv-mkv mod, "DLNA Disc Images") and waits up
+        /// to 45 s for the disc to start. Returns false (after stopping the renderer) so the caller falls back to
+        /// the network share.
+        /// </summary>
+        private async Task<bool> StartDlna(OppoClient oppo, string title, string label, BaseItem part, CancellationToken ct)
+        {
+            string url, mime = "video/iso";
+            long size = 0;
+            try
+            {
+                string bdmv = IsDiscImage(part.Path) ? null : DiscInfo.FindBdmvFolder(part.Path);
+                if (bdmv != null)
+                {
+                    // Blu-ray folder: served over WebDAV, the mod lists it and builds the disc image itself.
+                    // The link names a file inside BDMV, which is how the mod recognises a disc folder.
+                    url = DiscServer.RegisterFolder(Directory.GetParent(bdmv.TrimEnd('/')).FullName, _serverAddress, Config.DiscServerPort, TimeSpan.FromHours(12), _logger)
+                        + System.IO.Path.GetFileName(bdmv.TrimEnd('/')) + "/index.bdmv";
+                    mime = FolderMime;
+                }
+                else
+                {
+                    // Disc image, or a video file (MKV…: the mod keeps Dolby Vision, 2026-11-20).
+                    size = new FileInfo(part.Path).Length;
+                    mime = IsDiscImage(part.Path) ? "video/iso" : DlnaFileMime(part.Path);
+                    url = DiscServer.Register(part.Path, _serverAddress, Config.DiscServerPort, TimeSpan.FromHours(12), _logger, mime);
+                }
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger.ErrorException("OPPO: disc image server unavailable (port " + Config.DiscServerPort + "), using the network share", ex);
+                return false;
+            }
+
+            _logger.Info("OPPO: playing {0}{1} over DLNA ({2})", title, label, part.Path);
+            await MakeReady(oppo, ct, needHttp: false).ConfigureAwait(false);
+            // A wedged renderer stays in TRANSITIONING (even after Stop) and never fetches anything until the
+            // player is unplugged (2026-11-19). Do not wait for it: use the share at once.
+            if (!await RendererUsable(oppo, ct).ConfigureAwait(false)) return false;
+            if (!await oppo.PlayDlna(url, title, size, ct, mime).ConfigureAwait(false))
+            {
+                _logger.Info("OPPO: DLNA refused, using the network share ({0})", title);
+                return false;
+            }
+
+            // The mod reads the image within a second or two: if the player has not asked for it after 6 s,
+            // DLNA is not going to work (mod off, port blocked…). Otherwise allow 45 s for the disc to start.
+            var started = DateTime.UtcNow;
+            var deadline = started.AddSeconds(45);
+            int connectionsBefore = DiscServer.Connections;
+            string state = "";
+            while (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(1000, ct).ConfigureAwait(false);
+                state = await oppo.QueryPlayback(ct).ConfigureAwait(false);
+                if (IsSessionState(state) && state != "LOADING")
+                {
+                    _logger.Info("OPPO: started over DLNA in {0} s ({1} requests to the server)", (int)(DateTime.UtcNow - started).TotalSeconds, DiscServer.RequestCount(url));
+                    return true;
+                }
+                if (DateTime.UtcNow - started > TimeSpan.FromSeconds(6) && DiscServer.RequestCount(url) == 0)
+                {
+                    _logger.Info("OPPO: the player did not request the disc image within {0} s ({1} connections to the server)", 6, DiscServer.Connections - connectionsBefore);
+                    break;
+                }
+            }
+            _logger.Info("OPPO: no playback after the DLNA request (state \"{0}\", {1} requests to the server), using the network share ({2})", state, DiscServer.RequestCount(url), title);
+            // Wait for it (about 5 s): a Stop arriving once the film has started from the share could stop the film.
+            await oppo.StopDlna(ct).ConfigureAwait(false);
+            return false;
+        }
+
+        /// <summary>
+        /// A wedged renderer stays in TRANSITIONING (even after Stop) and never fetches anything until the
+        /// player is unplugged (2026-11-19): do not use it then.
+        /// </summary>
+        private async Task<bool> RendererUsable(OppoClient oppo, CancellationToken ct)
+        {
+            string transport = await oppo.DlnaTransportState(ct).ConfigureAwait(false);
+            if (transport != null && transport != "TRANSITIONING") return true;
+            _logger.Info("OPPO: DLNA renderer {0}, not used. If this persists, unplug the player for 30 s to reset it.",
+                transport == null ? "not answering" : "stuck in TRANSITIONING");
+            return false;
+        }
+
+        /// <summary>DLNA type announced for a disc folder link (…/BDMV/index.bdmv). Not documented by the mod: set by testing.</summary>
+        internal static string FolderMime = "video/mpeg";
+
+        /// <summary>DLNA type of a video file the player can be sent directly, or null (then the share is used).</summary>
+        private static string DlnaFileMime(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
+            switch (System.IO.Path.GetExtension(path).ToLowerInvariant())
+            {
+                case ".mkv": return "video/x-matroska";
+                case ".mp4": case ".m4v": return "video/mp4";
+                case ".m2ts": case ".mts": return "video/tts";   // timestamped TS: the player then knows the duration
+                case ".ts": return "video/mpeg";
+                default: return null;
+            }
+        }
+
+        private static bool IsBdmvFolder(string path) =>
+            !string.IsNullOrEmpty(path) && Directory.Exists(path) && DiscInfo.FindBdmvFolder(path) != null;
+
+        private static bool IsBluray(string path) =>
+            IsDiscImage(path) || (!string.IsNullOrEmpty(path) && Directory.Exists(path) && DiscInfo.FindBdmvFolder(path) != null);
+
+        /// <summary>
+        /// Plays the main movie of a Blu-ray as a plain file, without the disc menus: the .m2ts clips of the main
+        /// playlist, read inside the ISO (or the folder) and served end to end, sent to the DLNA renderer.
+        /// The player then has no chapters (they are jumped to by time) and outputs no Dolby Vision (HDR10 base
+        /// layer only: the web remote does not offer this mode for Dolby Vision discs).
+        /// Returns false so the caller plays the disc normally.
+        /// </summary>
+        private async Task<bool> StartMainMovie(OppoClient oppo, string title, string label, BaseItem part, CancellationToken ct)
+        {
+            DiscInfo disc;
+            string url;
+            long size = 0;
+            try
+            {
+                disc = Chapters.Disc(part.Path);
+                var segments = new List<DiscServer.Segment>();
+                foreach (var clip in disc.ClipFiles)
+                    foreach (var e in clip.Extents)
+                    {
+                        segments.Add(new DiscServer.Segment { Path = clip.Path, Offset = e.Offset, Length = e.Length });
+                        size += e.Length;
+                    }
+                if (segments.Count == 0) throw new InvalidDataException("no clip");
+                url = DiscServer.RegisterSegments(segments, "movie_" + part.InternalId.ToString(CultureInfo.InvariantCulture) + ".m2ts",
+                    "video/vnd.dlna.mpeg-tts", _serverAddress, Config.DiscServerPort, TimeSpan.FromHours(12), _logger);
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger.Info("OPPO: main movie of {0} unavailable ({1}), playing the disc", title, ex.Message);
+                return false;
+            }
+
+            _logger.Info("OPPO: playing the main movie of {0}{1} without menus (playlist {2}, {3} clip(s))", title, label, disc.MainPlaylist.Name, disc.ClipFiles.Count);
+            await MakeReady(oppo, ct, needHttp: false).ConfigureAwait(false);
+            if (!await RendererUsable(oppo, ct).ConfigureAwait(false)) return false;
+            // "video/tts" (MPEG-2 TS with timestamps, i.e. .m2ts): the player then knows the duration;
+            // with "video/vnd.dlna.mpeg-tts" it refused the stream (2026-11-19).
+            if (!await oppo.PlayDlna(url, title, size, ct, "video/tts").ConfigureAwait(false)) return false;
+
+            var started = DateTime.UtcNow;
+            string state = "";
+            while (DateTime.UtcNow - started < TimeSpan.FromSeconds(30))
+            {
+                await Task.Delay(1000, ct).ConfigureAwait(false);
+                state = await oppo.QueryPlayback(ct).ConfigureAwait(false);
+                if (state == "PLAY" || state == "PAUSE")
+                {
+                    MainMovieChapters = disc.MainPlaylist.Chapters.ToArray();
+                    _logger.Info("OPPO: main movie started in {0} s ({1} chapters)", (int)(DateTime.UtcNow - started).TotalSeconds, MainMovieChapters.Length);
+                    return true;
+                }
+                if (DateTime.UtcNow - started > TimeSpan.FromSeconds(6) && DiscServer.RequestCount(url) == 0) break;
+            }
+            _logger.Info("OPPO: the main movie did not start (state \"{0}\", {1} requests), playing the disc", state, DiscServer.RequestCount(url));
+            await oppo.StopDlna(ct).ConfigureAwait(false);
+            return false;
+        }
+
+        /// <summary>
+        /// Next / previous chapter while the main movie plays as a file: the player has no chapters then,
+        /// so jump by time to the disc's chapter marks. Returns false if not in that mode.
+        /// </summary>
+        internal static async Task<bool> JumpChapter(OppoClient oppo, bool next, CancellationToken ct)
+        {
+            var marks = MainMovieChapters;
+            if (marks == null || marks.Length == 0) return false;
+            double pos = (await oppo.GetStatus(ct).ConfigureAwait(false)).Position.TotalSeconds;
+            double? target;
+            if (next)
+            {
+                target = marks.Where(m => m > pos + 1).Select(m => (double?)m).FirstOrDefault();
+            }
+            else
+            {
+                int k = marks.Count(m => m <= pos) - 1;                        // current chapter
+                double current = k >= 0 ? marks[k] : 0;
+                target = pos - current > 5 || k <= 0 ? current : marks[k - 1];   // restart it, or go to the previous one
+            }
+            if (target.HasValue) await oppo.Seek(TimeSpan.FromSeconds(target.Value), ct).ConfigureAwait(false);
+            return true;
+        }
+
+        /// <summary>"current / total" chapter of the main movie playing as a file, from its position.</summary>
+        internal static string MainMovieChapter(double positionSeconds)
+        {
+            var marks = MainMovieChapters;
+            if (marks == null || marks.Length == 0) return null;
+            int k = Math.Max(1, marks.Count(m => m <= positionSeconds + 0.5));
+            return k.ToString(CultureInfo.InvariantCulture) + " / " + marks.Length.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>Mounts the network share (NFS or SMB) and starts the file or Blu-ray folder.</summary>
+        private async Task<bool> StartFromShare(OppoClient oppo, string title, string label, BaseItem part, CancellationToken ct)
+        {
+            var partCt = ct;
+            var target = MapPath(part.Path);
+            if (target == null)
+            {
+                _logger.Error("OPPO: no share configured for {0} (see the OPPO page of the dashboard)", part.Path);
+                return false;
+            }
+
+            var map = target.Value.Mapping;
+                bool smb = string.Equals(map.Protocol, "smb", StringComparison.OrdinalIgnoreCase);
+                _logger.Info("OPPO: playing {0}{1} ({2} {3}:/{4}, file {5})", title, label, smb ? "SMB" : "NFS", map.Server, map.Share, target.Value.Relative);
+                await MakeReady(oppo, partCt).ConfigureAwait(false);
+                await oppo.SignIn(_serverAddress, partCt).ConfigureAwait(false);
+                var mountTimeout = TimeSpan.FromSeconds(Config.StartTimeoutSeconds);
+                Func<Task<bool>> mount = () => smb
+                    ? oppo.MountSmb(map.Server, map.Share, map.Username, map.Password, mountTimeout, partCt)
+                    : oppo.MountNfs(map.Server, map.Share, mountTimeout, partCt);
+                bool mountedOk = await mount().ConfigureAwait(false);
+                if (!mountedOk)
+                {
+                    // Typically "bd_is_playing": a disc is still running. Close it and try again.
+                    _logger.Info("OPPO: mount refused, stopping current playback and retrying ({0})", map.Server);
+                    await MakeReady(oppo, partCt, force: true).ConfigureAwait(false);
+                    mountedOk = await mount().ConfigureAwait(false);
+                }
+                if (!mountedOk)
+                {
+                    _logger.Error("OPPO: mount failed {0} {1}:/{2}", smb ? "SMB" : "NFS", map.Server, map.Share);
+                    return false;
+                }
+
+                string mounted = (smb ? "/mnt/cifs1/" : "/mnt/nfs1/") + target.Value.Relative;
+                bool isFolder = Directory.Exists(part.Path);
+                bool accepted = isFolder
+                    ? await oppo.PlayBlurayFolder(mounted, partCt).ConfigureAwait(false)
+                    : await oppo.PlayFile(mounted, map.Server, partCt).ConfigureAwait(false);
+                if (!accepted) _logger.Info("OPPO: play command not confirmed, waiting for the player state ({0})", title);
+            return true;
+        }
+
         /// <summary>
         /// Converts Emby indexes into positions in the OPPO menus. For an ISO analysed by the
         /// ISO Blu-ray plugin, Emby's track order follows the disc's.
@@ -389,8 +633,27 @@ namespace Emby.Oppo
                 _logger.Info("OPPO: OPPO menus: audio {0} | subtitles {1}",
                     await oppo.DescribeMenu("getaudiomenulist", ct).ConfigureAwait(false),
                     await oppo.DescribeMenu("getsubtitlemenulist", ct).ConfigureAwait(false));
-                if (_audioIndex.HasValue) await SelectAudio(oppo, item, _audioIndex.Value, ct).ConfigureAwait(false);
-                if (_subtitleIndex.HasValue) await SelectSubtitle(oppo, item, _subtitleIndex.Value, ct).ConfigureAwait(false);
+                int? audio = _audioIndex.HasValue ? await SelectAudio(oppo, item, _audioIndex.Value, ct).ConfigureAwait(false) : null;
+                int? subtitle = _subtitleIndex.HasValue ? await SelectSubtitle(oppo, item, _subtitleIndex.Value, ct).ConfigureAwait(false) : null;
+                // The player may accept a track and then switch back to its default (while a file is still
+                // starting): check a moment later and send it again.
+                for (int attempt = 0; attempt < 2 && (audio.HasValue || subtitle.HasValue); attempt++)
+                {
+                    await Task.Delay(2500, ct).ConfigureAwait(false);
+                    bool redo = false;
+                    if (audio.HasValue)
+                    {
+                        var current = (await oppo.GetTrackMenu(true, ct).ConfigureAwait(false)).FirstOrDefault(t => t.selected);
+                        if (current != null && current.index != audio.Value) { redo = true; await oppo.SelectAudio(audio.Value, ct).ConfigureAwait(false); }
+                    }
+                    if (subtitle.HasValue)
+                    {
+                        var current = (await oppo.GetTrackMenu(false, ct).ConfigureAwait(false)).FirstOrDefault(t => t.selected);
+                        if (current != null && current.index != subtitle.Value) { redo = true; await oppo.SelectSubtitle(subtitle.Value, ct).ConfigureAwait(false); }
+                    }
+                    if (!redo) break;
+                    _logger.Info("OPPO: the player changed the tracks back, selecting them again (attempt {0})", attempt + 1);
+                }
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
@@ -402,24 +665,26 @@ namespace Emby.Oppo
             _itemRepository.GetMediaStreams(new MediaStreamQuery { ItemId = item.InternalId }, ct)
                            .Where(s => !s.IsExternal && s.Type == type).OrderBy(s => s.Index).ToList();
 
-        /// <summary>Emby index → position in the OPPO audio list (same order as the disc).</summary>
-        private async Task SelectAudio(OppoClient oppo, BaseItem item, int embyIndex, CancellationToken ct)
+        /// <summary>Emby index → position in the OPPO audio list (same order as the disc). Returns the OPPO index sent, or null.</summary>
+        private async Task<int?> SelectAudio(OppoClient oppo, BaseItem item, int embyIndex, CancellationToken ct)
         {
             int pos = Streams(item, MediaStreamType.Audio, ct).Select(s => s.Index).ToList().IndexOf(embyIndex);
-            if (pos < 0) return;
+            if (pos < 0) return null;
             // The OPPO numbers its audio tracks from 1.
             bool ok = await oppo.SelectAudio(pos + 1, ct).ConfigureAwait(false);
             _logger.Info("OPPO: Emby audio track {0} → OPPO #{1}: {2}", embyIndex, pos + 1, ok ? "OK" : "refused");
+            return pos + 1;
         }
 
-        private async Task SelectSubtitle(OppoClient oppo, BaseItem item, int embyIndex, CancellationToken ct)
+        private async Task<int?> SelectSubtitle(OppoClient oppo, BaseItem item, int embyIndex, CancellationToken ct)
         {
             int pos = embyIndex < 0 ? -1 : Streams(item, MediaStreamType.Subtitle, ct).Select(s => s.Index).ToList().IndexOf(embyIndex);
-            if (embyIndex >= 0 && pos < 0) return;
+            if (embyIndex >= 0 && pos < 0) return null;
             // OPPO subtitle menu: 0 = "Off", then 1, 2…
             int oppoIndex = pos < 0 ? 0 : pos + 1;
             bool ok = await oppo.SelectSubtitle(oppoIndex, ct).ConfigureAwait(false);
             _logger.Info("OPPO: Emby subtitles {0} → OPPO #{1}: {2}", embyIndex, oppoIndex, ok ? "OK" : "refused");
+            return oppoIndex;
         }
 
         /// <summary>
@@ -496,10 +761,12 @@ namespace Emby.Oppo
                     _paused = !_paused;
                     break;
                 case PlaystateCommand.NextTrack:
-                    await oppo.Command("NXT", ct).ConfigureAwait(false);   // next chapter
+                    if (!await JumpChapter(oppo, true, ct).ConfigureAwait(false))
+                        await oppo.Command("NXT", ct).ConfigureAwait(false);   // next chapter
                     break;
                 case PlaystateCommand.PreviousTrack:
-                    await oppo.Command("PRE", ct).ConfigureAwait(false);   // previous chapter
+                    if (!await JumpChapter(oppo, false, ct).ConfigureAwait(false))
+                        await oppo.Command("PRE", ct).ConfigureAwait(false);   // previous chapter
                     break;
                 case PlaystateCommand.FastForward:
                     await oppo.Command("FWD", ct).ConfigureAwait(false);   // each press speeds up
@@ -557,7 +824,7 @@ namespace Emby.Oppo
         /// Prepares the OPPO before a mount: leaves the screen saver and closes a disc that is still
         /// open (otherwise the OPPO refuses the mount with "bd_is_playing").
         /// </summary>
-        private async Task MakeReady(OppoClient oppo, CancellationToken ct, bool force = false)
+        private async Task MakeReady(OppoClient oppo, CancellationToken ct, bool force = false, bool needHttp = true)
         {
             string state = await oppo.QueryPlayback(ct).ConfigureAwait(false);
             if (string.IsNullOrEmpty(state))
@@ -574,7 +841,7 @@ namespace Emby.Oppo
                 }
                 if (!string.IsNullOrEmpty(state)) _logger.Info("OPPO: player powered on (state \"{0}\")", state);
             }
-            else if (!await oppo.WaitForHttp(TimeSpan.FromSeconds(20), ct).ConfigureAwait(false))
+            else if (needHttp && !await oppo.WaitForHttp(TimeSpan.FromSeconds(20), ct).ConfigureAwait(false))
             {
                 // On, but restarted: its HTTP interface stays closed until a control app announces itself
                 // (2026-11-11 after the player was restarted: "Connection refused (192.168.2.195:436)").

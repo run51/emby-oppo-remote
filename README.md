@@ -10,7 +10,7 @@ The interface is available in **English and French**. The language follows the d
 
 | Component | What it does |
 |---|---|
-| **Emby.Oppo** (plugin) | **Playback:** adds the OPPO to Emby's "Play on…" menu. The player mounts your share over NFS or SMB and opens the original file. Position is reported back to Emby, so resume and watched status work.<br>**Playback options:** audio and subtitle track selection, multi-disc titles, optional webhook for home automation.<br>**Web remote:** browse your libraries, open a title page, then control playback: chapter thumbnails, live OPPO output info (resolution, HDR, audio format), transport keys, a D-pad and a "Showtime" power scene. |
+| **Emby.Oppo** (plugin) | **Playback:** adds the OPPO to Emby's "Play on…" menu. The player plays the original file, either sent over DLNA by the plugin (with the oppo-dv-mkv mod, see below) or from your share over NFS or SMB. Position is reported back to Emby, so resume and watched status work.<br>**Playback options:** audio and subtitle track selection, multi-disc titles, "Movie without menus" for Blu-ray discs, optional webhook for home automation.<br>**Web remote:** browse your libraries, open a title page, then control playback: chapter thumbnails, live OPPO output info (resolution, HDR, audio format), transport keys, a D-pad and a "Showtime" power scene. |
 | **Emby.IsoBluray** (plugin) | Reads inside Blu-ray ISOs and BDMV folders (UDF 2.50, MPLS playlists). Emby then shows the real audio and subtitle tracks, the correct runtime and the format (UHD, HDR…). Blu-ray 3D discs are marked as 3D. |
 | **Android apps** | Fullscreen app for the web remote, with voice search and lock-screen media controls. It comes in two editions:<ul><li>**OPPO**: no home automation.</li><li>**OPPO Home**: adds Showtime, All off and the amplifier volume. The phone's volume keys control the amplifier while the app is open, and while a movie plays even with the screen locked.</li></ul>The interface is served by the plugin, so it updates without reinstalling the app. |
 
@@ -21,7 +21,7 @@ The web remote, which is also what the Android apps show:
 <p>
   <img src="docs/screenshots/phone-home.jpg" width="200" alt="Home: libraries, resume, sagas">
   <img src="docs/screenshots/phone-library.jpg" width="200" alt="Library grid with 4K / Dolby Vision / HDR badges and filters">
-  <img src="docs/screenshots/phone-title.jpg" width="200" alt="Title page: disc format, audio and subtitle choice, Play on OPPO">
+  <img src="docs/screenshots/phone-title.jpg" width="200" alt="Title page: disc format, Play on OPPO, Movie without menus, audio and subtitle choice">
   <img src="docs/screenshots/phone-player.jpg" width="200" alt="Playback: live OPPO output, transport keys, amplifier volume, chapter thumbnails, D-pad">
 </p>
 
@@ -54,7 +54,13 @@ Developed and tested with Emby Server 4.10. The plugins are built against the 4.
   | `/volume1/Movies` | NFS | `192.168.1.10` | `volume1/Movies` |
   | `/mnt/movies` | SMB | `nas.local` | `Movies` (+ username and password) |
 
-  NFS is recommended, especially for BDMV folders.
+  NFS is recommended, especially for BDMV folders. With DLNA (below), the share is only a fallback.
+- **Play over DLNA** (optional, recommended with a modded player)
+  - Needs the [oppo-dv-mkv](https://github.com/fandangos/oppo-dv-mkv) mod on the player, with **DLNA Disc Images** on (Setup → Extras).
+  - The plugin then serves the movie itself and sends it to the player's DLNA renderer, with no share mounted. ISO files and Blu-ray folders play as a disc (menus, Dolby Vision, lossless audio); MKV, MP4 and M2TS files play as files.
+  - The plugin listens on its own port (**8099** by default, "Disc image server port"): it must be free on the Emby server and reachable by the player. With Docker, use host networking or publish this port.
+  - Blu-ray folders are listed over WebDAV and the player builds the disc from that list: most discs start in 1 to 3 s, a UHD folder with many files can take 10 to 20 s.
+  - If the movie does not start, the share above is used.
 - **Webhook** (optional)
   - Called with `POST {"event":"detected"|"stopped"|"seance_on"|"seance_off","title":…}`.
   - For example, use it to have Home Assistant turn on the TV and AV receiver (`http://homeassistant:8123/api/webhook/<id>`).
@@ -98,15 +104,25 @@ cp android/build/oppo.apk android/build/oppo-home.apk src/Emby.Oppo/Remote/   # 
 node tools/make_icons.js
 ```
 
+## Movie without menus
+
+On the title page of a Blu-ray or UHD disc (ISO or folder), **Movie without menus** starts the main movie directly, like the "play main movie" of Zidoo players. The plugin finds the main playlist, serves its clips end to end as one .m2ts file and sends it over DLNA (no mod needed for this).
+
+- Audio and subtitle tracks and the resume point are applied as usual. The remote shows Emby's track names, since the player lists the tracks without languages in this mode.
+- The player has no chapters then: next / previous chapter jump by time to the disc's chapter marks. The chapter key of another controller talking to the player directly does nothing in this mode.
+- The button is not offered on **Dolby Vision** discs: played as a file, the player outputs the HDR10 base layer only. Play those discs normally.
+
 ## Known limitations
 
-- On discs with BD-J menus, the OPPO cannot jump straight to the main movie, so the disc menu is shown.
-- The file must be reachable by the OPPO over NFS or SMB. The player does not play Emby's transcoded streams.
+- Without "Movie without menus", discs with BD-J menus show their menu: the OPPO cannot jump straight to the main movie through IP control.
+- Without DLNA, the file must be reachable by the OPPO over NFS or SMB. In every mode the player plays the original file, never Emby's transcoded streams.
+- The player's DLNA renderer was once seen stuck ("TRANSITIONING", fetching nothing) until the player was unplugged. The plugin then falls back to the share and says so in Emby's log.
 
 ## Credits
 
 - This project is inspired by [Xnoppo](https://github.com/siberian-git/Xnoppo) by siberian-git, the original bridge that turned Emby into a library front end for the OPPO 203/205. Thanks also to jandrop for its [Docker image](https://hub.docker.com/r/jandrop/xnoppo).
 - Many thanks to **doylet8456**, who wrote the scripts I used to launch movies from my Synology NAS with Kodi. They were the starting point of this setup.
+- DLNA playback relies on [oppo-dv-mkv](https://github.com/fandangos/oppo-dv-mkv) by fandangos (Dolby Vision MKV and DLNA disc images on the OPPO). Its documentation and source code describe how the player reads a disc image or a Blu-ray folder over HTTP and WebDAV.
 - OPPO is a trademark of its owner. This is an unofficial project, not affiliated with or endorsed by OPPO.
 
 ## Licence

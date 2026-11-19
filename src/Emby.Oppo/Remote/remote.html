@@ -595,6 +595,7 @@
       n_discs: '{0} discs', ends_around: 'Ends around {0}', if_resuming: ' if resumed', video_format: 'Video format',
       disc: 'Disc', disc_n: 'Disc {0}', version: 'Version', version_n: 'Version {0}', audio: 'Audio', none: 'None',
       discs_chain: 'Discs play one after another, starting from the one selected.',
+      play_movie: 'Movie without menus', play_movie_at: 'Movie without menus, from {0}',
       resume_at: 'Resume at {0}', resume_disc: ' · disc {0}', play_disc_from_start: 'Play disc {0} from the beginning',
       play_from_start: 'Play from the beginning', play_disc_on: 'Play disc {0} on {1}', play_on: 'Play on {0}',
       watched: 'Watched', mark_watched: 'Mark as watched', favorite: 'Favorite', add_favorite: 'Add to favorites',
@@ -651,6 +652,7 @@
       n_discs: '{0} disques', ends_around: 'Fin vers {0}', if_resuming: ' en reprenant', video_format: 'Format vidéo',
       disc: 'Disque', disc_n: 'Disque {0}', version: 'Version', version_n: 'Version {0}', audio: 'Audio', none: 'Aucun',
       discs_chain: 'Les disques s’enchaînent automatiquement à partir de celui choisi.',
+      play_movie: 'Film sans menu', play_movie_at: 'Film sans menu, à {0}',
       resume_at: 'Reprendre à {0}', resume_disc: ' · disque {0}', play_disc_from_start: 'Lire le disque {0} depuis le début',
       play_from_start: 'Lire depuis le début', play_disc_on: 'Lire le disque {0} sur {1}', play_on: 'Lire sur {0}',
       watched: 'Vu', mark_watched: 'Marquer comme vu', favorite: 'Favori', add_favorite: 'Ajouter aux favoris',
@@ -1640,6 +1642,7 @@
       sources.forEach(function (s, i) { sourceSel.appendChild(el('option', { value: String(i), text: s.Name || t('version_n', i + 1) })); });
       fields.appendChild(field(t('version'), sourceSel));
     }
+    var movieOk = false;   // "Movie without menus" offered (set once the disc format is known)
     var audioSel = el('select'), subSel = el('select');
     var audioField = field(t('audio'), audioSel), subField = field(t('subtitles'), subSel);
     fields.appendChild(audioField);
@@ -1657,9 +1660,15 @@
       // Disc format (Blu-ray, UHD Blu-ray, DVD, MKV…), asked from the plugin, which reads the file.
       var d = disc(), ask = d > 0 && discs[d] ? { Id: discs[d].Id } : { Id: item.Id, MediaSourceId: sourceSel ? sources[+sourceSel.value].Id : null };
       var mark = badges.dataset.mark = String(Math.random());
+      movieOk = false;
       discFormat(ask).then(function (f) {
         if (!f || !f.Label || badges.dataset.mark !== mark) return;
         badges.insertBefore(el('span', { 'class': 'vb src ' + (f.Kind || 'file'), text: f.Label }), badges.firstChild);
+        // "Movie without menus": Blu-ray and UHD discs only, not Dolby Vision ones (the OPPO then plays the
+        // movie as a file and outputs HDR10 only), not multi-disc titles.
+        var v = streams(s, 'Video')[0];
+        movieOk = (f.Kind === 'uhd' || f.Kind === 'bluray') && !discSel && !(v && v.ExtendedVideoType === 'DolbyVision');
+        drawActions();
       }).catch(function () { /* unknown format: no label */ });
       var audio = streams(s, 'Audio'), subs = streams(s, 'Subtitle');
       audioSel.textContent = '';
@@ -1689,14 +1698,15 @@
     fillTracks();
     if (item.PartCount > 1) fields.appendChild(el('p', { 'class': 'note', text: t('discs_chain') }));
 
-    function go(startTicks, startIndex) {
+    function go(startTicks, startIndex, mainMovie) {
       buzz();
       launch(item, {
         MediaSourceId: sourceSel ? sources[+sourceSel.value].Id : null,
         AudioStreamIndex: audioField.hidden ? null : audioSel.value,
         SubtitleStreamIndex: subField.hidden ? null : subSel.value,
         StartPositionTicks: startTicks,
-        StartIndex: startIndex
+        StartIndex: startIndex,
+        MainMovie: !!mainMovie
       });
     }
     function button(cls, iconName, text, onClick) {
@@ -1727,6 +1737,9 @@
         actions.appendChild(button('secondary', null, d > 0 ? t('play_disc_from_start', d + 1) : t('play_from_start'), function () { go(0, multi ? d : null); }));
       } else {
         actions.appendChild(button('primary', 'play', d > 0 ? t('play_disc_on', d + 1, deviceLabel()) : t('play_on', deviceLabel()), function () { go(0, multi ? d : null); }));
+      }
+      if (movieOk) {
+        actions.appendChild(button('secondary', 'play', pos > 0 ? t('play_movie_at', fmt(pos / 1e7)) : t('play_movie'), function () { go(pos, null, true); }));
       }
     }
     drawActions();
@@ -1834,6 +1847,11 @@
       return emby('/Sessions/' + sessionId + '/Playing', q, 'POST');
     }
     (last.sessionId ? Promise.resolve(last.sessionId) : remote('/State').then(function (s) { render(s); return s.SessionId; }))
+      .then(function (sessionId) {
+        // Main movie without menus: the plugin is told first, then the usual play request follows.
+        if (!options.MainMovie) return sessionId;
+        return remote('/MainMovie', { Id: item.Id, MediaSourceId: options.MediaSourceId }, 'POST').then(function () { return sessionId; });
+      })
       .then(send)
       .then(function () {
         pending = { at: Date.now(), Title: item.Name, ItemId: item.Id, ImageTag: item.ImageTags && item.ImageTags.Primary };
@@ -2073,7 +2091,9 @@
   }
   function oppoTrackLabel(track, subtitles) {
     if (subtitles && track.Index === 0) return t('none');
-    return (track.Name || t('track_n', track.Index)).replace(/^\s*\d+\s*\/\s*\d+\s*/, '');
+    // The OPPO may give only the position ("2/5") of a track: show "Track 2" rather than an empty chip.
+    var name = (track.Name || '').replace(/^\s*\d+\s*\/\s*\d+\s*/, '').trim();
+    return name || t('track_n', track.Index);
   }
   function drawTracks(id, list, subtitles) {
     var box = $(id);

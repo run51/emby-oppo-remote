@@ -118,6 +118,13 @@ namespace Emby.Oppo
         public string MediaSourceId { get; set; }
     }
 
+    [Route("/Oppo/Remote/MainMovie", "POST", Summary = "The next play of this item starts its main movie directly, without the disc menus")]
+    public sealed class RemoteMainMovie : IReturn<RemoteActionResult>
+    {
+        public string Id { get; set; }
+        public string MediaSourceId { get; set; }
+    }
+
     [Route("/Oppo/Remote/ChapterImage", "GET", Summary = "Chapter thumbnail (JPEG)")]
     [Unauthenticated]   // like Emby's posters: an <img> tag cannot send a token
     public sealed class RemoteChapterImage
@@ -332,7 +339,7 @@ namespace Emby.Oppo
                     var status = await oppo.GetStatus(ct).ConfigureAwait(false);
                     result.Position = status.Position.TotalSeconds;
                     result.Duration = status.Duration.TotalSeconds;
-                    result.Chapter = await oppo.QueryChapter(ct).ConfigureAwait(false);
+                    result.Chapter = OppoSessionController.MainMovieChapter(status.Position.TotalSeconds) ?? await oppo.QueryChapter(ct).ConfigureAwait(false);
                     // #QHS / #QAT / #QST only during the film itself (a title of more than 5 minutes, playback
                     // started), like the Oppo driver of the remote: on a disc menu or a short title the OPPO does
                     // not answer #QHS, each unanswered query holds the oppo-multiplexer 10 s, and the player then
@@ -352,6 +359,10 @@ namespace Emby.Oppo
                             .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
                         result.Subtitles = (await oppo.GetTrackMenu(false, ct).ConfigureAwait(false))
                             .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
+                        // Main movie played as a file: the OPPO lists its tracks without languages ("2/5"); they
+                        // are in the same order as Emby's (the disc's), so Emby's names are used.
+                        if (OppoSessionController.MainMovieChapters != null && now != null)
+                            NameTracksFromEmby(now.Id, result.Audio, result.Subtitles, Fr);
                     }
                 }
                 result.Amp = await amp.ConfigureAwait(false);
@@ -468,6 +479,16 @@ namespace Emby.Oppo
             return item == null ? Array.Empty<ChapterEntry>() : ChapterSource.List(item, Fr).ToArray();
         }
 
+        public object Post(RemoteMainMovie request)
+        {
+            var item = Resolve(request.Id, request.MediaSourceId);
+            if (item == null) throw new FileNotFoundException("Unknown movie");
+            OppoSessionController.RequestMainMovie(item.InternalId);
+            if (!string.IsNullOrEmpty(request.Id) && long.TryParse(request.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out long id) && id != item.InternalId)
+                OppoSessionController.RequestMainMovie(id);   // the play request names the main item
+            return new RemoteActionResult { Ok = true };
+        }
+
         public async Task<object> Get(RemoteChapterImage request)
         {
             var item = Resolve(request.Id, request.MediaSourceId);
@@ -553,6 +574,55 @@ namespace Emby.Oppo
 
         // Keys are the language names the OPPO reports (device tokens, matched as is); values are the
         // French names. In English the OPPO's own name is shown.
+        /// <summary>Replaces the OPPO track names (position only) with Emby's: "1/5 French · Dolby Digital 5.1".</summary>
+        private void NameTracksFromEmby(string itemId, RemoteTrack[] audio, RemoteTrack[] subtitles, bool fr)
+        {
+            try
+            {
+                var item = Resolve(itemId, null);
+                if (item == null) return;
+                var streams = _itemRepository.GetMediaStreams(new MediaStreamQuery { ItemId = item.InternalId }, CancellationToken.None)
+                    .Where(x => !x.IsExternal).OrderBy(x => x.Index).ToList();
+                var embyAudio = streams.Where(x => x.Type == MediaStreamType.Audio).ToList();
+                var embySubs = streams.Where(x => x.Type == MediaStreamType.Subtitle).ToList();
+                // OPPO audio tracks are numbered from 1; subtitles have 0 = Off, then 1, 2…
+                if (audio != null && audio.Length == embyAudio.Count)
+                    foreach (var t in audio)
+                        if (t.Index >= 1 && t.Index <= embyAudio.Count)
+                            t.Name = t.Index + "/" + audio.Length + " " + StreamLabel(embyAudio[t.Index - 1], true, fr);
+                int subCount = subtitles == null ? 0 : subtitles.Count(t => t.Index > 0);
+                if (subtitles != null && subCount == embySubs.Count)
+                    foreach (var t in subtitles)
+                        if (t.Index >= 1 && t.Index <= embySubs.Count)
+                            t.Name = t.Index + "/" + subCount + " " + StreamLabel(embySubs[t.Index - 1], false, fr);
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug("OPPO: track names from Emby failed: {0}", ex.Message);
+            }
+        }
+
+        private static string StreamLabel(MediaStream stream, bool audio, bool fr)
+        {
+            string lang = stream.DisplayLanguage;
+            if (string.IsNullOrWhiteSpace(lang)) lang = stream.Language ?? "";
+            if (fr && FrenchLanguages.TryGetValue(lang, out var l)) lang = l;
+            var parts = new List<string>();
+            if (lang.Length > 0) parts.Add(lang);
+            if (audio)
+            {
+                string codec = (stream.Codec ?? "").ToLowerInvariant();
+                string name = codec == "truehd" ? "Dolby TrueHD" : codec == "ac3" ? "Dolby Digital" : codec == "eac3" ? "Dolby Digital Plus"
+                    : codec == "dts" ? (string.IsNullOrEmpty(stream.Profile) ? "DTS" : stream.Profile)
+                    : codec.StartsWith("pcm", StringComparison.Ordinal) ? "PCM" : codec.ToUpperInvariant();
+                if (!string.IsNullOrEmpty(stream.ChannelLayout)) name += " " + stream.ChannelLayout.Replace("(side)", "").Trim();
+                else if (stream.Channels.HasValue) name += " " + (stream.Channels.Value >= 6 ? (stream.Channels.Value - 1) + ".1" : stream.Channels.Value + ".0");
+                parts.Add(name);
+            }
+            else if (stream.IsForced) parts.Add(L10n.T(fr, "forced", "forcés"));
+            return parts.Count > 0 ? string.Join(" · ", parts) : L10n.T(fr, "Track", "Piste");
+        }
+
         private static readonly Dictionary<string, string> FrenchLanguages = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["French"] = "Français", ["English"] = "Anglais", ["German"] = "Allemand", ["Spanish"] = "Espagnol", ["Italian"] = "Italien",
@@ -587,6 +657,8 @@ namespace Emby.Oppo
             if (!AllowedKeys.Contains(code)) return new RemoteActionResult { Message = L10n.T(Fr, "Unknown key: ", "Touche inconnue : ") + code };
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
             {
+                if ((code == "NXT" || code == "PRE") && await OppoSessionController.JumpChapter(Oppo, code == "NXT", cts.Token).ConfigureAwait(false))
+                    return new RemoteActionResult { Ok = true };   // main movie without menus: chapters by time
                 string answer = await Oppo.Command(code, cts.Token).ConfigureAwait(false);
                 bool ok = answer.IndexOf(" OK", StringComparison.OrdinalIgnoreCase) >= 0;
                 _logger.Debug("OPPO: web remote #{0} → {1}", code, answer);

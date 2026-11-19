@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.18.0
+
+- **Movies can be played over DLNA, with no network share** (new option "Play over DLNA", off by
+  default). It needs the [oppo-dv-mkv](https://github.com/fandangos/oppo-dv-mkv) mod on the player, with
+  its "DLNA Disc Images" setting on. The plugin serves the movie itself, on a port of its own (8099 by
+  default), and sends its address to the player's DLNA renderer:
+  - **ISO files and Blu-ray folders play as a disc**, with menus, Dolby Vision and lossless audio. An ISO
+    is served byte for byte with HTTP ranges. A Blu-ray folder is served over WebDAV, and the mod builds
+    the disc image from that listing. Most discs start in 1 to 3 s; a UHD folder with many files can
+    take 10 to 20 s, while the player builds its image.
+  - **MKV, MP4 and M2TS files play as files.** Dolby Vision MKV files keep Dolby Vision.
+  - Track selection, the resume point, chapters and the web remote work as before, through IP control.
+  - This skips the share mount and the player's HTTP interface (port 436), the steps that failed after a
+    player restart or when a share was not released. The share is still used as a fallback: if the
+    player does not request the movie within 6 s, if the movie does not start, or if its DLNA renderer is
+    stuck ("TRANSITIONING" even after Stop; only unplugging the player cleared it).
+  - Emby's own stream URL cannot be used for this: for an ISO, the ISO Blu-ray plugin answers with the
+    main title as an M2TS stream, not with the image.
+- **"Movie without menus"** button on the title page of Blu-ray and UHD discs (ISO or folder), like the
+  "play main movie" of Zidoo players. The plugin serves the clips of the main playlist end to end and
+  sends them to the DLNA renderer as an .m2ts file: the movie starts at once, with no menu or trailer.
+  This mode does not need the mod.
+  - The player has no chapters then: next / previous chapter jump by time to the disc's chapter marks.
+  - The player lists the tracks without languages: the web remote shows Emby's track names instead.
+  - Not offered on Dolby Vision discs: played as a file, the player outputs the HDR10 base layer only.
+  - If the movie does not start, the disc is played normally.
+- **Tracks are checked after they are applied.** The player could accept the chosen audio and subtitle
+  tracks and then switch back to its own defaults while a file was still starting. The plugin now
+  re-reads them a moment later and selects them again if needed.
+- **The web remote and the apps no longer say the OPPO is off while it is on.** The player answers IP
+  control in a short form ("@OK MEDIA CENTER") when another client, such as the Unfolded Circle Oppo
+  driver, switches it out of verbose mode. The plugin only understood the verbose form
+  ("@QPL OK MEDIA CENTER"), so every query looked unanswered. Both forms are now accepted.
+- Emby.Oppo 0.18.0, Emby.IsoBluray 0.5.0 (unchanged). Android apps unchanged.
+
 ## v0.17.2
 
 - **A film starts after the player was restarted** (power button held, power cut): the player then

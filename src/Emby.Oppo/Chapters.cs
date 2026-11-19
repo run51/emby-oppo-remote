@@ -50,7 +50,7 @@ namespace Emby.Oppo
         private static bool IsDisc(string path) =>
             path.EndsWith(".iso", StringComparison.OrdinalIgnoreCase) || DiscInfo.FindBdmvFolder(path) != null;
 
-        private static DiscInfo Disc(string path)
+        internal static DiscInfo Disc(string path)
         {
             DateTime stamp = Directory.Exists(path) ? Directory.GetLastWriteTimeUtc(path) : File.GetLastWriteTimeUtc(path);
             if (Discs.TryGetValue(path, out var hit) && hit.Stamp == stamp) return hit.Disc;

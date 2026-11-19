@@ -13,6 +13,10 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             ipControlAddressHelp: 'The player accepts a single IP control connection (port 23). If another device controls it too (an Unfolded Circle remote, for example), run an oppo-multiplexer and enter its address, e.g. 192.168.1.20:23. Empty: the player itself.',
             deviceName: 'Name in the "Play on" menu:',
             startTimeout: 'Start timeout (seconds):',
+            dlnaDiscImages: 'Play over DLNA: ISO files, Blu-ray folders, MKV (oppo-dv-mkv mod)',
+            dlnaDiscImagesHelp: 'Requires the oppo-dv-mkv mod on the player with "DLNA Disc Images" on. The plugin serves the movie itself to the player: an ISO or a Blu-ray folder plays as a disc (menus and Dolby Vision included), an MKV, MP4 or M2TS file as a file. No share is mounted; the share above is only used if the movie does not start.',
+            discServerPort: 'Disc image server port:',
+            discServerPortHelp: 'A free port on this server, reachable by the player. Restart Emby after changing it.',
             remote: 'Remote control',
             remoteHelp: 'Full remote control page (playback, chapters, directional pad, menus, audio and subtitles) to open on a phone and add to its home screen. Sign in with an Emby account.',
             openRemote: 'Open the remote control',
@@ -59,6 +63,10 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             ipControlAddressHelp: 'Le lecteur n\'accepte qu\'une connexion de contrôle IP (port 23). Si un autre appareil le pilote aussi (une télécommande Unfolded Circle, par exemple), lancez un oppo-multiplexer et indiquez son adresse, par ex. 192.168.1.20:23. Vide : le lecteur lui-même.',
             deviceName: 'Nom dans le menu « Lire sur… » :',
             startTimeout: 'Délai de démarrage (secondes) :',
+            dlnaDiscImages: 'Lire par DLNA : ISO, dossiers Blu-ray, MKV (mod oppo-dv-mkv)',
+            dlnaDiscImagesHelp: 'Nécessite le mod oppo-dv-mkv sur le lecteur, avec « DLNA Disc Images » activé. Le plugin sert lui-même le film au lecteur : un ISO ou un dossier Blu-ray est lu comme un disque (menus et Dolby Vision compris), un fichier MKV, MP4 ou M2TS comme un fichier. Aucun partage n\'est monté ; le partage ci-dessus ne sert que si le film ne démarre pas.',
+            discServerPort: 'Port du serveur d\'images disque :',
+            discServerPortHelp: 'Un port libre sur ce serveur, joignable par le lecteur. Redémarrez Emby après l\'avoir changé.',
             remote: 'Télécommande',
             remoteHelp: 'Page de télécommande complète (lecture, chapitres, pavé directionnel, menus, audio et sous-titres) à ouvrir sur un téléphone et à ajouter à son écran d\'accueil. Connexion avec un compte Emby.',
             openRemote: 'Ouvrir la télécommande',
@@ -286,6 +294,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 config.IpControlAddress = view.querySelector('#txtIpControlAddress').value.trim();
                 config.DeviceName = view.querySelector('#txtDeviceName').value.trim() || 'OPPO';
                 config.StartTimeoutSeconds = parseInt(view.querySelector('#txtStartTimeout').value, 10) || 60;
+                config.DlnaDiscImages = view.querySelector('#chkDlnaDiscImages').checked;
+                config.DiscServerPort = parseInt(view.querySelector('#txtDiscServerPort').value, 10) || 8099;
                 config.WebhookUrl = view.querySelector('#txtWebhookUrl').value.trim();
                 config.RemoteAddress = view.querySelector('#txtRemoteAddress').value.trim();
                 config.RemoteApiKey = view.querySelector('#txtRemoteApiKey').value.trim();
@@ -314,6 +324,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtIpControlAddress').value = config.IpControlAddress || '';
                 view.querySelector('#txtDeviceName').value = config.DeviceName || 'OPPO';
                 view.querySelector('#txtStartTimeout').value = config.StartTimeoutSeconds || 60;
+                view.querySelector('#chkDlnaDiscImages').checked = !!config.DlnaDiscImages;
+                view.querySelector('#txtDiscServerPort').value = config.DiscServerPort || 8099;
                 view.querySelector('#txtWebhookUrl').value = config.WebhookUrl || '';
                 view.querySelector('#txtRemoteAddress').value = config.RemoteAddress || '';
                 view.querySelector('#txtRemoteApiKey').value = config.RemoteApiKey || '';
