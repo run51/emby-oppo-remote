@@ -14,6 +14,21 @@ The interface is available in **English and French**. The language follows the d
 | **Emby.IsoBluray** (plugin) | Reads inside Blu-ray ISOs and BDMV folders (UDF 2.50, MPLS playlists). Emby then shows the real audio and subtitle tracks, the correct runtime and the format (UHD, HDR…). Blu-ray 3D discs are marked as 3D. |
 | **Android apps** | Fullscreen app for the web remote, with voice search and lock-screen media controls. It comes in two editions:<ul><li>**OPPO**: no home automation.</li><li>**OPPO Home**: adds Showtime, All off and the amplifier volume. The phone's volume keys control the amplifier while the app is open, and while a movie plays even with the screen locked.</li></ul>The interface is served by the plugin, so it updates without reinstalling the app. |
 
+## Screenshots
+
+The web remote, which is also what the Android apps show:
+
+<p>
+  <img src="docs/screenshots/phone-home.jpg" width="200" alt="Home: libraries, resume, sagas">
+  <img src="docs/screenshots/phone-library.jpg" width="200" alt="Library grid with 4K / Dolby Vision / HDR badges and filters">
+  <img src="docs/screenshots/phone-title.jpg" width="200" alt="Title page: disc format, audio and subtitle choice, Play on OPPO">
+  <img src="docs/screenshots/phone-player.jpg" width="200" alt="Playback: live OPPO output, transport keys, amplifier volume, chapter thumbnails, D-pad">
+</p>
+
+On a tablet in landscape, the remote stays on the right while you browse:
+
+<img src="docs/screenshots/tablet-title-remote.jpg" width="820" alt="Tablet layout: title page with the remote on the right">
+
 ## Installing the plugins
 
 Emby has no catalog for third-party plugins: they are installed by copying the DLL files.
