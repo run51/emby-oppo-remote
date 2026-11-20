@@ -282,7 +282,7 @@ namespace Emby.Oppo
                 bool started = _mainMovie && IsBluray(part.Path)
                     && await StartMainMovie(oppo, title, label, part, partCt).ConfigureAwait(false);
                 if (!started)
-                    started = Config.DlnaDiscImages && (IsDiscImage(part.Path) || IsBdmvFolder(part.Path) || DlnaFileMime(part.Path) != null)
+                    started = Config.DlnaDiscImages && (IsDiscImage(part.Path) || IsBdmvFolder(part.Path) || IsDvdFolder(part.Path) || DlnaFileMime(part.Path) != null)
                         && await StartDlna(oppo, title, label, part, partCt).ConfigureAwait(false);
                 if (!started && !await StartFromShare(oppo, title, label, part, partCt).ConfigureAwait(false))
                     return PartEnd.Failed;
@@ -392,12 +392,21 @@ namespace Emby.Oppo
             try
             {
                 string bdmv = IsDiscImage(part.Path) ? null : DiscInfo.FindBdmvFolder(part.Path);
+                string videoTs = bdmv == null && !IsDiscImage(part.Path) ? FindVideoTs(part.Path) : null;
                 if (bdmv != null)
                 {
                     // Blu-ray folder: served over WebDAV, the mod lists it and builds the disc image itself.
                     // The link names a file inside BDMV, which is how the mod recognises a disc folder.
                     url = DiscServer.RegisterFolder(Directory.GetParent(bdmv.TrimEnd('/', '\\')).FullName, _serverAddress, Config.DiscServerPort, TimeSpan.FromHours(12), _logger)
                         + System.IO.Path.GetFileName(bdmv.TrimEnd('/', '\\')) + "/index.bdmv";
+                    mime = FolderMime;
+                }
+                else if (videoTs != null)
+                {
+                    // DVD folder: the same, with a link to VIDEO_TS/VIDEO_TS.IFO (oppo-dv-mkv README; VIDEO_TS
+                    // confirmed by its author, 2026-11-20). The names are sent as they are on disk.
+                    url = DiscServer.RegisterFolder(Directory.GetParent(videoTs).FullName, _serverAddress, Config.DiscServerPort, TimeSpan.FromHours(12), _logger)
+                        + Uri.EscapeDataString(System.IO.Path.GetFileName(videoTs)) + "/" + Uri.EscapeDataString(System.IO.Path.GetFileName(VideoTsIfo(videoTs)));
                     mime = FolderMime;
                 }
                 else
@@ -480,6 +489,32 @@ namespace Emby.Oppo
                 default: return null;
             }
         }
+
+        private static bool IsDvdFolder(string path) => FindVideoTs(path) != null;
+
+        /// <summary>
+        /// The VIDEO_TS folder of a DVD folder: the item's own folder (as Emby stores DVD folders) or VIDEO_TS
+        /// itself, any case, with a VIDEO_TS.IFO inside. Null if there is none.
+        /// </summary>
+        private static string FindVideoTs(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return null;
+            try
+            {
+                string folder = path.TrimEnd('/', '\\');
+                if (string.Equals(System.IO.Path.GetFileName(folder), "VIDEO_TS", StringComparison.OrdinalIgnoreCase))
+                    return VideoTsIfo(folder) != null ? folder : null;
+                return Directory.EnumerateDirectories(folder)
+                    .FirstOrDefault(d => string.Equals(System.IO.Path.GetFileName(d), "VIDEO_TS", StringComparison.OrdinalIgnoreCase) && VideoTsIfo(d) != null);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                return null;
+            }
+        }
+
+        private static string VideoTsIfo(string videoTs) =>
+            Directory.EnumerateFiles(videoTs).FirstOrDefault(f => string.Equals(System.IO.Path.GetFileName(f), "VIDEO_TS.IFO", StringComparison.OrdinalIgnoreCase));
 
         private static bool IsBdmvFolder(string path) =>
             !string.IsNullOrEmpty(path) && Directory.Exists(path) && DiscInfo.FindBdmvFolder(path) != null;

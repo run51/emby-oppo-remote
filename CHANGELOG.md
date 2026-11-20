@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.22.0
+
+- **DVD folders over DLNA** (oppo-dv-mkv mod): a DVD folder (`VIDEO_TS`) is served over WebDAV like a Blu-ray
+  folder, with a link to `VIDEO_TS/VIDEO_TS.IFO`, and the OPPO plays it as a disc: menu, tracks, seeking and
+  resume work, and it starts in about a second. Before, DVD folders were played from the share. DVD ISOs
+  already played over DLNA, now checked too (including a two-disc title). Thanks to fandangos for confirming
+  VIDEO_TS support in the mod.
+- Emby.Oppo 0.22.0, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.21.1
 
 - **The remote no longer stays on "Connecting…" when the OPPO is not set up yet.** It now reads "OPPO not

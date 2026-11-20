@@ -1,6 +1,6 @@
 # Emby × OPPO UDP-203/205
 
-Two Emby Server plugins and an Android app to play your library on an **OPPO UDP-203 / UDP-205** (or a compatible clone) straight from Emby. Supported sources are Blu-ray / UHD ISOs, BDMV folders, MKV and other files. The OPPO plays the original file, so you keep full-quality audio and video, menus and Dolby Vision. Emby keeps track of progress.
+Two Emby Server plugins and an Android app to play your library on an **OPPO UDP-203 / UDP-205** (or a compatible clone) straight from Emby. Supported sources are Blu-ray / UHD / DVD ISOs, BDMV and VIDEO_TS folders, MKV and other files. The OPPO plays the original file, so you keep full-quality audio and video, menus and Dolby Vision. Emby keeps track of progress.
 
 Written from scratch using the OPPO's public IP control protocol and Emby's public plugin API. No third-party code is included.
 
@@ -97,7 +97,7 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
   NFS is recommended, especially for BDMV folders. With DLNA (below), the share is only a fallback.
 - **Play over DLNA** (optional, recommended with a modded player)
   - Needs the [oppo-dv-mkv](https://github.com/fandangos/oppo-dv-mkv) mod on the player, with **DLNA Disc Images** on (Setup → Extras).
-  - The plugin then serves the movie itself and sends it to the player's DLNA renderer, with no share mounted. ISO files and Blu-ray folders play as a disc (menus, Dolby Vision, lossless audio); MKV, MP4 and M2TS files play as files.
+  - The plugin then serves the movie itself and sends it to the player's DLNA renderer, with no share mounted. ISO files (Blu-ray, UHD, DVD), Blu-ray folders and DVD folders (`VIDEO_TS`) play as a disc (menus, Dolby Vision, lossless audio); MKV, MP4 and M2TS files play as files.
   - The plugin listens on its own port (**8099** by default, "Disc image server port"): it must be free on the Emby server and reachable by the player. With Docker, use host networking or publish this port.
   - Blu-ray folders are listed over WebDAV and the player builds the disc from that list: most discs start in 1 to 3 s, a UHD folder with many files can take 10 to 20 s.
   - If the movie does not start, the share above is used.
