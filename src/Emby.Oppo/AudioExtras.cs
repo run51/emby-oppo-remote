@@ -98,6 +98,15 @@ namespace Emby.Oppo
             }
         }
 
+        /// <summary>Atmos / DTS:X of an item if it was already analysed, otherwise null (no analysis here).</summary>
+        public AudioExtra[] Peek(BaseItem item)
+        {
+            if (string.IsNullOrEmpty(item.Path)) return null;
+            Load();
+            string key = Key(item.Path);
+            return key != null && Cache.TryGetValue(key, out var hit) ? hit : null;
+        }
+
         private static string Key(string path)
         {
             try

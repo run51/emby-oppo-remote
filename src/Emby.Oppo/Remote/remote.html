@@ -586,8 +586,8 @@
       sort_name: 'Name', sort_added: 'Recently added', sort_year: 'Year', sort_rating: 'Rating', sort_by: 'Sort by',
       unwatched: 'Unwatched', filters: 'Filters', filters_n: 'Filters ({0})', random_title: 'A random title', loading: 'Loading…',
       genre: 'Genre', decade: 'Decade', all_m: 'All', all_f: 'All', decade_label: '{1}s', before_1950: 'Before 1950',
-      picture: 'Picture', hdr_all: 'HDR (all)', favorites_only: 'Favorites only', era: 'Era',
-      dv4k: '4K Dolby Vision', duration: 'Duration', dur_lt105: 'Under 1 h 45', dur_lt120: 'Under 2 h', dur_gt150: 'Over 2 h 30', sagas: 'Sagas',
+      picture: 'Video', hdr_all: 'HDR (no Dolby Vision)', audio_kind: 'Audio', immersive: 'Atmos or DTS:X', favorites_only: 'Favorites only', era: 'Era',
+      duration: 'Duration', dur_lt105: 'Under 1 h 45', dur_lt120: 'Under 2 h', dur_gt150: 'Over 2 h 30', sagas: 'Sagas',
       cant_load_lib: 'Unable to load this library.', n_titles: '{0} titles', n_title: '{0} title', no_titles: 'No titles',
       search_title: 'Search', search_placeholder: 'Movie or concert title', voice_search: 'Voice search',
       heard_nothing: 'Didn’t catch that', mic_unavailable: 'Microphone unavailable', mic_denied: 'Microphone blocked: allow it in Chrome',
@@ -643,8 +643,8 @@
       sort_name: 'Nom', sort_added: 'Ajouts récents', sort_year: 'Année', sort_rating: 'Note', sort_by: 'Trier par',
       unwatched: 'Non vus', filters: 'Filtres', filters_n: 'Filtres ({0})', random_title: 'Un titre au hasard', loading: 'Chargement…',
       genre: 'Genre', decade: 'Décennie', all_m: 'Tous', all_f: 'Toutes', decade_label: 'Années {0}', before_1950: 'Avant 1950',
-      picture: 'Image', hdr_all: 'HDR (tous)', favorites_only: 'Favoris seulement', era: 'Époque',
-      dv4k: '4K Dolby Vision', duration: 'Durée', dur_lt105: 'Moins de 1 h 45', dur_lt120: 'Moins de 2 h', dur_gt150: 'Plus de 2 h 30', sagas: 'Sagas',
+      picture: 'Vidéo', hdr_all: 'HDR (hors Dolby Vision)', audio_kind: 'Audio', immersive: 'Atmos ou DTS:X', favorites_only: 'Favoris seulement', era: 'Époque',
+      duration: 'Durée', dur_lt105: 'Moins de 1 h 45', dur_lt120: 'Moins de 2 h', dur_gt150: 'Plus de 2 h 30', sagas: 'Sagas',
       cant_load_lib: 'Impossible de charger cette bibliothèque.', n_titles: '{0} titres', n_title: '{0} titre', no_titles: 'Aucun titre',
       search_title: 'Recherche', search_placeholder: 'Titre d’un film ou d’un concert', voice_search: 'Recherche vocale',
       heard_nothing: 'Rien entendu', mic_unavailable: 'Micro indisponible', mic_denied: 'Micro refusé : autorise-le dans Chrome',
@@ -990,7 +990,27 @@
     }
   }
 
-  /** Labels for the selected audio track: format and channels, Atmos / DTS:X when the track mentions it. */
+  /**
+   * Best audio track of the title, whatever the language: Atmos > DTS:X > TrueHD > DTS-HD MA > PCM > DTS-HD HRA >
+   * Dolby Digital Plus > DTS > Dolby Digital, then the most channels. The badges show it, so a disc with a French
+   * Dolby Digital track and an English TrueHD Atmos one reads as Atmos.
+   */
+  function bestAudio(list) {
+    function score(st) {
+      var codec = (st.Codec || '').toLowerCase(), profile = (st.Profile || '') + ' ' + (st.Title || '');
+      var base = codec === 'truehd' ? 70
+        : /^dts/.test(codec) ? (/MA\b|master/i.test(profile) ? 60 : /HRA|high res/i.test(profile) ? 45 : 35)
+        : /^pcm/.test(codec) ? 55 : codec === 'eac3' ? 40 : codec === 'ac3' ? 30 : 10;
+      if (st._atmos || /atmos/i.test(profile)) base += 40;
+      else if (st._dtsx || /dts[\s:-]*x\b/i.test(profile)) base += 35;
+      return base + (st.Channels || 0) / 10;
+    }
+    var best = null;
+    (list || []).forEach(function (st) { if (!best || score(st) > score(best)) best = st; });
+    return best;
+  }
+
+  /** Labels for an audio track: format and channels, Atmos / DTS:X when found or mentioned. */
   function audioBadges(stream) {
     if (!stream) return [];
     var out = [];
@@ -1362,13 +1382,18 @@
     decadeSel.appendChild(el('option', { value: 'old', text: t('before_1950') }));
     var imageSel = el('select', { 'aria-label': t('picture') }, [
       el('option', { value: '', text: t('all_f') }), el('option', { value: '4k', text: '4K' }),
-      el('option', { value: 'dv', text: 'Dolby Vision' }), el('option', { value: '4kdv', text: t('dv4k') }),
+      el('option', { value: 'dv', text: 'Dolby Vision' }),
       el('option', { value: 'hdr', text: t('hdr_all') }), el('option', { value: '3d', text: '3D' })]);
+    // Audio: titles with at least one track of that kind, whatever its language (computed by the plugin).
+    var audioKindSel = el('select', { 'aria-label': t('audio_kind') }, [el('option', { value: '', text: t('all_m') }),
+      el('option', { value: 'atmos', text: 'Dolby Atmos' }), el('option', { value: 'dtsx', text: 'DTS:X' }),
+      el('option', { value: 'immersive', text: t('immersive') }), el('option', { value: 'truehd', text: 'TrueHD' }),
+      el('option', { value: 'dtshdma', text: 'DTS-HD MA' }), el('option', { value: '71', text: '7.1' })]);
     var durSel = el('select', { 'aria-label': t('duration') }, [el('option', { value: '', text: t('all_f') }),
       el('option', { value: 'lt105', text: t('dur_lt105') }), el('option', { value: 'lt120', text: t('dur_lt120') }),
       el('option', { value: 'gt150', text: t('dur_gt150') })]);
     var favSel = el('select', { 'aria-label': t('favorites') }, [el('option', { value: '', text: t('all_m') }), el('option', { value: '1', text: t('favorites_only') })]);
-    var filters = el('div', { 'class': 'filters', hidden: true }, [field(t('genre'), genreSel), field(t('era'), decadeSel), field(t('picture'), imageSel), field(t('duration'), durSel), field(t('favorites'), favSel)]);
+    var filters = el('div', { 'class': 'filters', hidden: true }, [field(t('genre'), genreSel), field(t('era'), decadeSel), field(t('picture'), imageSel), field(t('audio_kind'), audioKindSel), field(t('duration'), durSel), field(t('favorites'), favSel)]);
     var node = el('div', { 'class': 'view' }, [el('div', { 'class': 'toolbar' }, [sort, unplayed, filterBtn, diceBtn, count]), filters, grid, status, sentinel]);
     emby('/Genres', { ParentId: id, UserId: uid(), SortBy: 'SortName' }).then(function (r) {
       ((r && r.Items) || []).forEach(function (g) { genreSel.appendChild(el('option', { value: g.Name, text: g.Name })); });
@@ -1377,7 +1402,7 @@
       filters.hidden = !filters.hidden;
       filterBtn.setAttribute('aria-pressed', filters.hidden && !activeFilters() ? 'false' : 'true');
     });
-    function activeFilters() { return [genreSel, decadeSel, imageSel, durSel, favSel].filter(function (x) { return x.value; }).length; }
+    function activeFilters() { return [genreSel, decadeSel, imageSel, audioKindSel, durSel, favSel].filter(function (x) { return x.value; }).length; }
     // Emby has no runtime filter: the matching IDs are computed here from one light query, then passed as Ids.
     var durIds = null;
     function loadDuration() {
@@ -1395,11 +1420,18 @@
         }).map(function (it) { return it.Id; });
       });
     }
-    [genreSel, decadeSel, imageSel, durSel, favSel].forEach(function (x) {
+    var audioIds = null;
+    function loadAudioKind() {
+      audioIds = null;
+      if (!audioKindSel.value) return Promise.resolve();
+      return remote('/AudioFilter', { Kind: audioKindSel.value }).then(function (ids) { audioIds = ids || []; });
+    }
+    [genreSel, decadeSel, imageSel, audioKindSel, durSel, favSel].forEach(function (x) {
       x.addEventListener('change', function () {
         var n = activeFilters();
         filterBtn.querySelector('span').textContent = n ? t('filters_n', n) : t('filters');
         if (x === durSel) loadDuration().then(reset, function () { durIds = null; reset(); });
+        else if (x === audioKindSel) loadAudioKind().then(reset, function () { audioIds = null; reset(); });
         else reset();
       });
     });
@@ -1409,10 +1441,14 @@
       else if (decadeSel.value) { var d0 = +decadeSel.value, ys = []; for (var b = d0; b < d0 + 10; b++) ys.push(b); q.Years = ys.join(','); }
       if (imageSel.value === '4k') q.MinWidth = 3800;
       if (imageSel.value === 'dv') q.ExtendedVideoTypes = 'DolbyVision';
-      if (imageSel.value === '4kdv') { q.MinWidth = 3800; q.ExtendedVideoTypes = 'DolbyVision'; }
       if (imageSel.value === '3d') q.Is3D = true;
-      if (durSel.value && durIds) q.Ids = durIds.length ? durIds.join(',') : '0';
-      if (imageSel.value === 'hdr') q.ExtendedVideoTypes = 'Hdr10,Hdr10Plus,HyperLogGamma,DolbyVision';
+      // Duration and audio: IDs computed outside Emby's query (intersected when both are set)
+      var ids = null;
+      if (durSel.value && durIds) ids = durIds;
+      if (audioKindSel.value && audioIds) ids = ids ? ids.filter(function (x) { return audioIds.indexOf(x) >= 0; }) : audioIds;
+      if (ids) q.Ids = ids.length ? ids.join(',') : '0';
+      // HDR without Dolby Vision (a Dolby Vision disc also carries HDR10: it is in the Dolby Vision choice)
+      if (imageSel.value === 'hdr') q.ExtendedVideoTypes = 'Hdr10,Hdr10Plus,HyperLogGamma';
       if (favSel.value) q.IsFavorite = true;
       return q;
     }
@@ -1689,7 +1725,7 @@
       subField.hidden = !subs.length;
       var current = audio.filter(function (a) { return String(a.Index) === audioSel.value; })[0];
       subSel.value = String(defaultSubtitle(s, current));
-      drawAudioBadges(current);
+      drawAudioBadges(bestAudio(audio));
       // Dolby Atmos / DTS:X, found by the plugin in the audio itself (first time: a few seconds, then cached)
       if (audio.length && !s._extras) {
         s._extras = true;
@@ -1703,7 +1739,7 @@
             var st = audio.filter(function (a) { return String(a.Index) === o.value; })[0];
             if (st && (st._atmos || st._dtsx)) o.textContent = numberedLabel(audio, st);
           });
-          drawAudioBadges(audio.filter(function (a) { return String(a.Index) === audioSel.value; })[0]);
+          drawAudioBadges(bestAudio(audio));
         }).catch(function () { /* no analysis: Emby's labels stay */ });
       }
     }
@@ -1715,8 +1751,7 @@
     audioSel.addEventListener('change', function () {
       var s = source();
       var current = streams(s, 'Audio').filter(function (a) { return String(a.Index) === audioSel.value; })[0];
-      subSel.value = String(defaultSubtitle(s, current));
-      drawAudioBadges(current);
+      subSel.value = String(defaultSubtitle(s, current));   // the badges keep showing the disc's best track
     });
     fillTracks();
     if (item.PartCount > 1) fields.appendChild(el('p', { 'class': 'note', text: t('discs_chain') }));

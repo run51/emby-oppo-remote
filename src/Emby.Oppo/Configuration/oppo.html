@@ -3,6 +3,16 @@
         <!-- English by default; oppo.js applies the data-i18n* texts (English or French) when the page loads. -->
         <form class="oppoConfigForm auto-center padded-top">
 
+            <h2 class="sectionTitle" data-i18n="updates">Version and updates</h2>
+            <div class="fieldDescription oppoUpdate" style="margin-bottom:1.5em;">
+                <div class="txtUpdate"></div>
+                <div style="margin-top:.8em;">
+                    <button is="emby-button" type="button" class="raised btnInstallUpdate" hidden><span data-i18n="installUpdate">Update</span></button>
+                    <button is="emby-button" type="button" class="raised btnRestartEmby" hidden><span data-i18n="restartEmby">Restart Emby</span></button>
+                    <a class="lnkRelease button-link" href="#" target="_blank" rel="noopener" hidden data-i18n="releaseNotes">What's new</a>
+                </div>
+            </div>
+
             <h2 class="sectionTitle" data-i18n="player">Player</h2>
             <div class="inputContainer">
                 <input is="emby-input" type="text" id="txtOppoAddress" label="OPPO player IP address:" data-i18n-label="oppoAddress" required />

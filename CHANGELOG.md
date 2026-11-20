@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.20.0
+
+- **The title page's audio badges show the disc's best track**, whatever the language selected: a disc with
+  a French Dolby Digital track and an English TrueHD Atmos one now reads "TrueHD 7.1 · Atmos" (Backdraft:
+  "DTS:X 7.1" instead of the French "DTS"). Order: Atmos, DTS:X, TrueHD, DTS-HD MA, PCM, DTS-HD HRA,
+  Dolby Digital Plus, DTS, Dolby Digital, then the number of channels. The track list still selects your
+  preferred language.
+- **Library filters:** the "Picture" filter is now called "Video"; "4K Dolby Vision" is gone (Dolby Vision
+  stays); "HDR" now lists HDR10 / HDR10+ / HLG titles without the Dolby Vision ones. New **Audio** filter:
+  Dolby Atmos, DTS:X, Atmos or DTS:X, TrueHD, DTS-HD MA, 7.1 (titles with at least one such track, in any
+  language).
+- **Updates from the plugin page:** Dashboard → Plugins → OPPO shows the installed versions and the latest
+  release on GitHub; **Update** downloads both plugins, checks them (assembly name and version) and replaces the
+  installed files (the previous ones are kept in Emby's cache folder), then **Restart Emby** applies them.
+  Administrators only. From this version on, no more manual copying for updates.
+- New scheduled task **"OPPO: Dolby Atmos / DTS:X"** (daily, 3 am): analyses the titles that have a TrueHD or
+  DTS track, so that the audio filter knows them all. First run on a 600-title library: about 7 minutes.
+- Emby.Oppo 0.20.0, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.19.0
 
 - **Dolby Atmos and DTS:X are shown on the title page** (audio badges and track list: "TrueHD Atmos 7.1",

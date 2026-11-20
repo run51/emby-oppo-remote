@@ -33,10 +33,19 @@ namespace Emby.Oppo.Oppo
             public long Length;
         }
 
+        /// <summary>File of a virtual folder: bytes held in memory, or byte ranges of files on disk.</summary>
+        public sealed class VirtualFile
+        {
+            public byte[] Data;
+            public List<Segment> Segments;
+            public long Size;
+        }
+
         private sealed class Registration
         {
             public List<Segment> Segments;   // a file (ISO, or clips end to end)…
-            public string Folder;            // …or a disc folder (the one that contains BDMV), served over WebDAV
+            public string Folder;            // …or a disc folder (the one that contains BDMV), served over WebDAV…
+            public Dictionary<string, VirtualFile> Tree;   // …or a virtual folder ("BDMV/index.bdmv" → file), over WebDAV
             public long Size;
             public string ContentType;
             public DateTime ExpiresUtc;
@@ -86,6 +95,16 @@ namespace Emby.Oppo.Oppo
             Purge();
             string token = Guid.NewGuid().ToString("N");
             Files[token] = new Registration { Folder = System.IO.Path.GetFullPath(discRoot).TrimEnd('/', '\\'), ExpiresUtc = DateTime.UtcNow + lifetime };
+            return "http://" + serverAddress + ":" + port.ToString(CultureInfo.InvariantCulture) + "/disc/" + token + "/";
+        }
+
+        /// <summary>Registers a virtual folder (relative path with "/" → file) and returns the URL of its root, ending in "/".</summary>
+        public static string RegisterTree(Dictionary<string, VirtualFile> tree, string serverAddress, int port, TimeSpan lifetime, ILogger logger)
+        {
+            EnsureStarted(port, logger);
+            Purge();
+            string token = Guid.NewGuid().ToString("N");
+            Files[token] = new Registration { Tree = tree, ExpiresUtc = DateTime.UtcNow + lifetime };
             return "http://" + serverAddress + ":" + port.ToString(CultureInfo.InvariantCulture) + "/disc/" + token + "/";
         }
 
@@ -193,10 +212,50 @@ namespace Emby.Oppo.Oppo
                     }
                     Interlocked.Increment(ref reg.Requests);
 
-                    List<Segment> fileSegments;
+                    List<Segment> fileSegments = null;
+                    byte[] memory = null;
                     string contentType;
                     long size;
-                    if (reg.Folder != null)
+                    if (reg.Tree != null)
+                    {
+                        string rel = string.Join("/", segments.Skip(2).Where(x => x.Length > 0));
+                        bool isFile = reg.Tree.TryGetValue(rel, out var vfile);
+                        bool isDir = !isFile && (rel.Length == 0 || reg.Tree.Keys.Any(k => k.StartsWith(rel + "/", StringComparison.Ordinal)));
+                        if (!isFile && !isDir)
+                        {
+                            _logger?.Debug("OPPO virtual disc: 404 for \"{0}\" from {1}", requestLine, remote);
+                            await WriteHead(stream, 404, "Not Found", null).ConfigureAwait(false);
+                            return;
+                        }
+                        if (method == "OPTIONS")
+                        {
+                            await WriteHead(stream, 200, "OK", new[] { "DAV: 1", "Allow: OPTIONS, GET, HEAD, PROPFIND" }).ConfigureAwait(false);
+                            return;
+                        }
+                        if (method == "PROPFIND")
+                        {
+                            headers.TryGetValue("Depth", out string depth);
+                            byte[] xml = Encoding.UTF8.GetBytes(TreeMultistatus(reg.Tree, rel, isDir, "/disc/" + segments[1].ToLowerInvariant(), depth));
+                            await WriteHead(stream, 207, "Multi-Status", new[] { "Content-Type: application/xml; charset=utf-8", "Content-Length: " + xml.Length.ToString(CultureInfo.InvariantCulture) }, noLength: true).ConfigureAwait(false);
+                            await stream.WriteAsync(xml, 0, xml.Length).ConfigureAwait(false);
+                            _logger?.Debug("OPPO virtual disc: PROPFIND /{0} depth {1}", rel, depth ?? "-");
+                            return;
+                        }
+                        if ((method != "GET" && method != "HEAD") || isDir)
+                        {
+                            await WriteHead(stream, 405, "Method Not Allowed", new[] { "Allow: OPTIONS, GET, HEAD, PROPFIND" }).ConfigureAwait(false);
+                            return;
+                        }
+                        size = vfile.Size;
+                        contentType = "application/octet-stream";
+                        if (vfile.Data != null)
+                        {
+                            fileSegments = null;
+                            memory = vfile.Data;
+                        }
+                        else fileSegments = vfile.Segments;
+                    }
+                    else if (reg.Folder != null)
                     {
                         // Disc folder: WebDAV listing, or one of its files.
                         string local = LocalPath(reg.Folder, segments);
@@ -280,7 +339,8 @@ namespace Emby.Oppo.Oppo
                     await WriteHead(stream, partial ? 206 : 200, partial ? "Partial Content" : "OK", extra, noLength: true).ConfigureAwait(false);
                     if (method == "HEAD") return;
 
-                    await CopyRange(fileSegments, start, length, stream).ConfigureAwait(false);
+                    if (memory != null) await stream.WriteAsync(memory, (int)start, (int)length).ConfigureAwait(false);
+                    else await CopyRange(fileSegments, start, length, stream).ConfigureAwait(false);
                 }
                 catch (IOException) { /* the player closed the connection: expected while seeking */ }
                 catch (SocketException) { /* same */ }
@@ -344,6 +404,49 @@ namespace Emby.Oppo.Oppo
             }
             Entry(local);
             if (Directory.Exists(local) && depth != "0") Children(local, !string.Equals(depth, "1", StringComparison.Ordinal));
+            sb.Append("</D:multistatus>\n");
+            return sb.ToString();
+        }
+
+        /// <summary>WebDAV multistatus of a virtual folder, like <see cref="Multistatus"/> for a real one.</summary>
+        private static string TreeMultistatus(Dictionary<string, VirtualFile> tree, string rel, bool isDir, string prefix, string depth)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<D:multistatus xmlns:D=\"DAV:\">\n");
+            void Entry(string path, bool dir, long size)
+            {
+                var href = new StringBuilder(prefix);
+                foreach (var part in path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) href.Append('/').Append(Uri.EscapeDataString(part));
+                if (dir) href.Append('/');
+                sb.Append("<D:response><D:href>").Append(System.Security.SecurityElement.Escape(href.ToString())).Append("</D:href><D:propstat><D:prop>");
+                if (dir) sb.Append("<D:resourcetype><D:collection/></D:resourcetype>");
+                else sb.Append("<D:resourcetype/><D:getcontentlength>").Append(size.ToString(CultureInfo.InvariantCulture)).Append("</D:getcontentlength>");
+                sb.Append("</D:prop><D:status>HTTP/1.1 200 OK</D:status></D:propstat></D:response>\n");
+            }
+            if (!isDir)
+            {
+                Entry(rel, false, tree[rel].Size);
+            }
+            else
+            {
+                Entry(rel, true, 0);
+                if (depth != "0")
+                {
+                    bool all = !string.Equals(depth, "1", StringComparison.Ordinal);
+                    string start = rel.Length == 0 ? "" : rel + "/";
+                    var dirs = new SortedSet<string>(StringComparer.Ordinal);
+                    var files = new SortedDictionary<string, long>(StringComparer.Ordinal);
+                    foreach (var kv in tree)
+                    {
+                        if (!kv.Key.StartsWith(start, StringComparison.Ordinal)) continue;
+                        var parts = kv.Key.Substring(start.Length).Split('/');
+                        for (int i = 0; i < parts.Length - 1 && (all || i == 0); i++) dirs.Add(start + string.Join("/", parts.Take(i + 1)));
+                        if (all || parts.Length == 1) files[kv.Key] = kv.Value.Size;
+                    }
+                    foreach (var d in dirs) Entry(d, true, 0);
+                    foreach (var f in files) Entry(f.Key, false, f.Value);
+                }
+            }
             sb.Append("</D:multistatus>\n");
             return sb.ToString();
         }

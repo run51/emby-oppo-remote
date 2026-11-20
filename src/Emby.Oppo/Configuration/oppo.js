@@ -14,6 +14,10 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             deviceName: 'Name in the "Play on" menu:',
             startTimeout: 'Start timeout (seconds):',
             dlnaDiscImages: 'Play over DLNA: ISO files, Blu-ray folders, MKV (oppo-dv-mkv mod)',
+            updates: 'Version and updates', installUpdate: 'Update', restartEmby: 'Restart Emby', releaseNotes: "What's new",
+            updChecking: 'Looking for updates…', updInstalled: 'Installed: OPPO {0}, ISO Blu-ray {1}.',
+            updAvailable: 'Version {0} is available.', updUpToDate: 'Up to date (latest release: {0}).', updInstalling: 'Downloading and installing…',
+            updRestarting: 'Emby is restarting. Reload this page in a minute.', updConfirm: 'Install version {0} of both plugins? Emby must be restarted afterwards.',
             dlnaDiscImagesHelp: 'Requires the oppo-dv-mkv mod on the player with "DLNA Disc Images" on. The plugin serves the movie itself to the player: an ISO or a Blu-ray folder plays as a disc (menus and Dolby Vision included), an MKV, MP4 or M2TS file as a file. No share is mounted; the share above is only used if the movie does not start.',
             discServerPort: 'Disc image server port:',
             discServerPortHelp: 'A free port on this server, reachable by the player. Restart Emby after changing it.',
@@ -64,6 +68,10 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             deviceName: 'Nom dans le menu « Lire sur… » :',
             startTimeout: 'Délai de démarrage (secondes) :',
             dlnaDiscImages: 'Lire par DLNA : ISO, dossiers Blu-ray, MKV (mod oppo-dv-mkv)',
+            updates: 'Version et mises à jour', installUpdate: 'Mettre à jour', restartEmby: 'Redémarrer Emby', releaseNotes: 'Nouveautés',
+            updChecking: 'Recherche de mises à jour…', updInstalled: 'Installé : OPPO {0}, ISO Blu-ray {1}.',
+            updAvailable: 'La version {0} est disponible.', updUpToDate: 'À jour (dernière version publiée : {0}).', updInstalling: 'Téléchargement et installation…',
+            updRestarting: 'Emby redémarre. Rechargez cette page dans une minute.', updConfirm: 'Installer la version {0} des deux plugins ? Emby devra ensuite être redémarré.',
             dlnaDiscImagesHelp: 'Nécessite le mod oppo-dv-mkv sur le lecteur, avec « DLNA Disc Images » activé. Le plugin sert lui-même le film au lecteur : un ISO ou un dossier Blu-ray est lu comme un disque (menus et Dolby Vision compris), un fichier MKV, MP4 ou M2TS comme un fichier. Aucun partage n\'est monté ; le partage ci-dessus ne sert que si le film ne démarre pas.',
             discServerPort: 'Port du serveur d\'images disque :',
             discServerPortHelp: 'Un port libre sur ce serveur, joignable par le lecteur. Redémarrez Emby après l\'avoir changé.',
@@ -312,8 +320,43 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             return false;
         });
 
+        // Version and updates (GitHub releases)
+        function fmt(text) { var args = arguments; return text.replace(/\{(\d)\}/g, function (m, i) { return args[+i + 1] != null ? args[+i + 1] : ''; }); }
+        function showUpdate(info, message) {
+            var box = view.querySelector('.txtUpdate');
+            var lines = [fmt(t('updInstalled'), info.Current || '?', info.IsoBlurayCurrent || '?')];
+            if (message) lines.push(message);
+            else if (info.Available) lines.push(fmt(t('updAvailable'), info.Latest));
+            else if (info.Latest) lines.push(fmt(t('updUpToDate'), info.Latest));
+            else if (info.Message) lines.push(info.Message);
+            box.textContent = lines.join(' ');
+            view.querySelector('.btnInstallUpdate').hidden = !info.Available || !!info.Installed;
+            view.querySelector('.btnRestartEmby').hidden = !info.Installed;
+            var link = view.querySelector('.lnkRelease');
+            link.hidden = !info.ReleaseUrl;
+            if (info.ReleaseUrl) link.href = info.ReleaseUrl;
+        }
+        function checkUpdate() {
+            view.querySelector('.txtUpdate').textContent = t('updChecking');
+            ApiClient.getJSON(ApiClient.getUrl('Oppo/Update')).then(function (info) { showUpdate(info); }, function () { view.querySelector('.txtUpdate').textContent = ''; });
+        }
+        view.querySelector('.btnInstallUpdate').addEventListener('click', function () {
+            var latest = (view.querySelector('.txtUpdate').textContent.match(/\d+\.\d+\.\d+(?=[^\d]*$)/) || [''])[0];
+            if (!window.confirm(fmt(t('updConfirm'), latest))) return;
+            view.querySelector('.txtUpdate').textContent = t('updInstalling');
+            this.hidden = true;
+            ApiClient.ajax({ type: 'POST', url: ApiClient.getUrl('Oppo/Update'), dataType: 'json' })
+                .then(function (info) { showUpdate(info, info.Message); }, function () { checkUpdate(); });
+        });
+        view.querySelector('.btnRestartEmby').addEventListener('click', function () {
+            this.hidden = true;
+            view.querySelector('.txtUpdate').textContent = t('updRestarting');
+            ApiClient.ajax({ type: 'POST', url: ApiClient.getUrl('System/Restart') });
+        });
+
         view.addEventListener('viewshow', function () {
             translatePage(view);
+            checkUpdate();
             var remoteUrl = ApiClient.getUrl('Oppo/Remote');
             view.querySelector('.lnkOppoRemote').href = remoteUrl;
             view.querySelector('.txtOppoRemoteUrl').textContent = remoteUrl;

@@ -125,6 +125,12 @@ namespace Emby.Oppo
         public string MediaSourceId { get; set; }
     }
 
+    [Route("/Oppo/Remote/AudioFilter", "GET", Summary = "IDs of the titles that have an audio track of a kind (atmos, dtsx, immersive, truehd, dtshdma, 71)")]
+    public sealed class RemoteAudioFilter : IReturn<string[]>
+    {
+        public string Kind { get; set; }
+    }
+
     [Route("/Oppo/Remote/MainMovie", "POST", Summary = "The next play of this item starts its main movie directly, without the disc menus")]
     public sealed class RemoteMainMovie : IReturn<RemoteActionResult>
     {
@@ -492,6 +498,44 @@ namespace Emby.Oppo
             if (item == null) return Array.Empty<AudioExtra>();
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90)))
                 return await new AudioExtras(_itemRepository, _json, _logger, _mediaEncoder.EncoderPath, _paths.CachePath).Get(item, cts.Token).ConfigureAwait(false);
+        }
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime At, string[] Ids)> AudioFilterCache =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime, string[])>();
+
+        /// <summary>
+        /// Titles with at least one audio track of the kind, whatever its language. TrueHD, DTS-HD MA and 7.1 come
+        /// from Emby's streams; Atmos and DTS:X from the plugin's analysis (title pages and the scheduled task).
+        /// </summary>
+        public object Get(RemoteAudioFilter request)
+        {
+            string kind = (request.Kind ?? "").Trim().ToLowerInvariant();
+            if (AudioFilterCache.TryGetValue(kind, out var hit) && DateTime.UtcNow - hit.At < TimeSpan.FromMinutes(5)) return hit.Ids;
+#pragma warning disable CS0618
+            var extras = new AudioExtras(_itemRepository, _json, _logger, _mediaEncoder.EncoderPath, _paths.CachePath);
+#pragma warning restore CS0618
+            var ids = new List<string>();
+            foreach (var video in _libraryManager.GetItemList(new InternalItemsQuery { IncludeItemTypes = new[] { "Movie", "MusicVideo" }, Recursive = true }))
+            {
+                var audio = _itemRepository.GetMediaStreams(new MediaStreamQuery { ItemId = video.InternalId }, CancellationToken.None)
+                    .Where(x => x.Type == MediaStreamType.Audio).ToList();
+                if (audio.Count == 0) continue;
+                bool match;
+                switch (kind)
+                {
+                    case "truehd": match = audio.Any(x => string.Equals(x.Codec, "truehd", StringComparison.OrdinalIgnoreCase)); break;
+                    case "dtshdma": match = audio.Any(x => (x.Codec ?? "").StartsWith("dts", StringComparison.OrdinalIgnoreCase) && (x.Profile ?? "").IndexOf("MA", StringComparison.Ordinal) >= 0); break;
+                    case "71": match = audio.Any(x => (x.Channels ?? 0) >= 8); break;
+                    default:
+                        var found = extras.Peek(video);
+                        match = found != null && (kind == "atmos" ? found.Any(x => x.Atmos) : kind == "dtsx" ? found.Any(x => x.DtsX) : found.Any(x => x.Atmos || x.DtsX));
+                        break;
+                }
+                if (match) ids.Add(video.InternalId.ToString(CultureInfo.InvariantCulture));
+            }
+            var result = ids.ToArray();
+            AudioFilterCache[kind] = (DateTime.UtcNow, result);
+            return result;
         }
 
         public object Post(RemoteMainMovie request)

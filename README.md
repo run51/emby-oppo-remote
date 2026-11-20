@@ -10,7 +10,7 @@ The interface is available in **English and French**. The language follows the d
 
 | Component | What it does |
 |---|---|
-| **Emby.Oppo** (plugin) | **Playback:** adds the OPPO to Emby's "Play on…" menu. The player plays the original file, either sent over DLNA by the plugin (with the oppo-dv-mkv mod, see below) or from your share over NFS or SMB. Position is reported back to Emby, so resume and watched status work.<br>**Playback options:** audio and subtitle track selection, multi-disc titles, "Movie without menus" for Blu-ray discs, optional webhook for home automation.<br>**Web remote:** browse your libraries, open a title page, then control playback: chapter thumbnails, live OPPO output info (resolution, HDR, audio format), transport keys, a D-pad and a "Showtime" power scene. |
+| **Emby.Oppo** (plugin) | **Playback:** adds the OPPO to Emby's "Play on…" menu. The player plays the original file, either sent over DLNA by the plugin (with the oppo-dv-mkv mod, see below) or from your share over NFS or SMB. Position is reported back to Emby, so resume and watched status work.<br>**Playback options:** audio and subtitle track selection, multi-disc titles, "Movie without menus" for Blu-ray discs, optional webhook for home automation.<br>**Web remote:** browse your libraries (filters by genre, era, video: 4K / Dolby Vision / HDR / 3D, audio: Dolby Atmos / DTS:X / TrueHD / DTS-HD MA / 7.1, duration), open a title page (format badges, including Atmos and DTS:X found in the audio itself), then control playback: chapter thumbnails, live OPPO output info (resolution, HDR, audio format), transport keys, a D-pad and a "Showtime" power scene.<br>**Updates:** from the plugin's settings page, in one click. |
 | **Emby.IsoBluray** (plugin) | Reads inside Blu-ray ISOs and BDMV folders (UDF 2.50, MPLS playlists). Emby then shows the real audio and subtitle tracks, the correct runtime and the format (UHD, HDR…). Blu-ray 3D discs are marked as 3D. |
 | **Android apps** | Fullscreen app for the web remote, with voice search and lock-screen media controls. It comes in two editions:<ul><li>**OPPO**: no home automation.</li><li>**OPPO Home**: adds Showtime, All off and the amplifier volume. The phone's volume keys control the amplifier while the app is open, and while a movie plays even with the screen locked.</li></ul>The interface is served by the plugin, so it updates without reinstalling the app. |
 
@@ -40,7 +40,7 @@ Emby has no catalog for third-party plugins: they are installed by copying the D
    - **Windows:** `%AppData%\Emby-Server\programdata\plugins\`
    - **Synology:** see below.
 3. Restart Emby. Both plugins appear under **Dashboard → Plugins**.
-4. Run *Dashboard → Scheduled tasks → "Blu-ray: tracks and runtimes"* once (see [Scheduled tasks](#scheduled-task)).
+4. Run *Dashboard → Scheduled tasks → "Blu-ray: tracks and runtimes"* once (see [Scheduled tasks](#scheduled-tasks)).
 
 ### On a Synology NAS
 
@@ -92,9 +92,14 @@ Developed and tested with Emby Server 4.10 on Linux (Docker on a Synology NAS). 
 
 Then, from any Emby app: **Play on… → OPPO**.
 
-### Scheduled task
+### Scheduled tasks
 
-Run *Dashboard → Scheduled tasks → "Blu-ray: tracks and runtimes"* once after installing. It analyses the Blu-ray ISOs and folders already in your library.
+- Run *Dashboard → Scheduled tasks → "Blu-ray: tracks and runtimes"* once after installing. It analyses the Blu-ray ISOs and folders already in your library.
+- *"OPPO: Dolby Atmos / DTS:X"* runs every night at 3 am (run it once by hand after installing). It finds the Atmos and DTS:X tracks of the titles that have a TrueHD or DTS track, for the audio filter of the web remote. About 7 minutes for 600 titles the first time, then only new titles.
+
+### Updating
+
+The plugin's settings page (*Dashboard → Plugins → OPPO*) shows the installed versions and the latest release. **Update** downloads both plugins from GitHub, checks them and replaces the installed files (the previous ones are kept in Emby's cache folder); **Restart Emby** then applies them. Administrators only. Versions older than 0.20.0 are updated once by hand.
 
 ## Web remote and Android app
 
