@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.19.0
+
+- **Dolby Atmos and DTS:X are shown on the title page** (audio badges and track list: "TrueHD Atmos 7.1",
+  "DTS:X 7.1"). Emby's ffprobe (FFmpeg 5.1) does not report them, so the plugin looks at the audio itself:
+  the Atmos bit of the TrueHD major sync, the DTS:X extension in DTS-HD MA. Blu-ray discs (ISO or folder):
+  48 MB of the movie are read once; MKV files: a few seconds of each TrueHD / DTS track. Results are cached.
+  Dolby Digital Plus Atmos (streaming files) is not detected.
+- **Audio track choice on some discs:** the OPPO's audio menu follows the disc playlist, and Emby's track
+  order can differ from it (a disc carrying an extra track that the playlist does not list, such as Dune).
+  The plugin now matches Emby's track to the playlist by language and codec before selecting it on a disc.
+- **Windows paths:** Emby libraries on a Windows server (`D:\Movies`, `\\nas\Movies`) now match the path
+  mappings (backslashes, any letter case), and Blu-ray folders can be served over DLNA from Windows paths.
+  The plugins were developed and tested on Linux (Docker on a Synology NAS); Windows is still untested.
+- Includes v0.18.1 (DLNA fixes).
+- Emby.Oppo 0.19.0, Emby.IsoBluray 0.5.1 (folder names with a trailing backslash). Android apps unchanged.
+
+## v0.18.1
+
+- **DLNA: the player could freeze when switching movies.** The plugin sent the DLNA renderer a Stop before
+  each new link and when falling back to the share. Sent while the mod plays a disc image, that Stop left
+  the disc playing, deaf to IP control, and the renderer stopped taking links until the player was
+  unplugged. The plugin no longer sends it: the player is stopped through IP control only, as before.
+- **DLNA was skipped for no reason after a disc image.** The renderer reports "TRANSITIONING" during and
+  after every disc image played by the mod, and still takes a new link then. The plugin took that state for
+  a stuck renderer and used the share. It now only skips DLNA when the renderer does not answer; a renderer
+  that really is stuck is still detected when it does not request the movie within 6 s.
+- Emby.Oppo 0.18.1, Emby.IsoBluray 0.5.0 (unchanged). Android apps unchanged.
+
 ## v0.18.0
 
 - **Movies can be played over DLNA, with no network share** (new option "Play over DLNA", off by

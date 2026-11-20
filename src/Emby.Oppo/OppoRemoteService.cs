@@ -118,6 +118,13 @@ namespace Emby.Oppo
         public string MediaSourceId { get; set; }
     }
 
+    [Route("/Oppo/Remote/AudioExtras", "GET", Summary = "Dolby Atmos / DTS:X of each audio track (analysed once, then cached)")]
+    public sealed class RemoteAudioExtras : IReturn<AudioExtra[]>
+    {
+        public string Id { get; set; }
+        public string MediaSourceId { get; set; }
+    }
+
     [Route("/Oppo/Remote/MainMovie", "POST", Summary = "The next play of this item starts its main movie directly, without the disc menus")]
     public sealed class RemoteMainMovie : IReturn<RemoteActionResult>
     {
@@ -477,6 +484,14 @@ namespace Emby.Oppo
         {
             var item = Resolve(request.Id, request.MediaSourceId);
             return item == null ? Array.Empty<ChapterEntry>() : ChapterSource.List(item, Fr).ToArray();
+        }
+
+        public async Task<object> Get(RemoteAudioExtras request)
+        {
+            var item = Resolve(request.Id, request.MediaSourceId);
+            if (item == null) return Array.Empty<AudioExtra>();
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90)))
+                return await new AudioExtras(_itemRepository, _json, _logger, _mediaEncoder.EncoderPath, _paths.CachePath).Get(item, cts.Token).ConfigureAwait(false);
         }
 
         public object Post(RemoteMainMovie request)

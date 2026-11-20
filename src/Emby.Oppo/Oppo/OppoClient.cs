@@ -516,9 +516,9 @@ namespace Emby.Oppo.Oppo
         {
             try
             {
+                // No Stop first: the player is stopped by IP control before (a renderer Stop while the mod plays a
+                // disc image wedged the renderer, 2026-11-20).
                 string control = await AvTransportControlUrl(ct).ConfigureAwait(false);
-                await Soap(control, "Stop", "", ct, logErrors: false).ConfigureAwait(false);
-                await Task.Delay(1000, ct).ConfigureAwait(false);
                 string didl = "<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\">"
                     + "<item id=\"1\" parentID=\"0\" restricted=\"1\"><dc:title>" + Xml(title) + "</dc:title><upnp:class>object.item.videoItem.movie</upnp:class>"
                     + "<res protocolInfo=\"http-get:*:" + mime + ":*\"" + (size > 0 ? " size=\"" + size.ToString(CultureInfo.InvariantCulture) + "\"" : "") + ">" + Xml(url) + "</res></item></DIDL-Lite>";
@@ -531,13 +531,6 @@ namespace Emby.Oppo.Oppo
                 _logger.Info("OPPO: DLNA renderer unreachable ({0})", ex.Message);
                 return false;
             }
-        }
-
-        /// <summary>Stops the DLNA renderer (before falling back to the network share).</summary>
-        public async Task StopDlna(CancellationToken ct)
-        {
-            try { await Soap(await AvTransportControlUrl(ct).ConfigureAwait(false), "Stop", "", ct, logErrors: false).ConfigureAwait(false); }
-            catch (Exception ex) when (!(ex is OperationCanceledException)) { }
         }
 
         /// <summary>

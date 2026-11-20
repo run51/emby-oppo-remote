@@ -132,7 +132,7 @@ namespace Emby.IsoBluray
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
-                    _logger.Debug("ISO Blu-ray: {0} unreadable for 3D detection ({1})", Path.GetFileName(path.TrimEnd('/')), ex.Message);
+                    _logger.Debug("ISO Blu-ray: {0} unreadable for 3D detection ({1})", Path.GetFileName(path.TrimEnd('/', '\\')), ex.Message);
                     is3D = false;
                 }
                 Stereo[path] = (stamp, is3D);
@@ -141,7 +141,7 @@ namespace Emby.IsoBluray
 
             video.Video3DFormat = Video3DFormat.MVC;
             video.UpdateToRepository(ItemUpdateType.MetadataImport);
-            _logger.Info("ISO Blu-ray: {0} marked as 3D (MVC)", Path.GetFileName(path.TrimEnd('/')));
+            _logger.Info("ISO Blu-ray: {0} marked as 3D (MVC)", Path.GetFileName(path.TrimEnd('/', '\\')));
             return true;
         }
 
@@ -197,7 +197,7 @@ namespace Emby.IsoBluray
             video.RunTimeTicks = expected;
             video.UpdateToRepository(ItemUpdateType.MetadataImport);
             _logger.Info("ISO Blu-ray: {0}, runtime fixed {1} -> {2} (playlist {3})",
-                Path.GetFileName(video.Path.TrimEnd('/')), TimeSpan.FromTicks(current), playlist.Duration, playlist.Name);
+                Path.GetFileName(video.Path.TrimEnd('/', '\\')), TimeSpan.FromTicks(current), playlist.Duration, playlist.Name);
             return true;
         }
 

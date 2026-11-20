@@ -40,7 +40,7 @@ Emby has no catalog for third-party plugins: they are installed by copying the D
    - **Windows:** `%AppData%\Emby-Server\programdata\plugins\`
 3. Restart Emby. Both plugins appear under **Dashboard → Plugins**.
 
-Developed and tested with Emby Server 4.10. The plugins are built against the 4.9 API, so 4.9 should work too.
+Developed and tested with Emby Server 4.10 on Linux (Docker on a Synology NAS). The plugins are built against the 4.9 API, so 4.9 should work too. Windows servers should work (Windows paths are supported in the mappings) but have not been tested yet: feedback welcome.
 
 ## Configuration (Dashboard → Plugins → OPPO)
 
@@ -116,7 +116,8 @@ On the title page of a Blu-ray or UHD disc (ISO or folder), **Movie without menu
 
 - Without "Movie without menus", discs with BD-J menus show their menu: the OPPO cannot jump straight to the main movie through IP control.
 - Without DLNA, the file must be reachable by the OPPO over NFS or SMB. In every mode the player plays the original file, never Emby's transcoded streams.
-- The player's DLNA renderer was once seen stuck ("TRANSITIONING", fetching nothing) until the player was unplugged. The plugin then falls back to the share and says so in Emby's log.
+- The player's DLNA renderer can get stuck (it accepts links but fetches nothing) until the player is unplugged. This happened after a DLNA Stop was sent while a disc image played, which the plugin no longer does. When it happens, the plugin falls back to the share after 6 s and says so in Emby's log.
+- Do not restart Emby while a movie plays over DLNA: the plugin serves the movie, so the player would lose its source.
 
 ## Credits
 

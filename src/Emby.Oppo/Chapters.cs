@@ -149,7 +149,7 @@ namespace Emby.Oppo
         }
 
         /// <summary>Reads a range of a clip, through its extents (inside the ISO) or directly (folder).</summary>
-        private static byte[] Read(ClipFile clip, long offset, int count)
+        internal static byte[] Read(ClipFile clip, long offset, int count)
         {
             var buffer = new byte[(int)Math.Min(count, Math.Max(0, clip.Size - offset))];
             int done = 0;

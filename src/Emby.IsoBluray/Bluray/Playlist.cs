@@ -256,7 +256,7 @@ namespace Emby.IsoBluray.Bluray
         public static string FindBdmvFolder(string folder)
         {
             if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder)) return null;
-            if (string.Equals(System.IO.Path.GetFileName(folder.TrimEnd('/')), "BDMV", StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(System.IO.Path.GetFileName(folder.TrimEnd('/', '\\')), "BDMV", StringComparison.OrdinalIgnoreCase)
                 && Directory.Exists(System.IO.Path.Combine(folder, "PLAYLIST")))
                 return folder;
             string bdmv = System.IO.Path.Combine(folder, "BDMV");

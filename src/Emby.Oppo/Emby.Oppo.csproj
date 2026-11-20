@@ -10,7 +10,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>Emby.Oppo</RootNamespace>
     <AssemblyName>Emby.Oppo</AssemblyName>
-    <Version>0.18.0</Version>
+    <Version>0.19.0</Version>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
@@ -24,6 +24,7 @@
     <!-- UDF reader shared with the ISO Blu-ray plugin (Blu-ray / DVD detection inside ISO images). -->
     <Compile Include="..\Emby.IsoBluray\Udf\UdfImage.cs" Link="Udf\UdfImage.cs" />
     <Compile Include="..\Emby.IsoBluray\Bluray\Playlist.cs" Link="Bluray\Playlist.cs" />
+    <Compile Include="..\Emby.IsoBluray\Bluray\ProgramMap.cs" Link="Bluray\ProgramMap.cs" />
   </ItemGroup>
 
   <ItemGroup>

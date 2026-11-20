@@ -61,7 +61,7 @@ namespace Emby.Oppo
         {
             if (Directory.Exists(path))
             {
-                string bdmv = string.Equals(Path.GetFileName(path.TrimEnd('/')), "BDMV", StringComparison.OrdinalIgnoreCase)
+                string bdmv = string.Equals(Path.GetFileName(path.TrimEnd('/', '\\')), "BDMV", StringComparison.OrdinalIgnoreCase)
                     ? path : Path.Combine(path, "BDMV");
                 if (Directory.Exists(bdmv))
                 {
@@ -69,7 +69,7 @@ namespace Emby.Oppo
                     return BluRay(File.Exists(index) ? ReadHeader(index) : null);
                 }
                 if (Directory.Exists(Path.Combine(path, "VIDEO_TS"))
-                    || string.Equals(Path.GetFileName(path.TrimEnd('/')), "VIDEO_TS", StringComparison.OrdinalIgnoreCase))
+                    || string.Equals(Path.GetFileName(path.TrimEnd('/', '\\')), "VIDEO_TS", StringComparison.OrdinalIgnoreCase))
                     return new FormatInfo { Kind = "dvd", Label = "DVD" };
                 return new FormatInfo { Kind = "folder", Label = FolderLabel };
             }

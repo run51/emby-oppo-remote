@@ -996,9 +996,9 @@
     var out = [];
     var text = [stream.Profile, stream.Title, stream.DisplayTitle].join(' ');
     var codec = stream.Profile || CODECS[(stream.Codec || '').toLowerCase()] || (/^pcm/i.test(stream.Codec || '') ? 'PCM' : (stream.Codec || '').toUpperCase());
-    if (/dts[\s:-]*x\b/i.test(text)) codec = 'DTS:X';
+    if (stream._dtsx || /dts[\s:-]*x\b/i.test(text)) codec = 'DTS:X';
     out.push([codec, stream.ChannelLayout === 'stereo' ? '2.0' : stream.ChannelLayout === 'mono' ? '1.0' : (stream.ChannelLayout || '')].join(' ').trim());
-    if (/atmos/i.test(text)) out.push('Atmos');
+    if (stream._atmos || /atmos/i.test(text)) out.push('Atmos');
     return out;
   }
 
@@ -1055,6 +1055,8 @@
   var CODECS = { truehd: 'TrueHD', ac3: 'Dolby Digital', eac3: 'Dolby Digital+', dts: 'DTS', aac: 'AAC', flac: 'FLAC', mp2: 'MP2', mp3: 'MP3', opus: 'Opus', vorbis: 'Vorbis' };
   function audioLabel(s) {
     var codec = s.Profile || CODECS[(s.Codec || '').toLowerCase()] || (/^pcm/i.test(s.Codec || '') ? 'PCM' : (s.Codec || '').toUpperCase());
+    if (s._dtsx) codec = 'DTS:X';            // found by the plugin in the audio stream (Emby does not report it)
+    else if (s._atmos) codec += ' Atmos';
     var layout = s.ChannelLayout === 'stereo' ? t('stereo') : s.ChannelLayout === 'mono' ? t('mono') : (s.ChannelLayout || (s.Channels ? t('n_channels', s.Channels) : ''));
     var parts = [langLabel(s), [codec, layout].filter(Boolean).join(' ')];
     if (s.Title && !/^(stereo|surround|5\.1|7\.1)$/i.test(s.Title)) parts.push(s.Title);
@@ -1066,6 +1068,11 @@
     if (s.IsHearingImpaired) label += t('sdh');
     if (s.Title) label += ' · ' + s.Title;
     return label;
+  }
+  /** Label of one track as numbered() gives it in the whole list. */
+  function numberedLabel(list, stream) {
+    var hit = numbered(list, audioLabel).filter(function (o) { return o.stream === stream; })[0];
+    return hit ? hit.label : audioLabel(stream);
   }
   /** Track labels, numbered when several are identical ("French 1", "French 2"…). */
   function numbered(list, labeler) {
@@ -1683,6 +1690,22 @@
       var current = audio.filter(function (a) { return String(a.Index) === audioSel.value; })[0];
       subSel.value = String(defaultSubtitle(s, current));
       drawAudioBadges(current);
+      // Dolby Atmos / DTS:X, found by the plugin in the audio itself (first time: a few seconds, then cached)
+      if (audio.length && !s._extras) {
+        s._extras = true;
+        remote('/AudioExtras', ask).then(function (list) {
+          var any = false;
+          (list || []).forEach(function (x) {
+            audio.forEach(function (a) { if (a.Index === x.Index && (x.Atmos || x.DtsX)) { a._atmos = x.Atmos; a._dtsx = x.DtsX; any = true; } });
+          });
+          if (!any || badges.dataset.mark !== mark) return;
+          Array.prototype.forEach.call(audioSel.options, function (o) {
+            var st = audio.filter(function (a) { return String(a.Index) === o.value; })[0];
+            if (st && (st._atmos || st._dtsx)) o.textContent = numberedLabel(audio, st);
+          });
+          drawAudioBadges(audio.filter(function (a) { return String(a.Index) === audioSel.value; })[0]);
+        }).catch(function () { /* no analysis: Emby's labels stay */ });
+      }
     }
     function drawAudioBadges(stream) {
       Array.prototype.forEach.call(badges.querySelectorAll('.vb.aud'), function (b) { b.remove(); });

@@ -85,7 +85,7 @@ namespace Emby.Oppo.Oppo
             EnsureStarted(port, logger);
             Purge();
             string token = Guid.NewGuid().ToString("N");
-            Files[token] = new Registration { Folder = System.IO.Path.GetFullPath(discRoot).TrimEnd('/'), ExpiresUtc = DateTime.UtcNow + lifetime };
+            Files[token] = new Registration { Folder = System.IO.Path.GetFullPath(discRoot).TrimEnd('/', '\\'), ExpiresUtc = DateTime.UtcNow + lifetime };
             return "http://" + serverAddress + ":" + port.ToString(CultureInfo.InvariantCulture) + "/disc/" + token + "/";
         }
 
@@ -302,8 +302,9 @@ namespace Emby.Oppo.Oppo
                 if (part == ".." || part.IndexOf('\\') >= 0) return null;
                 rest.Add(part);
             }
-            string full = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, string.Join("/", rest)));
-            return full == root || full.StartsWith(root + "/", StringComparison.Ordinal) ? full : null;
+            string full = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, string.Join(System.IO.Path.DirectorySeparatorChar.ToString(), rest)));
+            var comparison = System.IO.Path.DirectorySeparatorChar == '\\' ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;   // Windows
+            return string.Equals(full, root, comparison) || full.StartsWith(root + System.IO.Path.DirectorySeparatorChar, comparison) ? full : null;
         }
 
         /// <summary>
@@ -319,7 +320,7 @@ namespace Emby.Oppo.Oppo
                 bool dir = Directory.Exists(path);
                 string rel = path.Length > root.Length ? path.Substring(root.Length + 1) : "";
                 var href = new StringBuilder(prefix);
-                foreach (var part in rel.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)) href.Append('/').Append(Uri.EscapeDataString(part));
+                foreach (var part in rel.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries)) href.Append('/').Append(Uri.EscapeDataString(part));
                 if (dir) href.Append('/');
                 sb.Append("<D:response><D:href>").Append(System.Security.SecurityElement.Escape(href.ToString())).Append("</D:href><D:propstat><D:prop>");
                 if (dir) sb.Append("<D:resourcetype><D:collection/></D:resourcetype>");

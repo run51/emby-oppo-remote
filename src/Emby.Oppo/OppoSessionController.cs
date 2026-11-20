@@ -396,8 +396,8 @@ namespace Emby.Oppo
                 {
                     // Blu-ray folder: served over WebDAV, the mod lists it and builds the disc image itself.
                     // The link names a file inside BDMV, which is how the mod recognises a disc folder.
-                    url = DiscServer.RegisterFolder(Directory.GetParent(bdmv.TrimEnd('/')).FullName, _serverAddress, Config.DiscServerPort, TimeSpan.FromHours(12), _logger)
-                        + System.IO.Path.GetFileName(bdmv.TrimEnd('/')) + "/index.bdmv";
+                    url = DiscServer.RegisterFolder(Directory.GetParent(bdmv.TrimEnd('/', '\\')).FullName, _serverAddress, Config.DiscServerPort, TimeSpan.FromHours(12), _logger)
+                        + System.IO.Path.GetFileName(bdmv.TrimEnd('/', '\\')) + "/index.bdmv";
                     mime = FolderMime;
                 }
                 else
@@ -442,26 +442,25 @@ namespace Emby.Oppo
                 }
                 if (DateTime.UtcNow - started > TimeSpan.FromSeconds(6) && DiscServer.RequestCount(url) == 0)
                 {
-                    _logger.Info("OPPO: the player did not request the disc image within {0} s ({1} connections to the server)", 6, DiscServer.Connections - connectionsBefore);
+                    _logger.Info("OPPO: the player did not request the movie within {0} s ({1} connections to the server). If this persists, unplug the player for 30 s to reset its DLNA renderer.", 6, DiscServer.Connections - connectionsBefore);
                     break;
                 }
             }
             _logger.Info("OPPO: no playback after the DLNA request (state \"{0}\", {1} requests to the server), using the network share ({2})", state, DiscServer.RequestCount(url), title);
-            // Wait for it (about 5 s): a Stop arriving once the film has started from the share could stop the film.
-            await oppo.StopDlna(ct).ConfigureAwait(false);
+            // No renderer Stop: sent while the mod plays a disc image, it left the disc playing, deaf to IP control,
+            // and the renderer wedged until the player was unplugged (2026-11-20). The share path stops by IP control.
             return false;
         }
 
         /// <summary>
-        /// A wedged renderer stays in TRANSITIONING (even after Stop) and never fetches anything until the
-        /// player is unplugged (2026-11-19): do not use it then.
+        /// The renderer must answer. Its state is not a reliable sign of trouble: it reports TRANSITIONING during
+        /// and after every disc image played by the mod, and still takes a new link then (2026-11-20). A wedged
+        /// renderer is caught later, when it does not request the movie.
         /// </summary>
         private async Task<bool> RendererUsable(OppoClient oppo, CancellationToken ct)
         {
-            string transport = await oppo.DlnaTransportState(ct).ConfigureAwait(false);
-            if (transport != null && transport != "TRANSITIONING") return true;
-            _logger.Info("OPPO: DLNA renderer {0}, not used. If this persists, unplug the player for 30 s to reset it.",
-                transport == null ? "not answering" : "stuck in TRANSITIONING");
+            if (await oppo.DlnaTransportState(ct).ConfigureAwait(false) != null) return true;
+            _logger.Info("OPPO: DLNA renderer not answering ({0}), not used", Config.OppoAddress);
             return false;
         }
 
@@ -542,8 +541,7 @@ namespace Emby.Oppo
                 if (DateTime.UtcNow - started > TimeSpan.FromSeconds(6) && DiscServer.RequestCount(url) == 0) break;
             }
             _logger.Info("OPPO: the main movie did not start (state \"{0}\", {1} requests), playing the disc", state, DiscServer.RequestCount(url));
-            await oppo.StopDlna(ct).ConfigureAwait(false);
-            return false;
+            return false;   // no renderer Stop (see StartDlna)
         }
 
         /// <summary>
@@ -670,6 +668,26 @@ namespace Emby.Oppo
         {
             int pos = Streams(item, MediaStreamType.Audio, ct).Select(s => s.Index).ToList().IndexOf(embyIndex);
             if (pos < 0) return null;
+            // A disc played as a disc: its audio menu follows the playlist, whose order can differ from Emby's
+            // (Dune: an AC-3 track of the clip that the playlist does not list). Use the playlist position.
+            if (MainMovieChapters == null && IsBluray(item.Path))
+            {
+                try
+                {
+                    var embedded = _itemRepository.GetMediaStreams(new MediaStreamQuery { ItemId = item.InternalId }, ct)
+                        .Where(s => !s.IsExternal).OrderBy(s => s.Index).ToList();
+                    var match = AudioExtras.MapToPlaylist(Chapters.Disc(item.Path), embedded).FirstOrDefault(x => x.Stream.Index == embyIndex);
+                    if (match.Entry != null && match.Position != pos)
+                    {
+                        _logger.Info("OPPO: Emby audio track {0} is track {1} of the disc playlist (Emby order: {2})", embyIndex, match.Position + 1, pos + 1);
+                        pos = match.Position;
+                    }
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    _logger.Debug("OPPO: playlist audio order unavailable: {0}", ex.Message);
+                }
+            }
             // The OPPO numbers its audio tracks from 1.
             bool ok = await oppo.SelectAudio(pos + 1, ct).ConfigureAwait(false);
             _logger.Info("OPPO: Emby audio track {0} → OPPO #{1}: {2}", embyIndex, pos + 1, ok ? "OK" : "refused");
@@ -975,12 +993,17 @@ namespace Emby.Oppo
             if (string.IsNullOrEmpty(path)) return null;
             var mappings = (Config.Mappings ?? Array.Empty<PathMapping>())
                 .Where(m => !string.IsNullOrWhiteSpace(m.EmbyPath) && !string.IsNullOrWhiteSpace(m.Server) && !string.IsNullOrWhiteSpace(m.Share))
-                .OrderByDescending(m => m.EmbyPath.TrimEnd('/').Length);
+                .OrderByDescending(m => m.EmbyPath.Trim().TrimEnd('/', '\\').Length);
+            // Windows paths (D:\Movies\Dune, \\nas\Movies) are compared with forward slashes and without case; the
+            // relative part is sent to the OPPO with forward slashes. Linux paths are left as they are.
             foreach (var m in mappings)
             {
-                string prefix = m.EmbyPath.TrimEnd('/');
-                if (path.StartsWith(prefix + "/", StringComparison.Ordinal))
-                    return (m, path.Substring(prefix.Length + 1));
+                string raw = m.EmbyPath.Trim();
+                bool windows = (raw.Length >= 2 && raw[1] == ':') || raw.StartsWith("\\\\", StringComparison.Ordinal);
+                string prefix = (windows ? raw.Replace('\\', '/') : raw).TrimEnd('/');
+                string candidate = windows ? path.Replace('\\', '/') : path;
+                if (candidate.StartsWith(prefix + "/", windows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                    return (m, candidate.Substring(prefix.Length + 1));
             }
             return null;
         }
