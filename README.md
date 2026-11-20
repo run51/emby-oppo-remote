@@ -44,24 +44,45 @@ Emby has no catalog for third-party plugins: they are installed by copying the D
 
 ### On a Synology NAS
 
-**Emby in Container Manager (Docker), the easiest:**
+First check how Emby is installed: if **Emby Server** is listed in **Package Center → Installed**, follow the first method. Use the second one only if Emby already runs as a container in Container Manager (there is no need to install Container Manager otherwise).
+
+**Emby from Package Center:** the plugins folder is inside a system folder that File Station cannot open, so DSM's Task Scheduler copies the files, with no command to type:
+
+1. In **File Station**, upload the two DLL files directly into your **home** folder (not in a subfolder).
+2. **Control Panel → Task Scheduler → Create → Scheduled Task → User-defined script.**
+   - **General:** name it `Install OPPO plugins`, **User: root**.
+   - **Schedule:** "Run on the following date", today, "Do not repeat".
+   - **Task Settings:** paste this script into **User-defined script**, then **OK** (confirm the warning about root):
+     ```sh
+     F=$(ls /volume*/*/Emby.Oppo.dll /volume*/homes/*/Emby.Oppo.dll 2>/dev/null | head -n 1)
+     [ -n "$F" ] || exit 1
+     D=$(dirname "$F")
+     P=/var/packages/EmbyServer/var/plugins
+     [ -d "$P" ] || P=$(ls -d /volume*/@appdata/EmbyServer/plugins 2>/dev/null | head -n 1)
+     if [ -z "$P" ] || [ ! -d "$P" ]; then echo "Emby plugins folder not found" > "$D/oppo-install.txt"; exit 1; fi
+     {
+       echo "DLL folder: $D"
+       echo "Emby plugins folder: $P"
+       cp "$D/Emby.Oppo.dll" "$D/Emby.IsoBluray.dll" "$P/" &&
+       chown "$(stat -c %u:%g "$P")" "$P/Emby.Oppo.dll" "$P/Emby.IsoBluray.dll" &&
+       chmod 644 "$P/Emby.Oppo.dll" "$P/Emby.IsoBluray.dll" &&
+       /usr/syno/bin/synopkg restart EmbyServer &&
+       echo "OK: plugins installed, Emby restarted"
+     } > "$D/oppo-install.txt" 2>&1
+     ```
+3. Select the task and click **Run**. Emby restarts within a minute. The file `oppo-install.txt`, next to the DLLs, tells what happened. You can then delete the task: later updates are done from the plugin's page (the files belong to Emby's own user, so the plugin can replace them).
+
+**Emby in Container Manager (Docker):**
 
 1. In **Container Manager → Container**, open the Emby container → **Settings** → **Volume**, and note the folder mapped to `/config` (for example `docker/emby/config`).
 2. In **File Station**, open that folder, then its `plugins` folder, and **Upload** the two DLL files.
 3. In Container Manager, select the Emby container → **Action → Restart**.
 
-**Emby from Package Center:** the plugins folder is inside a system folder that File Station cannot open, so the files are copied over SSH:
-
-1. With File Station, upload the two DLL files to one of your shared folders (for example your home folder).
-2. **Control Panel → Terminal & SNMP → Enable SSH service.**
-3. From a computer, connect with `ssh <your DSM admin user>@<NAS address>`.
-4. Find Emby's plugins folder: `sudo find / -type d -name plugins -path "*mby*" 2>/dev/null`
-5. Copy the files into it: `sudo cp /volume1/homes/<user>/Emby.*.dll <plugins folder found above>/`
-6. In **Package Center**, **Stop** then **Run** Emby Server. You can disable SSH again afterwards.
-
 Developed and tested with Emby Server 4.10 on Linux (Docker on a Synology NAS). The plugins are built against the 4.9 API, so 4.9 should work too. Windows servers should work (Windows paths are supported in the mappings) but have not been tested yet: feedback welcome.
 
 ## Configuration (Dashboard → Plugins → OPPO)
+
+Open this page in a **web browser** (`http://<server>:8096`): plugin settings pages may not open in the Emby apps. Until the OPPO address is set, the remote shows "OPPO not set up".
 
 - **OPPO address**
   - Give the player a fixed IP address.

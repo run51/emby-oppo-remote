@@ -207,6 +207,8 @@ namespace Emby.Oppo
         public AmpState Amp { get; set; }
         /// <summary>"Movie without menus" plays the disc reduced to its main movie (DLNA with the mod): Dolby Vision kept.</summary>
         public bool MovieDisc { get; set; }
+        /// <summary>The player's address is not set in the plugin's settings yet.</summary>
+        public bool NotConfigured { get; set; }
     }
 
     public sealed class RemoteActionResult
@@ -324,66 +326,82 @@ namespace Emby.Oppo
         public async Task<object> Get(RemoteState request)
         {
             var result = new RemoteStateResult();
+            // Not set up yet: the remote says where to set the player's address (it used to stay on
+            // "Connecting…" with "Emby is not responding", the request failing; forum report, 2026-11-20).
+            if (string.IsNullOrWhiteSpace(Plugin.Instance.Configuration.OppoAddress))
+            {
+                result.NotConfigured = true;
+                result.DeviceName = Plugin.Instance.Configuration.DeviceName;
+                return result;
+            }
             var oppo = Oppo;
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15)))
             {
                 var ct = cts.Token;
-                result.State = await oppo.QueryPlayback(ct).ConfigureAwait(false);
-                result.Reachable = !string.IsNullOrEmpty(result.State);
-
-                // Emby's "OPPO" session: used to start a movie on it, and gives the current title.
-                var session = _sessionManager.Sessions.FirstOrDefault(s =>
-                    string.Equals(s.Client, "OPPO", StringComparison.Ordinal) && s.SessionControllers.OfType<OppoSessionController>().Any());
-                result.SessionId = session?.Id;
-                result.DeviceName = Plugin.Instance.Configuration.DeviceName;
-                result.SleepAt = SleepTimer.At?.ToString("o", CultureInfo.InvariantCulture);
-                result.SleepEndOfFilm = SleepTimer.EndOfFilm;
-                var config = Plugin.Instance.Configuration;
-                result.MovieDisc = config.DlnaDiscImages;
-                result.HomeAutomation = !string.IsNullOrWhiteSpace(config.WebhookUrl) || !string.IsNullOrWhiteSpace(config.RemoteAddress) || Amplifier.Configured;
-                var amp = Amplifier.GetState(_json, _logger);
-                var now = session?.NowPlayingItem;
-                if (now != null)
+                try
                 {
-                    result.Title = now.Name;
-                    result.ItemId = now.Id;
-                    if (now.ImageTags != null && now.ImageTags.TryGetValue(ImageType.Primary, out var tag)) result.ImageTag = tag;
-                }
+                    result.State = await oppo.QueryPlayback(ct).ConfigureAwait(false);
+                    result.Reachable = !string.IsNullOrEmpty(result.State);
 
-                if (result.Reachable && PlayingStates.Contains(result.State))
-                {
-                    var status = await oppo.GetStatus(ct).ConfigureAwait(false);
-                    result.Position = status.Position.TotalSeconds;
-                    result.Duration = status.Duration.TotalSeconds;
-                    result.Chapter = OppoSessionController.MainMovieChapter(status.Position.TotalSeconds) ?? await oppo.QueryChapter(ct).ConfigureAwait(false);
-                    // #QHS / #QAT / #QST only during the film itself (a title of more than 5 minutes, playback
-                    // started), like the Oppo driver of the remote: on a disc menu or a short title the OPPO does
-                    // not answer #QHS, each unanswered query holds the oppo-multiplexer 10 s, and the player then
-                    // stops answering IP control for a while (seen on a UHD ISO menu: the web remote's STOP was lost).
-                    // Not in the first 90 s either: 18 s into a movie disc started without menus, #QHS got no answer
-                    // and the OPPO then refused IP control until it was switched off (2026-11-20).
-                    if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90)
+                    // Emby's "OPPO" session: used to start a movie on it, and gives the current title.
+                    var session = _sessionManager.Sessions.FirstOrDefault(s =>
+                        string.Equals(s.Client, "OPPO", StringComparison.Ordinal) && s.SessionControllers.OfType<OppoSessionController>().Any());
+                    result.SessionId = session?.Id;
+                    result.DeviceName = Plugin.Instance.Configuration.DeviceName;
+                    result.SleepAt = SleepTimer.At?.ToString("o", CultureInfo.InvariantCulture);
+                    result.SleepEndOfFilm = SleepTimer.EndOfFilm;
+                    var config = Plugin.Instance.Configuration;
+                    result.MovieDisc = config.DlnaDiscImages;
+                    result.HomeAutomation = !string.IsNullOrWhiteSpace(config.WebhookUrl) || !string.IsNullOrWhiteSpace(config.RemoteAddress) || Amplifier.Configured;
+                    var amp = Amplifier.GetState(_json, _logger);
+                    var now = session?.NowPlayingItem;
+                    if (now != null)
                     {
-                        string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
-                        OppoClient.Events.TryGetValue("UVO", out var uvo);
-                        bool fr = Fr;
-                        result.OutputVideo = string.Join(" · ", new[] { HdrLabel(hdr), VideoOutLabel(uvo, fr) }.Where(x => !string.IsNullOrEmpty(x)));
-                        result.OutputAudio = TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
-                        result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
+                        result.Title = now.Name;
+                        result.ItemId = now.Id;
+                        if (now.ImageTags != null && now.ImageTags.TryGetValue(ImageType.Primary, out var tag)) result.ImageTag = tag;
                     }
-                    if (request.Tracks)
+
+                    if (result.Reachable && PlayingStates.Contains(result.State))
                     {
-                        result.Audio = (await oppo.GetTrackMenu(true, ct).ConfigureAwait(false))
-                            .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
-                        result.Subtitles = (await oppo.GetTrackMenu(false, ct).ConfigureAwait(false))
-                            .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
-                        // Main movie played as a file: the OPPO lists its tracks without languages ("2/5"); they
-                        // are in the same order as Emby's (the disc's), so Emby's names are used.
-                        if (OppoSessionController.MainMovieChapters != null && now != null)
-                            NameTracksFromEmby(now.Id, result.Audio, result.Subtitles, Fr);
+                        var status = await oppo.GetStatus(ct).ConfigureAwait(false);
+                        result.Position = status.Position.TotalSeconds;
+                        result.Duration = status.Duration.TotalSeconds;
+                        result.Chapter = OppoSessionController.MainMovieChapter(status.Position.TotalSeconds) ?? await oppo.QueryChapter(ct).ConfigureAwait(false);
+                        // #QHS / #QAT / #QST only during the film itself (a title of more than 5 minutes, playback
+                        // started), like the Oppo driver of the remote: on a disc menu or a short title the OPPO does
+                        // not answer #QHS, each unanswered query holds the oppo-multiplexer 10 s, and the player then
+                        // stops answering IP control for a while (seen on a UHD ISO menu: the web remote's STOP was lost).
+                        // Not in the first 90 s either: 18 s into a movie disc started without menus, #QHS got no answer
+                        // and the OPPO then refused IP control until it was switched off (2026-11-20).
+                        if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90)
+                        {
+                            string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
+                            OppoClient.Events.TryGetValue("UVO", out var uvo);
+                            bool fr = Fr;
+                            result.OutputVideo = string.Join(" · ", new[] { HdrLabel(hdr), VideoOutLabel(uvo, fr) }.Where(x => !string.IsNullOrEmpty(x)));
+                            result.OutputAudio = TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
+                            result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
+                        }
+                        if (request.Tracks)
+                        {
+                            result.Audio = (await oppo.GetTrackMenu(true, ct).ConfigureAwait(false))
+                                .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
+                            result.Subtitles = (await oppo.GetTrackMenu(false, ct).ConfigureAwait(false))
+                                .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
+                            // Main movie played as a file: the OPPO lists its tracks without languages ("2/5"); they
+                            // are in the same order as Emby's (the disc's), so Emby's names are used.
+                            if (OppoSessionController.MainMovieChapters != null && now != null)
+                                NameTracksFromEmby(now.Id, result.Audio, result.Subtitles, Fr);
+                        }
                     }
+                    result.Amp = await amp.ConfigureAwait(false);
                 }
-                result.Amp = await amp.ConfigureAwait(false);
+                catch (OperationCanceledException) when (cts.IsCancellationRequested)
+                {
+                    // The player did not answer within 15 s: what is known so far (unreachable if #QPL got no answer).
+                    _logger.Debug("OPPO: state query timed out after {0} s", 15);
+                }
             }
             return result;
         }

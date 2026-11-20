@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.21.1
+
+- **The remote no longer stays on "Connecting…" when the OPPO is not set up yet.** It now reads "OPPO not
+  set up · Set its address in Emby: Dashboard → Plugins → OPPO". Before, the state request failed and the
+  remote showed "Emby is not responding", which was misleading. A player that does not answer within 15 s now
+  shows "OPPO unreachable" in the same way.
+- README: on a Synology with Emby from Package Center, the plugins are now installed with DSM's Task Scheduler
+  (a script to paste, no SSH); plugin settings are to be opened in a web browser.
+- Emby.Oppo 0.21.1, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.21.0
 
 - **"Movie without menus" keeps Dolby Vision** when DLNA playback is on (oppo-dv-mkv mod): the plugin serves the

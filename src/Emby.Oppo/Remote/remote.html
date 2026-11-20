@@ -604,7 +604,7 @@
       no_session: 'The OPPO is not registered in Emby yet', launch_failed: 'Unable to start playback',
       power_off_oppo: 'Turn off the OPPO', power_on_oppo: 'Turn on the OPPO', off_or_offline: 'Off or offline',
       launching_state: 'Starting… ({0})', output: 'Output ', subs_short: ' · Subs ', no_film: 'Nothing started from Emby',
-      oppo_unreachable: 'OPPO unreachable', chapter_n: 'Chapter {0}', go_chapter: 'Go to chapter {0}', seek_refused: 'Seek refused',
+      oppo_unreachable: 'OPPO unreachable', not_configured: 'OPPO not set up', not_configured_hint: 'Set its address in Emby: Dashboard → Plugins → OPPO', chapter_n: 'Chapter {0}', go_chapter: 'Go to chapter {0}', seek_refused: 'Seek refused',
       ends_at: 'ends at {0}', playing_on: 'Playing on {0}', track_n: 'Track {0}', no_subs_here: 'No subtitles on this title',
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
       during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', powering_on: 'Turning on the OPPO…',
@@ -661,7 +661,7 @@
       no_session: 'L’OPPO n’est pas encore déclaré dans Emby', launch_failed: 'Lancement impossible',
       power_off_oppo: 'Éteindre l’OPPO', power_on_oppo: 'Allumer l’OPPO', off_or_offline: 'Éteint ou hors réseau',
       launching_state: 'Lancement… ({0})', output: 'Sortie ', subs_short: ' · ST ', no_film: 'Aucun film lancé depuis Emby',
-      oppo_unreachable: 'OPPO injoignable', chapter_n: 'Chapitre {0}', go_chapter: 'Aller au chapitre {0}', seek_refused: 'Saut refusé',
+      oppo_unreachable: 'OPPO injoignable', not_configured: 'OPPO non configuré', not_configured_hint: 'Renseignez son adresse dans Emby : Tableau de bord → Plugins → OPPO', chapter_n: 'Chapitre {0}', go_chapter: 'Aller au chapitre {0}', seek_refused: 'Saut refusé',
       ends_at: 'fin à {0}', playing_on: 'Lecture sur {0}', track_n: 'Piste {0}', no_subs_here: 'Aucun sous-titre sur ce titre',
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
       during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', powering_on: 'Allumage de l’OPPO…',
@@ -1976,7 +1976,7 @@
     renderAmp(s.Amp);
 
     var title = s.Title, itemId = s.ItemId, tag = s.ImageTag;
-    var stateText = s.Reachable ? (STATES[state] || state) : t('off_or_offline');
+    var stateText = s.NotConfigured ? t('not_configured_hint') : s.Reachable ? (STATES[state] || state) : t('off_or_offline');
     if (s.Title) pending = null;
     if (!title && pending && Date.now() - pending.at < 120000) {
       title = pending.Title; itemId = pending.ItemId; tag = pending.ImageTag;
@@ -2003,7 +2003,7 @@
     $('dot2').classList.toggle('off', !s.Reachable);
     $('nav-power').classList.toggle('off', !s.Reachable);
     markChapter(playing ? s.Chapter : null);
-    $('p-title').textContent = title || (s.Reachable ? t('no_film') : t('oppo_unreachable'));
+    $('p-title').textContent = title || (s.NotConfigured ? t('not_configured') : s.Reachable ? t('no_film') : t('oppo_unreachable'));
     $('p-state').textContent = stateText;
     $('p-chapter').textContent = playing && s.Chapter ? t('chapter_n', s.Chapter) : '';
     setPoster($('p-poster'), itemId, tag, 252);
