@@ -130,11 +130,10 @@ node tools/make_icons.js
 
 ## Movie without menus
 
-On the title page of a Blu-ray or UHD disc (ISO or folder), **Movie without menus** starts the main movie directly, like the "play main movie" of Zidoo players. The plugin finds the main playlist, serves its clips end to end as one .m2ts file and sends it over DLNA (no mod needed for this).
+On the title page of a Blu-ray or UHD disc (ISO or folder), **Movie without menus** starts the main movie directly, like the "play main movie" of Zidoo players. The plugin finds the main playlist and plays it in one of two ways:
 
-- Audio and subtitle tracks and the resume point are applied as usual. The remote shows Emby's track names, since the player lists the tracks without languages in this mode.
-- The player has no chapters then: next / previous chapter jump by time to the disc's chapter marks. The chapter key of another controller talking to the player directly does nothing in this mode.
-- The button is not offered on **Dolby Vision** discs: played as a file, the player outputs the HDR10 base layer only. Play those discs normally.
+- **With DLNA playback on (oppo-dv-mkv mod):** the plugin serves the disc reduced to its main movie, a virtual Blu-ray folder whose navigation plays the main playlist at once, and the OPPO plays it as a disc. **Dolby Vision**, lossless audio, the disc's chapters, its named tracks and resume all work, and the movie starts in about a second.
+- **Without the mod:** the clips of the main playlist are served end to end as one .m2ts file over DLNA. Audio and subtitle tracks and the resume point are applied as usual (the remote shows Emby's track names, since the player lists the tracks without languages in this mode). The player has no chapters then: next / previous chapter jump by time to the disc's chapter marks. The button is not offered on **Dolby Vision** discs in this mode: played as a file, the player outputs the HDR10 base layer only.
 
 ## Known limitations
 

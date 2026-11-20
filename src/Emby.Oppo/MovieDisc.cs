@@ -16,41 +16,14 @@ namespace Emby.Oppo
     /// .m2ts file of "Movie without menus". The disc's own navigation (BD-J menus) is replaced by a minimal
     /// HDMV one that plays the main playlist at once:
     /// - index.bdmv: the disc's header, application info and extension data (UHD / HDR information) kept;
-    ///   First Playback, Top Menu and a single title all point to HDMV movie object 0;
-    /// - MovieObject.bdmv: one object, one command: PlayPL(main playlist);
-    /// - the main playlist and the clip information of every clip it references, copied as is;
+    ///   First Playback and Top Menu run movie object 1, which jumps to title 1; title 1 is movie object 0;
+    /// - MovieObject.bdmv: object 0 = PlayPL(main playlist), resume allowed; object 1 = JumpTitle(1);
+    /// - the main playlist and the clip information of every clip it references, copied as is (and in BACKUP);
     /// - the clips (.m2ts), read inside the ISO or the folder.
     /// Formats: index.bdmv / MovieObject.bdmv as parsed by libbluray (index_parse.c, mobj_parse.c).
     /// </summary>
     internal static class MovieDisc
     {
-        /// <summary>
-        /// Test variant for a Blu-ray folder: every file of the real disc (BDMV, CERTIFICATE…) with only
-        /// index.bdmv and MovieObject.bdmv replaced.
-        /// </summary>
-        public static Dictionary<string, DiscServer.VirtualFile> BuildFull(string path, bool keepNavigation = false)
-        {
-            var reduced = Build(path);
-            string bdmv = DiscInfo.FindBdmvFolder(path) ?? throw new InvalidDataException("folders only");
-            string root = Path.GetDirectoryName(bdmv.TrimEnd('/', '\\'));
-            var files = new Dictionary<string, DiscServer.VirtualFile>(StringComparer.Ordinal);
-            foreach (var top in new[] { Path.GetFileName(bdmv.TrimEnd('/', '\\')), "CERTIFICATE", "AACS" })
-            {
-                string dir = Path.Combine(root, top);
-                if (!Directory.Exists(dir)) continue;
-                foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
-                {
-                    if (Path.GetFileName(file).StartsWith(".", StringComparison.Ordinal) || file.Contains("@eaDir")) continue;
-                    string rel = file.Substring(root.Length + 1).Replace('\\', '/');
-                    files[rel] = new DiscServer.VirtualFile { Segments = new List<DiscServer.Segment> { new DiscServer.Segment { Path = file, Offset = 0, Length = new FileInfo(file).Length } }, Size = new FileInfo(file).Length };
-                }
-            }
-            if (keepNavigation) return files;   // control test: the real disc, unchanged
-            files["BDMV/index.bdmv"] = reduced["BDMV/index.bdmv"];
-            files["BDMV/MovieObject.bdmv"] = reduced["BDMV/MovieObject.bdmv"];
-            return files;
-        }
-
         public static Dictionary<string, DiscServer.VirtualFile> Build(string path)
         {
             var disc = Chapters.Disc(path);

@@ -488,14 +488,55 @@ namespace Emby.Oppo
             IsDiscImage(path) || (!string.IsNullOrEmpty(path) && Directory.Exists(path) && DiscInfo.FindBdmvFolder(path) != null);
 
         /// <summary>
-        /// Plays the main movie of a Blu-ray as a plain file, without the disc menus: the .m2ts clips of the main
-        /// playlist, read inside the ISO (or the folder) and served end to end, sent to the DLNA renderer.
-        /// The player then has no chapters (they are jumped to by time) and outputs no Dolby Vision (HDR10 base
-        /// layer only: the web remote does not offer this mode for Dolby Vision discs).
-        /// Returns false so the caller plays the disc normally.
+        /// "Movie without menus" with the oppo-dv-mkv mod: the Blu-ray reduced to its main movie (a virtual disc
+        /// whose navigation plays the main playlist at once, see <see cref="MovieDisc"/>) is served over WebDAV and
+        /// played by the OPPO as a disc: Dolby Vision, real chapters and named tracks kept (checked on 1917, UHD
+        /// Dolby Vision, 2026-11-20). Returns false so the caller plays the disc normally.
+        /// </summary>
+        private async Task<bool> StartMovieDisc(OppoClient oppo, string title, string label, BaseItem part, CancellationToken ct)
+        {
+            string url;
+            try
+            {
+                var tree = MovieDisc.Build(part.Path);
+                url = DiscServer.RegisterTree(tree, _serverAddress, Config.DiscServerPort, TimeSpan.FromHours(12), _logger) + "BDMV/index.bdmv";
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger.Info("OPPO: {0} cannot be reduced to its main movie ({1}), playing the disc", title, ex.Message);
+                return false;
+            }
+            _logger.Info("OPPO: playing {0}{1} reduced to its main movie, as a disc over DLNA", title, label);
+            await MakeReady(oppo, ct, needHttp: false).ConfigureAwait(false);
+            if (!await RendererUsable(oppo, ct).ConfigureAwait(false)) return false;
+            if (!await oppo.PlayDlna(url, title, 0, ct, FolderMime).ConfigureAwait(false)) return false;
+            var started = DateTime.UtcNow;
+            string state = "";
+            while (DateTime.UtcNow - started < TimeSpan.FromSeconds(45))
+            {
+                await Task.Delay(1000, ct).ConfigureAwait(false);
+                state = await oppo.QueryPlayback(ct).ConfigureAwait(false);
+                if (state == "PLAY" || state == "PAUSE")
+                {
+                    _logger.Info("OPPO: main movie disc started in {0} s ({1} requests to the server)", (int)(DateTime.UtcNow - started).TotalSeconds, DiscServer.RequestCount(url));
+                    return true;
+                }
+                if (DateTime.UtcNow - started > TimeSpan.FromSeconds(6) && DiscServer.RequestCount(url) == 0) break;
+            }
+            _logger.Info("OPPO: the main movie disc did not start (state \"{0}\", {1} requests), playing the disc", state, DiscServer.RequestCount(url));
+            return false;
+        }
+
+        /// <summary>
+        /// Plays the main movie of a Blu-ray without the disc menus. With the mod: the reduced disc above. Without
+        /// it: the .m2ts clips of the main playlist, read inside the ISO (or the folder) and served end to end as
+        /// one file, sent to the DLNA renderer; the player then has no chapters (they are jumped to by time) and
+        /// outputs no Dolby Vision (HDR10 base layer only: the web remote does not offer this mode for Dolby
+        /// Vision discs then). Returns false so the caller plays the disc normally.
         /// </summary>
         private async Task<bool> StartMainMovie(OppoClient oppo, string title, string label, BaseItem part, CancellationToken ct)
         {
+            if (Config.DlnaDiscImages) return await StartMovieDisc(oppo, title, label, part, ct).ConfigureAwait(false);
             DiscInfo disc;
             string url;
             long size = 0;

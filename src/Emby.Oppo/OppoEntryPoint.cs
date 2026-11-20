@@ -35,10 +35,16 @@ namespace Emby.Oppo
         private readonly IUserManager _userManager;
         private User _user;   // last user who started a movie: kept on the session (resume point, "watched")
 
+        private readonly MediaBrowser.Controller.MediaEncoding.IMediaEncoder _mediaEncoder;
+        private readonly MediaBrowser.Common.Configuration.IApplicationPaths _paths;
+
         public OppoEntryPoint(ISessionManager sessionManager, ILibraryManager libraryManager, IItemRepository itemRepository,
             IServerApplicationHost appHost, IJsonSerializer json, ILogManager logManager, IUserManager userManager,
-            IServerConfigurationManager serverConfig)
+            IServerConfigurationManager serverConfig, MediaBrowser.Controller.MediaEncoding.IMediaEncoder mediaEncoder,
+            MediaBrowser.Common.Configuration.IApplicationPaths paths)
         {
+            _mediaEncoder = mediaEncoder;
+            _paths = paths;
             Current = this;
             L10n.ServerConfig = serverConfig;
             _userManager = userManager;
@@ -52,6 +58,7 @@ namespace Emby.Oppo
 
         public void Run()
         {
+            _libraryManager.ItemUpdated += OnItemUpdated;
             try
             {
                 var plugin = Plugin.Instance;
@@ -125,8 +132,34 @@ namespace Emby.Oppo
             }
         }
 
+        /// <summary>
+        /// A rescan probes a file again and resets Emby's track information: Atmos / DTS:X are written back once
+        /// the other plugins (ISO Blu-ray sets the languages) are done with the item.
+        /// </summary>
+        private void OnItemUpdated(object sender, ItemChangeEventArgs e)
+        {
+            if (!(e.Item is Video video) || video.InternalId <= 0 || string.IsNullOrEmpty(video.Path)) return;
+            System.Threading.Tasks.Task.Run(async () =>
+            {
+                try
+                {
+                    await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+#pragma warning disable CS0618
+                    var extras = new AudioExtras(_itemRepository, _json, _logger, _mediaEncoder.EncoderPath, _paths.CachePath);
+#pragma warning restore CS0618
+                    var known = extras.Peek(video);
+                    if (known != null) extras.ApplyToEmby(video, known, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Debug("OPPO: Atmos / DTS:X not restored for {0}: {1}", video.Name, ex.Message);
+                }
+            });
+        }
+
         public void Dispose()
         {
+            _libraryManager.ItemUpdated -= OnItemUpdated;
             _timer?.Dispose();
         }
     }

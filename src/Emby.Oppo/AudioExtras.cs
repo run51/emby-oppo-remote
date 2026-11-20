@@ -68,7 +68,7 @@ namespace Emby.Oppo
             string key = Key(path);
             if (key == null) return Array.Empty<AudioExtra>();
             Load();
-            if (Cache.TryGetValue(key, out var hit)) return hit;
+            if (Cache.TryGetValue(key, out var hit)) { ApplyToEmby(item, hit, ct); return hit; }
 
             await Gate.WaitAsync(ct).ConfigureAwait(false);   // one analysis at a time (disk and CPU)
             try
@@ -85,6 +85,7 @@ namespace Emby.Oppo
                     string.Join(", ", result.Select(r => r.Index + (r.Atmos ? " Atmos" : r.DtsX ? " DTS:X" : " -"))), watch.ElapsedMilliseconds);
                 Cache[key] = result;
                 Save();
+                ApplyToEmby(item, result, ct);
                 return result;
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
@@ -95,6 +96,51 @@ namespace Emby.Oppo
             finally
             {
                 Gate.Release();
+            }
+        }
+
+        /// <summary>
+        /// Writes Atmos / DTS:X into Emby's own track information (audio stream profile "TrueHD Atmos" or "DTS:X"), so
+        /// that every Emby app shows them. A library rescan probes the file again and resets the profile: the entry
+        /// point applies it again after each item update. Returns true if something changed.
+        /// </summary>
+        public bool ApplyToEmby(BaseItem item, AudioExtra[] extras, CancellationToken ct)
+        {
+            if (extras == null || !extras.Any(x => x.Atmos || x.DtsX)) return false;
+            try
+            {
+                var streams = _items.GetMediaStreams(new MediaStreamQuery { ItemId = item.InternalId }, ct).ToList();
+                bool changed = false;
+                foreach (var stream in streams.Where(x => x.Type == MediaStreamType.Audio && !x.IsExternal))
+                {
+                    var extra = extras.FirstOrDefault(x => x.Index == stream.Index);
+                    if (extra == null) continue;
+                    string wanted = extra.Atmos && string.Equals(stream.Codec, "truehd", StringComparison.OrdinalIgnoreCase) ? "TrueHD Atmos"
+                        : extra.DtsX ? "DTS:X" : null;
+                    if (wanted != null && !string.Equals(stream.Profile, wanted, StringComparison.Ordinal))
+                    {
+                        stream.Profile = wanted;   // Emby shows the profile of a DTS track ("English DTS:X 7.1")
+                        changed = true;
+                    }
+                    // For TrueHD, Emby shows the codec name and not the profile: the track title says Atmos instead
+                    // (only when the track has no title of its own).
+                    if (extra.Atmos && string.IsNullOrWhiteSpace(stream.Title))
+                    {
+                        stream.Title = "Dolby Atmos";
+                        changed = true;
+                    }
+                }
+                if (changed)
+                {
+                    _items.SaveMediaStreams(item.InternalId, streams, ct);
+                    _logger.Debug("OPPO: Atmos / DTS:X written to Emby's tracks of {0}", item.Name);
+                }
+                return changed;
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger.Debug("OPPO: Atmos / DTS:X not written for {0}: {1}", item.Name, ex.Message);
+                return false;
             }
         }
 

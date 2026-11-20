@@ -205,6 +205,8 @@ namespace Emby.Oppo
         public bool HomeAutomation { get; set; }
         /// <summary>Amplifier volume and mute, or null if no amplifier is configured.</summary>
         public AmpState Amp { get; set; }
+        /// <summary>"Movie without menus" plays the disc reduced to its main movie (DLNA with the mod): Dolby Vision kept.</summary>
+        public bool MovieDisc { get; set; }
     }
 
     public sealed class RemoteActionResult
@@ -337,6 +339,7 @@ namespace Emby.Oppo
                 result.SleepAt = SleepTimer.At?.ToString("o", CultureInfo.InvariantCulture);
                 result.SleepEndOfFilm = SleepTimer.EndOfFilm;
                 var config = Plugin.Instance.Configuration;
+                result.MovieDisc = config.DlnaDiscImages;
                 result.HomeAutomation = !string.IsNullOrWhiteSpace(config.WebhookUrl) || !string.IsNullOrWhiteSpace(config.RemoteAddress) || Amplifier.Configured;
                 var amp = Amplifier.GetState(_json, _logger);
                 var now = session?.NowPlayingItem;
@@ -357,7 +360,9 @@ namespace Emby.Oppo
                     // started), like the Oppo driver of the remote: on a disc menu or a short title the OPPO does
                     // not answer #QHS, each unanswered query holds the oppo-multiplexer 10 s, and the player then
                     // stops answering IP control for a while (seen on a UHD ISO menu: the web remote's STOP was lost).
-                    if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 0)
+                    // Not in the first 90 s either: 18 s into a movie disc started without menus, #QHS got no answer
+                    // and the OPPO then refused IP control until it was switched off (2026-11-20).
+                    if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90)
                     {
                         string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
                         OppoClient.Events.TryGetValue("UVO", out var uvo);
@@ -524,7 +529,7 @@ namespace Emby.Oppo
                 switch (kind)
                 {
                     case "truehd": match = audio.Any(x => string.Equals(x.Codec, "truehd", StringComparison.OrdinalIgnoreCase)); break;
-                    case "dtshdma": match = audio.Any(x => (x.Codec ?? "").StartsWith("dts", StringComparison.OrdinalIgnoreCase) && (x.Profile ?? "").IndexOf("MA", StringComparison.Ordinal) >= 0); break;
+                    case "dtshdma": match = audio.Any(x => (x.Codec ?? "").StartsWith("dts", StringComparison.OrdinalIgnoreCase) && ((x.Profile ?? "").IndexOf("MA", StringComparison.Ordinal) >= 0 || (x.Profile ?? "").IndexOf("DTS:X", StringComparison.Ordinal) >= 0)); break;
                     case "71": match = audio.Any(x => (x.Channels ?? 0) >= 8); break;
                     default:
                         var found = extras.Peek(video);

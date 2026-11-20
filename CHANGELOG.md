@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.21.0
+
+- **"Movie without menus" keeps Dolby Vision** when DLNA playback is on (oppo-dv-mkv mod): the plugin serves the
+  Blu-ray reduced to its main movie, a virtual disc whose navigation plays the main playlist at once, and the
+  OPPO plays it as a disc. Dolby Vision, the disc's chapters, its named tracks and resume all work; the movie
+  starts in about a second (checked on 1917, Dune and Dune: Part Two, UHD Dolby Vision). The button is
+  therefore offered on Dolby Vision discs too when DLNA is on. Without the mod, the previous mode is kept (the
+  main movie as one .m2ts file, HDR10 only, button hidden on Dolby Vision discs).
+- **Dolby Atmos and DTS:X in every Emby app**, not only in the web remote: once a title is analysed, the
+  plugin writes them into Emby's own track information. DTS:X tracks read "English DTS:X 7.1" (track profile);
+  Atmos tracks get the title "Dolby Atmos" (for TrueHD, Emby shows the codec name, not the profile; an existing
+  track title is kept). A library rescan resets this information: the plugin writes it back a few seconds
+  after each item update, and the nightly task checks the whole library.
+- The DTS-HD MA audio filter and the "best track" badge now count DTS:X tracks as DTS-HD MA (they are).
+- The web remote no longer asks the player for its HDR / audio output in the first 90 s of a movie: on a disc
+  started without menus, that query once went unanswered and the OPPO then refused IP control until it was
+  switched off.
+- Emby.Oppo 0.21.0, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.20.0
 
 - **The title page's audio badges show the disc's best track**, whatever the language selected: a disc with

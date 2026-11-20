@@ -999,7 +999,7 @@
     function score(st) {
       var codec = (st.Codec || '').toLowerCase(), profile = (st.Profile || '') + ' ' + (st.Title || '');
       var base = codec === 'truehd' ? 70
-        : /^dts/.test(codec) ? (/MA\b|master/i.test(profile) ? 60 : /HRA|high res/i.test(profile) ? 45 : 35)
+        : /^dts/.test(codec) ? (/MA\b|master|DTS:X/i.test(profile) ? 60 : /HRA|high res/i.test(profile) ? 45 : 35)
         : /^pcm/.test(codec) ? 55 : codec === 'eac3' ? 40 : codec === 'ac3' ? 30 : 10;
       if (st._atmos || /atmos/i.test(profile)) base += 40;
       else if (st._dtsx || /dts[\s:-]*x\b/i.test(profile)) base += 35;
@@ -1016,6 +1016,7 @@
     var out = [];
     var text = [stream.Profile, stream.Title, stream.DisplayTitle].join(' ');
     var codec = stream.Profile || CODECS[(stream.Codec || '').toLowerCase()] || (/^pcm/i.test(stream.Codec || '') ? 'PCM' : (stream.Codec || '').toUpperCase());
+    codec = codec.replace(/\s*Atmos\b/i, '');   // "TrueHD Atmos" (written by the plugin): Atmos gets its own badge
     if (stream._dtsx || /dts[\s:-]*x\b/i.test(text)) codec = 'DTS:X';
     out.push([codec, stream.ChannelLayout === 'stereo' ? '2.0' : stream.ChannelLayout === 'mono' ? '1.0' : (stream.ChannelLayout || '')].join(' ').trim());
     if (stream._atmos || /atmos/i.test(text)) out.push('Atmos');
@@ -1076,10 +1077,10 @@
   function audioLabel(s) {
     var codec = s.Profile || CODECS[(s.Codec || '').toLowerCase()] || (/^pcm/i.test(s.Codec || '') ? 'PCM' : (s.Codec || '').toUpperCase());
     if (s._dtsx) codec = 'DTS:X';            // found by the plugin in the audio stream (Emby does not report it)
-    else if (s._atmos) codec += ' Atmos';
+    else if (s._atmos && !/atmos/i.test(codec)) codec += ' Atmos';
     var layout = s.ChannelLayout === 'stereo' ? t('stereo') : s.ChannelLayout === 'mono' ? t('mono') : (s.ChannelLayout || (s.Channels ? t('n_channels', s.Channels) : ''));
     var parts = [langLabel(s), [codec, layout].filter(Boolean).join(' ')];
-    if (s.Title && !/^(stereo|surround|5\.1|7\.1)$/i.test(s.Title)) parts.push(s.Title);
+    if (s.Title && !/^(stereo|surround|5\.1|7\.1|dolby atmos)$/i.test(s.Title)) parts.push(s.Title);   // "Dolby Atmos": written by the plugin, already in the codec
     return parts.filter(Boolean).join(' · ');
   }
   function subtitleLabel(s) {
@@ -1707,10 +1708,10 @@
       discFormat(ask).then(function (f) {
         if (!f || !f.Label || badges.dataset.mark !== mark) return;
         badges.insertBefore(el('span', { 'class': 'vb src ' + (f.Kind || 'file'), text: f.Label }), badges.firstChild);
-        // "Movie without menus": Blu-ray and UHD discs only, not Dolby Vision ones (the OPPO then plays the
-        // movie as a file and outputs HDR10 only), not multi-disc titles.
+        // "Movie without menus": Blu-ray and UHD discs, not multi-disc titles. Dolby Vision discs only when the
+        // plugin plays a reduced disc (DLNA with the mod); as a plain .m2ts file the OPPO outputs HDR10 only.
         var v = streams(s, 'Video')[0];
-        movieOk = (f.Kind === 'uhd' || f.Kind === 'bluray') && !discSel && !(v && v.ExtendedVideoType === 'DolbyVision');
+        movieOk = (f.Kind === 'uhd' || f.Kind === 'bluray') && !discSel && (last.movieDisc || !(v && v.ExtendedVideoType === 'DolbyVision'));
         drawActions();
       }).catch(function () { /* unknown format: no label */ });
       var audio = streams(s, 'Audio'), subs = streams(s, 'Subtitle');
@@ -1961,6 +1962,7 @@
   }
 
   function render(s) {
+    last.movieDisc = !!s.MovieDisc;   // "Movie without menus" keeps Dolby Vision (reduced disc over DLNA)
     var state = (s.State || '').toUpperCase();
     var playing = PLAYING.indexOf(state) >= 0;
     last.state = state;
