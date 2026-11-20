@@ -31,14 +31,33 @@ On a tablet in landscape, the remote stays on the right while you browse:
 
 ## Installing the plugins
 
-Emby has no catalog for third-party plugins: they are installed by copying the DLL files.
+Emby has no catalog for third-party plugins: they are installed by copying the DLL files into the `plugins` folder **of the computer or NAS that runs your Emby server**. Not the Plugins page of the dashboard, and not another computer where you only watch Emby.
 
-1. Download `Emby.Oppo.dll` and `Emby.IsoBluray.dll` from the [Releases](../../releases) page.
+1. Download `Emby.Oppo.dll` and `Emby.IsoBluray.dll` from the [Releases](../../releases) page. On Windows, right-click each file → **Properties** → tick **Unblock** if it is there.
 2. Copy them into the `plugins` folder of your Emby configuration:
-   - **Docker:** `<config volume>/plugins/`
+   - **Docker:** `<config volume>/plugins/` (the folder mapped to `/config`)
    - **Linux:** `/var/lib/emby/plugins/`
    - **Windows:** `%AppData%\Emby-Server\programdata\plugins\`
+   - **Synology:** see below.
 3. Restart Emby. Both plugins appear under **Dashboard → Plugins**.
+4. Run *Dashboard → Scheduled tasks → "Blu-ray: tracks and runtimes"* once (see [Scheduled tasks](#scheduled-task)).
+
+### On a Synology NAS
+
+**Emby in Container Manager (Docker), the easiest:**
+
+1. In **Container Manager → Container**, open the Emby container → **Settings** → **Volume**, and note the folder mapped to `/config` (for example `docker/emby/config`).
+2. In **File Station**, open that folder, then its `plugins` folder, and **Upload** the two DLL files.
+3. In Container Manager, select the Emby container → **Action → Restart**.
+
+**Emby from Package Center:** the plugins folder is inside a system folder that File Station cannot open, so the files are copied over SSH:
+
+1. With File Station, upload the two DLL files to one of your shared folders (for example your home folder).
+2. **Control Panel → Terminal & SNMP → Enable SSH service.**
+3. From a computer, connect with `ssh <your DSM admin user>@<NAS address>`.
+4. Find Emby's plugins folder: `sudo find / -type d -name plugins -path "*mby*" 2>/dev/null`
+5. Copy the files into it: `sudo cp /volume1/homes/<user>/Emby.*.dll <plugins folder found above>/`
+6. In **Package Center**, **Stop** then **Run** Emby Server. You can disable SSH again afterwards.
 
 Developed and tested with Emby Server 4.10 on Linux (Docker on a Synology NAS). The plugins are built against the 4.9 API, so 4.9 should work too. Windows servers should work (Windows paths are supported in the mappings) but have not been tested yet: feedback welcome.
 
