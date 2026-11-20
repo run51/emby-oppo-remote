@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.22.1
+
+- **"Test the connection" button** on the plugin's settings page, under the OPPO address: it checks the player's
+  IP control link and says what is wrong when it does not answer (connection refused: IP control off or another
+  device already connected; no answer: wrong address, player off without network standby, isolated Docker
+  network; connection closed; IP control hung…). A player in standby is reported as such: it answers the power
+  query but not the playback one. Through an oppo-multiplexer, the messages say so.
+- When the player stops giving its playback state, Emby's normal log now says why, once (it was only in the
+  debug log), and when it answers again.
+- Emby.Oppo 0.22.1, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.22.0
 
 - **DVD folders over DLNA** (oppo-dv-mkv mod): a DVD folder (`VIDEO_TS`) is served over WebDAV like a Blu-ray

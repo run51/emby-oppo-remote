@@ -86,7 +86,8 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
 
 - **OPPO address**
   - Give the player a fixed IP address.
-  - In the OPPO network settings, enable **IP control**.
+  - On the OPPO: **Setup → Network Setup → IP Control: On**, and **Setup → Device Setup → Standby Mode: Network Standby**, so that Emby can turn it on.
+  - Click **Test the connection**: it tells whether the player answers (on or in standby) and, if not, why (connection refused: IP control off or another device already connected, the player accepting only one; no answer: wrong address, player off without network standby, or the Emby container cannot reach your network…).
 - **Path mappings**: for each library folder, tell the plugin how the OPPO can reach it.
 
   | Path as seen by Emby | Protocol | Server | Share |

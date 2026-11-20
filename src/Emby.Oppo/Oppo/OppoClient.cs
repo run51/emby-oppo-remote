@@ -403,16 +403,75 @@ namespace Emby.Oppo.Oppo
         /// Where the IP control protocol goes: the player itself (port 23), or the address set in the
         /// configuration, e.g. an oppo-multiplexer shared with other controllers.
         /// </summary>
-        private (string Host, int Port) IpControlEndpoint()
+        private (string Host, int Port) IpControlEndpoint() => IpControlEndpoint(Plugin.Instance?.Configuration?.IpControlAddress, _host);
+
+        /// <summary>"host" or "host:port" of the IP control link (an oppo-multiplexer), or the player itself on port 23.</summary>
+        internal static (string Host, int Port) IpControlEndpoint(string ipControlAddress, string playerHost)
         {
-            string address = (Plugin.Instance?.Configuration?.IpControlAddress ?? "").Trim();
-            if (address.Length == 0) return (_host, 23);
+            string address = (ipControlAddress ?? "").Trim();
+            if (address.Length == 0) return (playerHost, 23);
             int colon = address.LastIndexOf(':');
             if (colon > 0 && address.IndexOf(':') == colon
                 && int.TryParse(address.Substring(colon + 1), NumberStyles.None, CultureInfo.InvariantCulture, out int port)
                 && port > 0 && port < 65536)
                 return (address.Substring(0, colon), port);
             return (address, 23);
+        }
+
+        public enum ProbeResult { Ok, Refused, Timeout, Closed, Silent, Unexpected, UnknownHost, NoRoute }
+
+        /// <summary>
+        /// Diagnoses the IP control link for the settings page: connects to host:port, sends #QPW and says what
+        /// happened (refused, no answer, connection closed, answer…). Uses its own connection. #QPW because a player
+        /// in network standby answers it ("@OK OFF") but not #QPL (2026-11-20).
+        /// </summary>
+        public static async Task<(ProbeResult Result, string Answer, string Error)> Probe(string host, int port, CancellationToken ct)
+        {
+            using (var tcp = new TcpClient())
+            {
+                try
+                {
+                    var connect = tcp.ConnectAsync(host, port);
+                    if (await Task.WhenAny(connect, Task.Delay(5000, ct)).ConfigureAwait(false) != connect) return (ProbeResult.Timeout, null, null);
+                    await connect.ConfigureAwait(false);
+                }
+                catch (SocketException ex)
+                {
+                    switch (ex.SocketErrorCode)
+                    {
+                        case SocketError.ConnectionRefused: return (ProbeResult.Refused, null, ex.Message);
+                        case SocketError.TimedOut: return (ProbeResult.Timeout, null, ex.Message);
+                        case SocketError.HostNotFound: case SocketError.NoData: case SocketError.TryAgain: return (ProbeResult.UnknownHost, null, ex.Message);
+                        default: return (ProbeResult.NoRoute, null, ex.Message);
+                    }
+                }
+                var stream = tcp.GetStream();
+                var payload = Encoding.ASCII.GetBytes("#QPW\r");
+                try { await stream.WriteAsync(payload, 0, payload.Length, ct).ConfigureAwait(false); }
+                catch (IOException ex) { return (ProbeResult.Closed, null, ex.Message); }
+                var buffer = new byte[512];
+                var received = new StringBuilder();
+                // 12 s: through an oppo-multiplexer, an unanswered query of the plugin (#QPL while the player is in
+                // standby) holds the link for 10 s before this one is answered.
+                var deadline = DateTime.UtcNow.AddSeconds(12);
+                while (DateTime.UtcNow < deadline)
+                {
+                    var read = stream.ReadAsync(buffer, 0, buffer.Length, ct);
+                    var left = deadline - DateTime.UtcNow;
+                    if (left <= TimeSpan.Zero || await Task.WhenAny(read, Task.Delay(left, ct)).ConfigureAwait(false) != read) break;
+                    int count;
+                    try { count = read.Result; }
+                    catch (AggregateException ex) { return (ProbeResult.Closed, received.ToString().Trim(), ex.InnerException?.Message); }
+                    if (count == 0) break;
+                    received.Append(Encoding.ASCII.GetString(buffer, 0, count));
+                    var line = received.ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(l => l.Trim())
+                        .FirstOrDefault(l => l.StartsWith("@QPW", StringComparison.OrdinalIgnoreCase) || l.StartsWith("@OK", StringComparison.OrdinalIgnoreCase)
+                                             || l.StartsWith("@ER", StringComparison.OrdinalIgnoreCase));
+                    if (line != null) return (ProbeResult.Ok, line, null);
+                }
+                if (received.Length > 0) return (ProbeResult.Unexpected, received.ToString().Trim(), null);
+                return tcp.Client.Poll(0, SelectMode.SelectRead) && tcp.Client.Available == 0 ? (ProbeResult.Closed, null, null) : (ProbeResult.Silent, null, null);
+            }
         }
 
         /// <summary>Sends an OPPO IP protocol command (e.g. "PAU") and returns the response.</summary>
@@ -496,12 +555,40 @@ namespace Emby.Oppo.Oppo
             {
                 string answer = await Command("QPL", ct).ConfigureAwait(false);
                 const string prefix = "@QPL OK ";
-                return answer.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? answer.Substring(prefix.Length).Trim().ToUpperInvariant() : "";
+                if (answer.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    IpControlAnswers(null);
+                    return answer.Substring(prefix.Length).Trim().ToUpperInvariant();
+                }
+                IpControlAnswers(answer.Length == 0 ? "no answer" : "answer \"" + answer + "\"");
+                return "";
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 _logger.Debug("OPPO #QPL failed: {0}", ex.Message);
+                IpControlAnswers(ex.Message);
                 return "";
+            }
+        }
+
+        private static string _ipFailure;
+
+        /// <summary>
+        /// Writes to Emby's log, once per change, why IP control does not answer (it used to be in the debug log
+        /// only, so a user stuck on "OPPO unreachable" could not tell why), and when it answers again.
+        /// </summary>
+        private void IpControlAnswers(string failure)
+        {
+            string previous = _ipFailure;
+            _ipFailure = failure;
+            if (failure == null)
+            {
+                if (previous != null) _logger.Info("OPPO: IP control answering again ({0})", _host);
+            }
+            else if (failure != previous)
+            {
+                var (host, port) = IpControlEndpoint();
+                _logger.Info("OPPO: no playback state from IP control {0}:{1}: {2}. Normal while the player is off; otherwise see \"Test the connection\" on the OPPO settings page", host, port, failure);
             }
         }
 

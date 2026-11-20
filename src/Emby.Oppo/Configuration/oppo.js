@@ -28,6 +28,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             access: 'Access to movies',
             accessHelp: 'Each folder of your Emby libraries must match a share that the OPPO can mount. "Search" turns the OPPO on and lists the shares it sees; a match is suggested automatically. Check it with "Test".',
             discover: 'Search the OPPO\'s shares',
+            testOppo: 'Test the connection',
             homeAutomation: 'Home automation',
             webhookUrl: 'Webhook URL (optional):',
             webhookHelp: 'Called with POST at the start (<code>{"event":"detected","title":…}</code>) and at the end (<code>"stopped"</code>) of each movie, and by the remote control\'s Showtime / All off buttons (<code>"seance_on"</code> / <code>"seance_off"</code>). Home Assistant example: <code>http://homeassistant:8123/api/webhook/my_id</code>',
@@ -82,6 +83,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             access: 'Accès aux films',
             accessHelp: 'Chaque dossier de vos bibliothèques Emby doit correspondre à un partage que l\'OPPO sait monter. « Rechercher » allume l\'OPPO et liste les partages qu\'il voit ; une correspondance est proposée automatiquement. Vérifiez-la avec « Tester ».',
             discover: 'Rechercher les partages de l\'OPPO',
+            testOppo: 'Tester la connexion',
             homeAutomation: 'Domotique',
             webhookUrl: 'URL de webhook (facultatif) :',
             webhookHelp: 'Appelée en POST au début (<code>{"event":"detected","title":…}</code>) et à la fin (<code>"stopped"</code>) de chaque film, et par les boutons Séance (<code>"seance_on"</code> / <code>"seance_off"</code>) de la télécommande. Exemple Home Assistant : <code>http://homeassistant:8123/api/webhook/mon_id</code>',
@@ -236,6 +238,19 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             });
             view.querySelector('.oppoMappings').innerHTML = rows.map(function (r) { return rowHtml(r, state.shares); }).join('');
         }
+
+        view.querySelector('.btnTestOppo').addEventListener('click', function () {
+            var status = view.querySelector('.testOppoStatus');
+            status.textContent = t('testing');
+            ApiClient.getJSON(ApiClient.getUrl('Oppo/TestConnection', {
+                Address: view.querySelector('#txtOppoAddress').value.trim(),
+                IpControl: view.querySelector('#txtIpControlAddress').value.trim()
+            })).then(function (result) {
+                status.textContent = result.Message;
+            }, function () {
+                status.textContent = t('testError');
+            });
+        });
 
         view.querySelector('.btnDiscover').addEventListener('click', function () {
             var status = view.querySelector('.discoverStatus');

@@ -22,6 +22,8 @@
                 <input is="emby-input" type="text" id="txtIpControlAddress" label="IP control through (optional):" data-i18n-label="ipControlAddress" />
                 <div class="fieldDescription" data-i18n="ipControlAddressHelp">The player accepts a single IP control connection (port 23). If another device controls it too (an Unfolded Circle remote, for example), run an oppo-multiplexer and enter its address, e.g. 192.168.1.20:23. Empty: the player itself.</div>
             </div>
+            <button is="emby-button" type="button" class="raised btnTestOppo"><span data-i18n="testOppo">Test the connection</span></button>
+            <div class="testOppoStatus fieldDescription" style="margin:1em 0;"></div>
             <div class="inputContainer">
                 <input is="emby-input" type="text" id="txtDeviceName" label="Name in the &quot;Play on&quot; menu:" data-i18n-label="deviceName" />
             </div>
