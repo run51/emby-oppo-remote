@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.22.2
+
+- **For the Remote 3 Emby driver:** the disc format answer (`/Oppo/Remote/Format`) now says whether "Movie without
+  menus" keeps Dolby Vision (`MovieDisc`: reduced disc over DLNA), so a client can offer it on Dolby Vision
+  discs without asking the player's state.
+- "Movie without menus": when the player takes the reduced disc's link but fetches nothing (its DLNA renderer is
+  stuck), the plugin now goes straight to the share instead of trying the full disc over DLNA too, 6 s sooner.
+- Emby.Oppo 0.22.2, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.22.1
 
 - **"Test the connection" button** on the plugin's settings page, under the OPPO address: it checks the player's

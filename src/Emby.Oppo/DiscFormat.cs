@@ -13,6 +13,11 @@ namespace Emby.Oppo
         /// <summary>uhd, bluray, dvd, file, iso (unrecognised image) or folder.</summary>
         public string Kind { get; set; }
         public string Label { get; set; }
+        /// <summary>
+        /// "Movie without menus" plays a reduced disc over DLNA (oppo-dv-mkv mod), so it keeps Dolby Vision; false:
+        /// it plays the main movie as a file (HDR10 only). Lets a client offer it without asking the OPPO's state.
+        /// </summary>
+        public bool MovieDisc { get; set; }
     }
 
     /// <summary>

@@ -51,6 +51,7 @@ namespace Emby.Oppo
         private DateTime _requestedAt;
         private string _requestKey;          // to recognise a request sent twice
         private bool _mainMovie;             // play the main movie as a file, without the disc menus
+        private bool _rendererDeaf;          // the DLNA renderer took a link but never fetched it: skip DLNA for this part
 
         // "Movie without menus" asked by the web remote for the next play of an item (valid 60 s).
         private static long _pendingMainMovie;
@@ -279,10 +280,12 @@ namespace Emby.Oppo
                 // Main movie as a file (no menus), then the disc image over DLNA (oppo-dv-mkv mod), then the
                 // network share: each one is the fallback of the previous one.
                 MainMovieChapters = null;
+                _rendererDeaf = false;
                 bool started = _mainMovie && IsBluray(part.Path)
                     && await StartMainMovie(oppo, title, label, part, partCt).ConfigureAwait(false);
                 if (!started)
-                    started = Config.DlnaDiscImages && (IsDiscImage(part.Path) || IsBdmvFolder(part.Path) || IsDvdFolder(part.Path) || DlnaFileMime(part.Path) != null)
+                    started = Config.DlnaDiscImages && !_rendererDeaf
+                        && (IsDiscImage(part.Path) || IsBdmvFolder(part.Path) || IsDvdFolder(part.Path) || DlnaFileMime(part.Path) != null)
                         && await StartDlna(oppo, title, label, part, partCt).ConfigureAwait(false);
                 if (!started && !await StartFromShare(oppo, title, label, part, partCt).ConfigureAwait(false))
                     return PartEnd.Failed;
@@ -558,7 +561,9 @@ namespace Emby.Oppo
                 }
                 if (DateTime.UtcNow - started > TimeSpan.FromSeconds(6) && DiscServer.RequestCount(url) == 0) break;
             }
-            _logger.Info("OPPO: the main movie disc did not start (state \"{0}\", {1} requests), playing the disc", state, DiscServer.RequestCount(url));
+            _rendererDeaf = DiscServer.RequestCount(url) == 0;
+            _logger.Info("OPPO: the main movie disc did not start (state \"{0}\", {1} requests), playing the disc{2}", state, DiscServer.RequestCount(url),
+                _rendererDeaf ? " from the share: the player's DLNA renderer took the link but fetched nothing (unplug the player for 30 s if this persists)" : "");
             return false;
         }
 
@@ -616,7 +621,9 @@ namespace Emby.Oppo
                 }
                 if (DateTime.UtcNow - started > TimeSpan.FromSeconds(6) && DiscServer.RequestCount(url) == 0) break;
             }
-            _logger.Info("OPPO: the main movie did not start (state \"{0}\", {1} requests), playing the disc", state, DiscServer.RequestCount(url));
+            _rendererDeaf = DiscServer.RequestCount(url) == 0;
+            _logger.Info("OPPO: the main movie did not start (state \"{0}\", {1} requests), playing the disc{2}", state, DiscServer.RequestCount(url),
+                _rendererDeaf ? " from the share: the player's DLNA renderer took the link but fetched nothing (unplug the player for 30 s if this persists)" : "");
             return false;   // no renderer Stop (see StartDlna)
         }
 

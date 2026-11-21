@@ -610,7 +610,10 @@ namespace Emby.Oppo
             if (item == null) return new FormatInfo();
             if (!string.IsNullOrEmpty(request.MediaSourceId))
                 item = _libraryManager.GetItemById(item.InternalId.ToString(CultureInfo.InvariantCulture), request.MediaSourceId) ?? item;
-            return DiscFormat.Detect(item.Path, Fr) ?? new FormatInfo();
+            var format = DiscFormat.Detect(item.Path, Fr);
+            if (format == null) return new FormatInfo();
+            // A copy: Detect returns cached objects.
+            return new FormatInfo { Kind = format.Kind, Label = format.Label, MovieDisc = Plugin.Instance.Configuration.DlnaDiscImages };
         }
 
         // ---------------------------------------------------------------- OPPO output information
