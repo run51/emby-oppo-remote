@@ -88,6 +88,7 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
   - Give the player a fixed IP address.
   - On the OPPO: **Setup → Network Setup → IP Control: On**, and **Setup → Device Setup → Standby Mode: Network Standby**, so that Emby can turn it on.
   - Click **Test the connection**: it tells whether the player answers (on or in standby) and, if not, why (connection refused: IP control off or another device already connected, the player accepting only one; no answer: wrong address, player off without network standby, or the Emby container cannot reach your network…).
+  - **Jailbroken players with the jb_overlay:** the overlay's Telnet must be **off**, otherwise it takes port 23 at boot and the OPPO's IP control cannot use it, even with IP Control "On" in the menus (the remote then shows "OPPO unreachable" and movies take minutes to start). See [Jailbreak: turn the overlay's Telnet off](#jailbreak-turn-the-overlays-telnet-off).
 - **Path mappings**: for each library folder, tell the plugin how the OPPO can reach it.
 
   | Path as seen by Emby | Protocol | Server | Share |
@@ -123,6 +124,17 @@ Then, from any Emby app: **Play on… → OPPO**.
 ### Updating
 
 The plugin's settings page (*Dashboard → Plugins → OPPO*) shows the installed versions and the latest release. **Update** downloads both plugins from GitHub, checks them and replaces the installed files (the previous ones are kept in Emby's cache folder); **Restart Emby** then applies them. Administrators only. Versions older than 0.20.0 are updated once by hand.
+
+### Jailbreak: turn the overlay's Telnet off
+
+The jb_overlay of the Russian jailbreak firmware (Moremodey01's, also used by other overlays such as the Dark Space Theme) reads its settings from `/mnt/ubi_boot/jb_overlay/config.ini`. With `USE_TELNET=1`, which is its documented default, its start-up script runs a Telnet server (`telnetd`) that listens on **port 23**, the port of the OPPO's IP control. The plugin then reaches that Telnet instead of the player: **Test the connection** reports "a Telnet server (the jailbreak's), not the OPPO's IP control" (from version 0.22.4; earlier versions show an "unexpected answer" made of odd characters such as `???? ??#??'??$`). Root access stays available over SSH (`USE_SSH=1`, port 22), so Telnet is not needed.
+
+1. From a computer on the same network: `ssh root@<OPPO address>` (default password `oppo`, unless `ROOT_PWD` was changed in the same file).
+2. Check the setting: `grep TELNET /mnt/ubi_boot/jb_overlay/config.ini`
+3. If it says `USE_TELNET=1`, turn it off: `sed -i 's/USE_TELNET=1/USE_TELNET=0/' /mnt/ubi_boot/jb_overlay/config.ini`
+4. Unplug the player for 30 seconds, plug it back in, and click **Test the connection** again: it should say that the OPPO answers.
+
+To check which program holds port 23 on the player: `netstat -tlnp | grep ':23 '` shows `bdpprog` (the OPPO's own program, correct) or `telnetd` (the overlay's Telnet).
 
 ## Web remote and Android app
 
