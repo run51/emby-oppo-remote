@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.22.3
+
+- **Emby on Windows:** the settings page now says, above the paths to the movies, that the OPPO cannot use NFS
+  with Windows and only speaks SMB 1 (disabled in Windows 10/11), and points to "Play over DLNA" with the
+  oppo-dv-mkv mod (no share needed; allow port 8099 in the Windows firewall).
+- **"Test" of a path mapping:** when the OPPO refuses the mount, the message gives its answer and what to check
+  (share name, username / password, SMB 1 on Windows, NFS permissions). The refusal is also written to Emby's log.
+- Emby.Oppo 0.22.3, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.22.2
 
 - **For the Remote 3 Emby driver:** the disc format answer (`/Oppo/Remote/Format`) now says whether "Movie without

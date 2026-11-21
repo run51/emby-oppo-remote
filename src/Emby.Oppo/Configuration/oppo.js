@@ -29,6 +29,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             accessHelp: 'Each folder of your Emby libraries must match a share that the OPPO can mount. "Search" turns the OPPO on and lists the shares it sees; a match is suggested automatically. Check it with "Test".',
             discover: 'Search the OPPO\'s shares',
             testOppo: 'Test the connection',
+            windowsNotice: 'This Emby server runs on Windows. The OPPO cannot use NFS with Windows (no NFS server), and it only speaks SMB 1, which Windows 10/11 disables. If the player has the oppo-dv-mkv mod, tick "Play over DLNA" below instead: the plugin then sends the movies itself, no share needed (allow Emby through the Windows firewall, port 8099).',
             homeAutomation: 'Home automation',
             webhookUrl: 'Webhook URL (optional):',
             webhookHelp: 'Called with POST at the start (<code>{"event":"detected","title":…}</code>) and at the end (<code>"stopped"</code>) of each movie, and by the remote control\'s Showtime / All off buttons (<code>"seance_on"</code> / <code>"seance_off"</code>). Home Assistant example: <code>http://homeassistant:8123/api/webhook/my_id</code>',
@@ -84,6 +85,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             accessHelp: 'Chaque dossier de vos bibliothèques Emby doit correspondre à un partage que l\'OPPO sait monter. « Rechercher » allume l\'OPPO et liste les partages qu\'il voit ; une correspondance est proposée automatiquement. Vérifiez-la avec « Tester ».',
             discover: 'Rechercher les partages de l\'OPPO',
             testOppo: 'Tester la connexion',
+            windowsNotice: 'Ce serveur Emby tourne sous Windows. L\'OPPO ne peut pas utiliser le NFS avec Windows (pas de serveur NFS), et il ne parle que SMB 1, que Windows 10/11 désactive. Si le lecteur a le mod oppo-dv-mkv, cochez plutôt « Lire par DLNA » ci-dessous : le plugin envoie alors les films lui-même, sans partage (autorisez Emby dans le pare-feu Windows, port 8099).',
             homeAutomation: 'Domotique',
             webhookUrl: 'URL de webhook (facultatif) :',
             webhookHelp: 'Appelée en POST au début (<code>{"event":"detected","title":…}</code>) et à la fin (<code>"stopped"</code>) de chaque film, et par les boutons Séance (<code>"seance_on"</code> / <code>"seance_off"</code>) de la télécommande. Exemple Home Assistant : <code>http://homeassistant:8123/api/webhook/mon_id</code>',
@@ -237,6 +239,11 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 if (!known[m.EmbyPath]) rows.push({ embyPath: m.EmbyPath, library: t('notInLibrary'), mapping: m });
             });
             view.querySelector('.oppoMappings').innerHTML = rows.map(function (r) { return rowHtml(r, state.shares); }).join('');
+            // Emby on Windows ("E:\\Movies", "\\\\nas\\Movies"): NFS is impossible and SMB needs SMB 1, so point to DLNA.
+            var windows = rows.some(function (r) { return /^[A-Za-z]:[\\\/]|^\\\\/.test(r.embyPath || ''); });
+            var notice = view.querySelector('.windowsNotice');
+            notice.textContent = t('windowsNotice');
+            notice.hidden = !windows;
         }
 
         view.querySelector('.btnTestOppo').addEventListener('click', function () {

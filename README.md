@@ -96,6 +96,7 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
   | `/mnt/movies` | SMB | `nas.local` | `Movies` (+ username and password) |
 
   NFS is recommended, especially for BDMV folders. With DLNA (below), the share is only a fallback.
+  **Emby on Windows:** the OPPO cannot use NFS with Windows (no NFS server) and only speaks SMB 1, which Windows 10/11 disables. Use **Play over DLNA** (below) if the player has the oppo-dv-mkv mod; otherwise share the movies from a NAS.
 - **Play over DLNA** (optional, recommended with a modded player)
   - Needs the [oppo-dv-mkv](https://github.com/fandangos/oppo-dv-mkv) mod on the player, with **DLNA Disc Images** on (Setup → Extras).
   - The plugin then serves the movie itself and sends it to the player's DLNA renderer, with no share mounted. ISO files (Blu-ray, UHD, DVD), Blu-ray folders and DVD folders (`VIDEO_TS`) play as a disc (menus, Dolby Vision, lossless audio); MKV, MP4 and M2TS files play as files.

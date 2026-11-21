@@ -86,7 +86,27 @@ namespace Emby.Oppo.Oppo
         {
             await Call("loginNfsServer", new Dictionary<string, object> { ["serverName"] = server }, TimeSpan.FromSeconds(10), ct).ConfigureAwait(false);
             var r = await Call("mountNfsSharedFolder", new Dictionary<string, object> { ["server"] = server, ["folder"] = folder }, timeout, ct).ConfigureAwait(false);
+            LastMountAnswer = Reason(r);
             return Success(r);
+        }
+
+        /// <summary>Why the last NFS / SMB mount was refused, as the OPPO put it (empty if it gave no reason).</summary>
+        public string LastMountAnswer { get; private set; } = "";
+
+        /// <summary>
+        /// The reason fields of an OPPO answer ("retInfo", "msg"…), never the whole answer: an SMB mount answer
+        /// may echo the credentials.
+        /// </summary>
+        private static string Reason(Dictionary<string, object> r)
+        {
+            var parts = r.Where(kv => kv.Key.IndexOf("info", StringComparison.OrdinalIgnoreCase) >= 0
+                                      || kv.Key.IndexOf("msg", StringComparison.OrdinalIgnoreCase) >= 0
+                                      || kv.Key.IndexOf("err", StringComparison.OrdinalIgnoreCase) >= 0
+                                      || kv.Key.IndexOf("reason", StringComparison.OrdinalIgnoreCase) >= 0)
+                .Select(kv => Convert.ToString(kv.Value, CultureInfo.InvariantCulture)?.Trim())
+                .Where(v => !string.IsNullOrEmpty(v) && !string.Equals(v, "null", StringComparison.OrdinalIgnoreCase))
+                .Distinct();
+            return string.Join(" / ", parts);
         }
 
         /// <summary>File server seen by the OPPO on the network.</summary>
@@ -185,7 +205,20 @@ namespace Emby.Oppo.Oppo
             bool mounted = smb
                 ? await MountSmb(server, share, user, password, TimeSpan.FromSeconds(30), ct).ConfigureAwait(false)
                 : await MountNfs(server, share, TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
-            if (!mounted) return (false, L10n.T(fr, "Mount refused by the OPPO", "Montage refusé par l'OPPO"), new List<string>());
+            if (!mounted)
+            {
+                string answer = string.IsNullOrEmpty(LastMountAnswer) ? L10n.T(fr, "no reason given", "sans raison donnée") : "\"" + LastMountAnswer + "\"";
+                _logger.Info("OPPO: {0} mount of {1} / {2} refused by the player: {3}", smb ? "SMB" : "NFS", server, share, answer);
+                return (false, L10n.T(fr, "Mount refused by the OPPO (" + answer + "). ", "Montage refusé par l'OPPO (" + answer + "). ")
+                    + (smb
+                        ? L10n.T(fr, "Check the server, the share name (as shared, not a drive path) and the username / password: Windows refuses guests. "
+                                     + "The OPPO only speaks SMB 1, which Windows 10/11 disables: with an Emby server on Windows, prefer \"Play over DLNA\" (oppo-dv-mkv mod).",
+                                 "Vérifiez le serveur, le nom du partage (tel que partagé, pas un chemin de disque) et l'utilisateur / mot de passe : Windows refuse les invités. "
+                                     + "L'OPPO ne parle que SMB 1, que Windows 10/11 désactive : avec un serveur Emby sous Windows, préférez « Lire par DLNA » (mod oppo-dv-mkv).")
+                        : L10n.T(fr, "Check the export path and that the NFS server lets the OPPO's address in (Windows has no NFS server).",
+                                 "Vérifiez le chemin de l'export et que le serveur NFS autorise l'adresse de l'OPPO (Windows n'a pas de serveur NFS).")),
+                    new List<string>());
+            }
             var raw = await Raw("getfilelist", new Dictionary<string, object>
             {
                 ["path"] = smb ? "/mnt/cifs1" : "/mnt/nfs1",
@@ -267,6 +300,7 @@ namespace Emby.Oppo.Oppo
                 ["password"] = password ?? "",
                 ["bRememberID"] = 1
             }, timeout, ct, logRequest: false).ConfigureAwait(false);
+            LastMountAnswer = Reason(r);
             return Success(r);
         }
 
