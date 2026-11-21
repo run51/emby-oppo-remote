@@ -452,7 +452,7 @@ namespace Emby.Oppo.Oppo
             return (address, 23);
         }
 
-        public enum ProbeResult { Ok, Refused, Timeout, Closed, Silent, Unexpected, UnknownHost, NoRoute }
+        public enum ProbeResult { Ok, Refused, Timeout, Closed, Silent, Unexpected, UnknownHost, NoRoute, Telnet }
 
         /// <summary>
         /// Diagnoses the IP control link for the settings page: connects to host:port, sends #QPW and says what
@@ -497,6 +497,9 @@ namespace Emby.Oppo.Oppo
                     try { count = read.Result; }
                     catch (AggregateException ex) { return (ProbeResult.Closed, received.ToString().Trim(), ex.InnerException?.Message); }
                     if (count == 0) break;
+                    // A Telnet server opens with IAC (0xFF) option negotiation: the jailbreak's Telnet, offered on port
+                    // 23 when the player's IP Control is off (AVForums, 2026-11-21).
+                    if (received.Length == 0 && buffer[0] == TelnetIac) return (ProbeResult.Telnet, null, null);
                     received.Append(Encoding.ASCII.GetString(buffer, 0, count));
                     var line = received.ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(l => l.Trim())
                         .FirstOrDefault(l => l.StartsWith("@QPW", StringComparison.OrdinalIgnoreCase) || l.StartsWith("@OK", StringComparison.OrdinalIgnoreCase)
@@ -509,8 +512,12 @@ namespace Emby.Oppo.Oppo
         }
 
         /// <summary>Sends an OPPO IP protocol command (e.g. "PAU") and returns the response.</summary>
+        private const byte TelnetIac = 0xFF;
+        private bool _telnet;   // the last IP-control answer was a Telnet greeting (IP Control off on the player)
+
         public async Task<string> Command(string code, CancellationToken ct, string argument = null)
         {
+            _telnet = false;
             await _ipLock.WaitAsync(ct).ConfigureAwait(false);
             try
             {
@@ -535,6 +542,7 @@ namespace Emby.Oppo.Oppo
                             var read = stream.ReadAsync(buffer, 0, buffer.Length, ct);
                             var left = deadline - DateTime.UtcNow;
                             if (left <= TimeSpan.Zero || await Task.WhenAny(read, Task.Delay(left, ct)).ConfigureAwait(false) != read || read.Result == 0) break;
+                            if (received.Length == 0) _telnet = buffer[0] == TelnetIac;
                             received.Append(Encoding.ASCII.GetString(buffer, 0, read.Result));
                             CaptureEvents(received.ToString());
                             // Verbose modes 2/3 answer "@QPL OK PLAY"; modes 0/1 answer "@OK PLAY". Another
@@ -594,7 +602,9 @@ namespace Emby.Oppo.Oppo
                     IpControlAnswers(null);
                     return answer.Substring(prefix.Length).Trim().ToUpperInvariant();
                 }
-                IpControlAnswers(answer.Length == 0 ? "no answer" : "answer \"" + answer + "\"");
+                IpControlAnswers(_telnet
+                    ? "port 23 is a Telnet server (the jailbreak's), not the OPPO's IP control: with the jb_overlay, set USE_TELNET=0 in /mnt/ubi_boot/jb_overlay/config.ini and unplug the player (see the README); check IP Control: On"
+                    : answer.Length == 0 ? "no answer" : "answer \"" + answer + "\"");
                 return "";
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))

@@ -175,6 +175,10 @@ namespace Emby.Oppo
                     message = L10n.T(Fr, "✘ " + target + " accepts the connection but does not answer. Unplug the player for 30 s (its IP control sometimes hangs), and check that no other device is connected to it.",
                         "✘ " + target + " accepte la connexion mais ne répond pas. Débranchez le lecteur 30 s (son contrôle IP se bloque parfois), et vérifiez qu'aucun autre appareil n'y est connecté.");
                     break;
+                case OppoClient.ProbeResult.Telnet:
+                    message = L10n.T(Fr, "✘ " + target + " is a Telnet server (the jailbreak's), not the OPPO's IP control, which cannot use port 23 then. With the jb_overlay, set USE_TELNET=0 in /mnt/ubi_boot/jb_overlay/config.ini (over SSH, see the README) and unplug the player for 30 s. Also check Setup > Network Setup > IP Control: On.",
+                        "✘ " + target + " est un serveur Telnet (celui du jailbreak), pas le contrôle IP de l'OPPO, qui ne peut alors pas utiliser le port 23. Avec le jb_overlay, mettez USE_TELNET=0 dans /mnt/ubi_boot/jb_overlay/config.ini (en SSH, voir le README) et débranchez le lecteur 30 s. Vérifiez aussi Setup > Network Setup > IP Control : On.");
+                    break;
                 case OppoClient.ProbeResult.Unexpected:
                     message = L10n.T(Fr, "✘ Unexpected answer from " + target + ": " + answer, "✘ Réponse inattendue de " + target + " : " + answer);
                     break;

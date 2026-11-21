@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.22.4
+
+- **Jailbreak Telnet on port 23 recognised:** with IP Control off, the jailbroken player answers port 23 with its
+  Telnet server, so the plugin cannot follow it (remote stuck on "OPPO unreachable", movies taking minutes to
+  "start"). "Test the connection" and Emby's log now say so, instead of showing the Telnet greeting as
+  unreadable characters. The cause on jailbroken players: the jb_overlay starts a Telnet server on port 23
+  when `USE_TELNET=1` (its default) in `/mnt/ubi_boot/jb_overlay/config.ini`; the README explains how to set it
+  to 0 over SSH.
+- Emby on Windows: the settings page and the README now also explain how to turn SMB 1 on in Windows (the OPPO
+  needs it for a Windows share) when the player has no oppo-dv-mkv mod for DLNA.
+- Emby.Oppo 0.22.4, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.22.3
 
 - **Emby on Windows:** the settings page now says, above the paths to the movies, that the OPPO cannot use NFS
