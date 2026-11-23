@@ -46,6 +46,58 @@ namespace Emby.Oppo.Oppo
 
         // ---------------------------------------------------------------- HTTP 436
 
+        private sealed class MoviePlayInfo
+        {
+#pragma warning disable IDE1006 // JSON names of the OPPO's HTTP interface
+            public bool success { get; set; }
+            public MoviePlay playinfo { get; set; }
+#pragma warning restore IDE1006
+        }
+
+        private sealed class MoviePlay
+        {
+#pragma warning disable IDE1006
+            public string frame_rate { get; set; }
+            public string width { get; set; }
+            public string height { get; set; }
+#pragma warning restore IDE1006
+        }
+
+        /// <summary>
+        /// Picture of the video file being played, from the HTTP interface (getmovieplayinfo: width, height, frame_rate,
+        /// e.g. 3840 x 2160 at "23.976"): "2160p 23,976 i/s" in French. Null when the player gives none (disc menus,
+        /// discs). HTTP only: it does not hold the IP-control link.
+        /// </summary>
+        public async Task<string> GetVideoFormat(bool fr, CancellationToken ct)
+        {
+            try
+            {
+                string url = "http://" + _host + ":436/getmovieplayinfo";
+                var request = (HttpWebRequest)WebRequest.Create(url);
+                request.Timeout = 3000;
+                request.ReadWriteTimeout = 3000;
+                MoviePlayInfo info;
+                using (ct.Register(request.Abort))
+                using (var response = (HttpWebResponse)await request.GetResponseAsync().ConfigureAwait(false))
+                using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                    info = _json.DeserializeFromString<MoviePlayInfo>(await reader.ReadToEndAsync().ConfigureAwait(false));
+                var p = info?.playinfo;
+                if (p == null || !int.TryParse(p.height, NumberStyles.Integer, CultureInfo.InvariantCulture, out int h) || h <= 0) return null;
+                string res = h + "p";
+                if (double.TryParse(p.frame_rate, NumberStyles.Float, CultureInfo.InvariantCulture, out double fps) && fps > 0)
+                {
+                    string n = fps.ToString(fps == Math.Floor(fps) ? "0" : "0.###", CultureInfo.InvariantCulture);
+                    res += " " + (fr ? n.Replace('.', ',') + " i/s" : n + " fps");
+                }
+                return res;
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger.Debug("OPPO getmovieplayinfo: {0}", ex.Message);
+                return null;
+            }
+        }
+
         private async Task<Dictionary<string, object>> Call(string endpoint, object args, TimeSpan timeout, CancellationToken ct, bool logRequest = true)
         {
             string url = "http://" + _host + ":436/" + endpoint;

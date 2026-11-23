@@ -422,12 +422,20 @@ namespace Emby.Oppo
                         // stops answering IP control for a while (seen on a UHD ISO menu: the web remote's STOP was lost).
                         // Not in the first 90 s either: 18 s into a movie disc started without menus, #QHS got no answer
                         // and the OPPO then refused IP control until it was switched off (2026-11-20).
+                        // Resolution and frame rate of the film (HTTP, any time: it does not hold the IP-control link),
+                        // else the output the player announced (UVO); HDR from #QHS after the first 90 s (see below).
+                        string picture = null;
+                        if (request.Tracks)
+                        {
+                            picture = await oppo.GetVideoFormat(Fr, ct).ConfigureAwait(false);
+                            if (picture == null && OppoClient.Events.TryGetValue("UVO", out var uvo)) picture = VideoOutLabel(uvo, Fr);
+                            if (picture != null) result.OutputVideo = picture;
+                        }
                         if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90)
                         {
                             string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
-                            OppoClient.Events.TryGetValue("UVO", out var uvo);
                             bool fr = Fr;
-                            result.OutputVideo = string.Join(" · ", new[] { VideoOutLabel(uvo, fr), HdrLabel(hdr) }.Where(x => !string.IsNullOrEmpty(x)));
+                            result.OutputVideo = string.Join(" · ", new[] { picture, HdrLabel(hdr) }.Where(x => !string.IsNullOrEmpty(x)));
                             result.OutputAudio = TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
                             result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
                         }
