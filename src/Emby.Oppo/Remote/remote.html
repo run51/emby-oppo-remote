@@ -2737,7 +2737,10 @@
       stateText = t('launching_state', stateText.toLowerCase());
     }
     last.title = title || null;
-    last.outVideo = playing ? s.OutputVideo || null : null; last.outAudio = playing ? s.OutputAudio || null : null;
+    // The OPPO's outputs come with the polls that ask for the tracks: kept in between, cleared when nothing plays.
+    if (!playing) last.outVideo = last.outAudio = null;
+    else if (s.OutputVideo !== undefined || s.OutputAudio !== undefined) { last.outVideo = s.OutputVideo || null; last.outAudio = s.OutputAudio || null; }
+    last.ampFormat = playing && s.Amp && s.Amp.On ? (s.Amp.Format || s.Amp.SoundMode || null) : null;
     if (sourceRedraw && currentRoute && currentRoute.name === 'source') setTimeout(sourceRedraw, 0);
     last.itemId = itemId; last.imageTag = tag; last.stateText = stateText;
 
@@ -2746,14 +2749,16 @@
     loadPlayerItem(itemId);
     drawSleep(s);
     if (!playing) $('p-out').hidden = true;
-    else if (s.OutputVideo !== undefined || s.OutputAudio !== undefined) {
-      // Two labelled lines, as in 0.23 but never cut: the picture the OPPO sends, and the sound the amplifier
-      // receives with its volume (the subtitles are on their own tile).
+    else {
+      // Two labelled lines: the picture the OPPO sends (#QHS and its output message), then what the amplifier decodes
+      // (its format sensor in Home Assistant, else its sound mode) with its volume. Without an amplifier (standard
+      // edition, or none configured) the second line is the OPPO's sound track.
       var out = $('p-out');
       out.textContent = '';
       var vol = !$('amp-row').hidden && $('amp-value').textContent !== '—' ? $('amp-value').textContent : '';
-      // Standard edition: no amplifier in the app, the sound line says "Sound".
-      [['OPPO', s.OutputVideo], [HOME_UI ? t('amp_kind') : t('src_out_audio'), [s.OutputAudio, s.OutputAudio ? vol : ''].filter(Boolean).join(' · ')]].forEach(function (x) {
+      var ampLine = HOME_UI && last.ampFormat;
+      [['OPPO', last.outVideo],
+       [ampLine ? t('amp_kind') : t('src_out_audio'), ampLine ? [last.ampFormat, vol].filter(Boolean).join(' · ') : last.outAudio]].forEach(function (x) {
         if (!x[1]) return;
         var row = el('div', { class: 'po-row' });
         row.appendChild(el('b', { text: x[0] }));
@@ -3288,7 +3293,8 @@
       });
       stateLine.textContent = standby ? t('src_standby') : current === null ? '' : t('src_now', t(SOURCES[current][2]));
       out.textContent = '';
-      [[t('src_out_video'), last.outVideo], [t('src_out_audio'), last.outAudio], [t('amplifier'), $('amp-value').textContent !== '—' && !$('amp-row').hidden ? $('amp-value').textContent : null]]
+      var ampVol = $('amp-value').textContent !== '—' && !$('amp-row').hidden ? $('amp-value').textContent : null;
+      [[t('src_out_video'), last.outVideo], [t('src_out_audio'), last.outAudio], [t('amplifier'), [last.ampFormat, ampVol].filter(Boolean).join(' · ') || null]]
         .forEach(function (r) { if (r[1]) { out.appendChild(el('dt', { text: r[0] })); out.appendChild(el('dd', { text: r[1] })); } });
       if (!out.childNodes.length) out.appendChild(el('dd', { 'class': 'note', text: t('src_out_none') }));
     }

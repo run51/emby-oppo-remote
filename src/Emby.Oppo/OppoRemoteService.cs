@@ -427,7 +427,7 @@ namespace Emby.Oppo
                             string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
                             OppoClient.Events.TryGetValue("UVO", out var uvo);
                             bool fr = Fr;
-                            result.OutputVideo = string.Join(" · ", new[] { HdrLabel(hdr), VideoOutLabel(uvo, fr) }.Where(x => !string.IsNullOrEmpty(x)));
+                            result.OutputVideo = string.Join(" · ", new[] { VideoOutLabel(uvo, fr), HdrLabel(hdr) }.Where(x => !string.IsNullOrEmpty(x)));
                             result.OutputAudio = TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
                             result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
                         }
@@ -749,12 +749,19 @@ namespace Emby.Oppo
             }
         }
 
-        /// <summary>"_UHD24_" → "4K 24 fps" ("4K 24 i/s" in French), "_1080P60_" → "1080p 60 fps".</summary>
+        /// <summary>
+        /// Output resolution from the player's UVO message, "source output" ("_1080P24 UHD24" → "4K 24 fps", "4K 24 i/s" in
+        /// French); a single value is taken as the output. "OTHER": unknown.
+        /// </summary>
         private static string VideoOutLabel(string v, bool fr)
         {
             if (string.IsNullOrEmpty(v)) return null;
-            var m = System.Text.RegularExpressions.Regex.Match(v.Trim('_').ToUpperInvariant(), @"^(UHD|4K|\d{3,4}[PI]?)(\d{2,3})?$");
-            if (!m.Success) return v.Trim('_');
+            var tokens = v.Replace('_', ' ').Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length == 0) return null;
+            v = tokens[tokens.Length - 1];
+            if (string.Equals(v, "OTHER", StringComparison.OrdinalIgnoreCase)) return null;
+            var m = System.Text.RegularExpressions.Regex.Match(v.ToUpperInvariant(), @"^(UHD|4K|\d{3,4}[PI]?)(\d{2,3})?$");
+            if (!m.Success) return v;
             string res = m.Groups[1].Value == "UHD" || m.Groups[1].Value == "4K" ? "4K" : m.Groups[1].Value.ToLowerInvariant();
             return m.Groups[2].Success ? res + " " + m.Groups[2].Value + L10n.T(fr, " fps", " i/s") : res;
         }

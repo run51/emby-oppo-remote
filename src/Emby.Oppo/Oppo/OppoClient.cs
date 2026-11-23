@@ -597,7 +597,71 @@ namespace Emby.Oppo.Oppo
         private static void CaptureEvents(string text)
         {
             foreach (System.Text.RegularExpressions.Match m in EventPattern.Matches(text))
-                Events[m.Groups[1].Value.ToUpperInvariant()] = m.Groups[2].Value.Trim().Split(' ')[0];
+            {
+                string code = m.Groups[1].Value.ToUpperInvariant(), value = m.Groups[2].Value.Trim();
+                // UVO carries two resolutions, the source's then the output's ("_480I60 1080P60", as read by openHAB's
+                // OPPO binding): both kept. The others keep their first word.
+                Events[code] = code == "UVO" ? value : value.Split(' ')[0];
+            }
+        }
+
+        private static CancellationTokenSource _listener;
+
+        /// <summary>
+        /// Through an oppo-multiplexer only: keeps one idle connection open to receive what the player announces by
+        /// itself in verbose mode, above all its video output (UVO), sent when a film starts and missed by the short
+        /// connections of the commands (24/11: the remote showed "Dolby Vision" without the resolution). Never on the
+        /// player's own port: the OPPO accepts a single IP-control connection and the commands need it.
+        /// </summary>
+        public static void StartEventListener(ILogger logger)
+        {
+            StopEventListener();
+            var cts = new CancellationTokenSource();
+            _listener = cts;
+            Task.Run(async () =>
+            {
+                var buffer = new byte[1024];
+                while (!cts.IsCancellationRequested)
+                {
+                    string address = Plugin.Instance?.Configuration?.IpControlAddress;
+                    if (string.IsNullOrWhiteSpace(address))
+                    {
+                        try { await Task.Delay(TimeSpan.FromMinutes(1), cts.Token).ConfigureAwait(false); } catch (OperationCanceledException) { }
+                        continue;
+                    }
+                    var (host, port) = IpControlEndpoint(address, null);
+                    try
+                    {
+                        using (var tcp = new TcpClient())
+                        {
+                            var connect = tcp.ConnectAsync(host, port);
+                            if (await Task.WhenAny(connect, Task.Delay(5000, cts.Token)).ConfigureAwait(false) != connect) throw new TimeoutException("connect");
+                            await connect.ConfigureAwait(false);
+                            using (var stream = tcp.GetStream())
+                            using (cts.Token.Register(() => tcp.Close()))
+                            {
+                                int count;
+                                while ((count = await stream.ReadAsync(buffer, 0, buffer.Length, cts.Token).ConfigureAwait(false)) > 0)
+                                    CaptureEvents(Encoding.ASCII.GetString(buffer, 0, count));
+                            }
+                        }
+                    }
+                    catch (Exception ex) when (!cts.IsCancellationRequested)
+                    {
+                        logger.Debug("OPPO event listener ({0}:{1}): {2}", host, port, ex.Message);
+                    }
+                    catch (Exception) { }
+                    try { await Task.Delay(TimeSpan.FromSeconds(15), cts.Token).ConfigureAwait(false); } catch (OperationCanceledException) { }
+                }
+            });
+        }
+
+        public static void StopEventListener()
+        {
+            var cts = Interlocked.Exchange(ref _listener, null);
+            if (cts == null) return;
+            cts.Cancel();
+            cts.Dispose();
         }
 
         /// <summary>

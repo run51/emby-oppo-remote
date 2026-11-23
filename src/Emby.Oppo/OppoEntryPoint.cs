@@ -69,6 +69,7 @@ namespace Emby.Oppo
                 _logger.ErrorException("OPPO: could not migrate legacy settings", ex);
             }
             _timer = new Timer(_ => Register(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1));
+            Oppo.OppoClient.StartEventListener(_logger);
         }
 
         /// <summary>
@@ -161,6 +162,7 @@ namespace Emby.Oppo
         {
             _libraryManager.ItemUpdated -= OnItemUpdated;
             _timer?.Dispose();
+            Oppo.OppoClient.StopEventListener();
         }
     }
 }

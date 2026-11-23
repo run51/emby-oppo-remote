@@ -103,6 +103,10 @@
             <div class="inputContainer">
                 <input is="emby-input" type="text" id="txtAmpEntity" label="Home Assistant — amplifier entity (e.g. media_player.denon):" data-i18n-label="ampEntity" />
             </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="text" id="txtAmpFormatEntity" label="Home Assistant — amplifier audio format sensor (optional, e.g. sensor.denon_audio_format):" data-i18n-label="ampFormatEntity" />
+                <div class="fieldDescription" data-i18n="ampFormatHelp">What the amplifier decodes (Dolby TrueHD, DTS-HD MA…), shown while a film plays. Empty: sensor.&lt;amplifier&gt;_audio_format if it exists, else the amplifier's sound mode.</div>
+            </div>
 
             <div style="margin-top:2em;">
                 <button is="emby-button" type="submit" class="raised button-submit block"><span data-i18n="save">Save</span></button>

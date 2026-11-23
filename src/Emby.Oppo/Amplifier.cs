@@ -20,6 +20,10 @@ namespace Emby.Oppo
         public double? VolumeDb { get; set; }
         public bool Muted { get; set; }
         public string Name { get; set; }
+        /// <summary>Audio format the amplifier decodes (its format sensor, e.g. "Dolby TrueHD"), or null.</summary>
+        public string Format { get; set; }
+        /// <summary>Sound mode (media_player sound_mode attribute, e.g. "Dolby Hd"), or null.</summary>
+        public string SoundMode { get; set; }
     }
 
     /// <summary>
@@ -70,8 +74,10 @@ namespace Emby.Oppo
                         state.VolumeDb = a.volume_db;
                         state.Muted = a.is_volume_muted ?? false;
                         state.Name = a.friendly_name;
+                        state.SoundMode = Known(a.sound_mode);
                     }
                 }
+                if (state.On) state.Format = await ReadFormat(json, c).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -80,6 +86,39 @@ namespace Emby.Oppo
             }
             lock (Gate) { _cached = state; _cachedAt = DateTime.UtcNow; }
             return state;
+        }
+
+        private static string Known(string v) =>
+            string.IsNullOrWhiteSpace(v) || v == "unknown" || v == "unavailable" ? null : v.Trim();
+
+        // The format sensor: the one set, else sensor.<amplifier object id>_audio_format. A missing sensor (404) is not
+        // asked again for 10 minutes.
+        private static string _missingFormat;
+        private static DateTime _missingAt;
+
+        private static async Task<string> ReadFormat(IJsonSerializer json, PluginConfiguration c)
+        {
+            string entity = (c.AmplifierFormatEntity ?? "").Trim();
+            if (entity.Length == 0)
+            {
+                string amp = c.AmplifierEntity.Trim();
+                int dot = amp.IndexOf('.');
+                entity = "sensor." + (dot >= 0 ? amp.Substring(dot + 1) : amp) + "_audio_format";
+            }
+            lock (Gate)
+                if (entity == _missingFormat && DateTime.UtcNow - _missingAt < TimeSpan.FromMinutes(10)) return null;
+            try
+            {
+                using (var response = await Send("GET", "/api/states/" + Uri.EscapeDataString(entity), null).ConfigureAwait(false))
+                using (var stream = response.GetResponseStream())
+                    return Known(json.DeserializeFromStream<HaState>(stream)?.state);
+            }
+            catch (WebException ex) when (ex.Response is HttpWebResponse r && r.StatusCode == HttpStatusCode.NotFound)
+            {
+                lock (Gate) { _missingFormat = entity; _missingAt = DateTime.UtcNow; }
+                return null;
+            }
+            catch (Exception) { return null; }
         }
 
         /// <summary>Volume up / down (steps times), mute toggle or absolute level (0–1). Returns false if Home Assistant refused or is unreachable.</summary>
@@ -153,6 +192,7 @@ namespace Emby.Oppo
             public double? volume_db { get; set; }
             public bool? is_volume_muted { get; set; }
             public string friendly_name { get; set; }
+            public string sound_mode { get; set; }
         }
 #pragma warning restore IDE1006
     }

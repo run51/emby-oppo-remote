@@ -78,6 +78,13 @@ namespace Emby.Oppo
         public string AmplifierEntity { get; set; } = "";
 
         /// <summary>
+        /// Optional: the Home Assistant sensor giving the audio format the amplifier decodes (e.g.
+        /// sensor.denon_audio_format), shown on the remote's playback screen. Empty: sensor.&lt;amplifier&gt;_audio_format
+        /// when it exists, else the amplifier's sound mode.
+        /// </summary>
+        public string AmplifierFormatEntity { get; set; } = "";
+
+        /// <summary>
         /// Plays ISO files over DLNA instead of a network share. Requires the oppo-dv-mkv mod on the player
         /// ("DLNA Disc Images" on); the network share is used if the player does not start within 30 s.
         /// </summary>

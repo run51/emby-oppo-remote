@@ -50,6 +50,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             tmdbKey: 'TheMovieDb — API key (optional):',
             tmdbKeyHelp: 'Your own key (themoviedb.org → Settings → API): the remote then also shows the French trailers of each film.',
             ampEntity: 'Home Assistant — amplifier entity (e.g. media_player.denon):',
+            ampFormatEntity: 'Home Assistant — amplifier audio format sensor (optional, e.g. sensor.denon_audio_format):',
+            ampFormatHelp: 'What the amplifier decodes (Dolby TrueHD, DTS-HD MA…), shown while a film plays. Empty: sensor.<amplifier>_audio_format if it exists, else the amplifier\'s sound mode.',
             save: 'Save',
             choose: '— choose —',
             manualEntry: 'Manual entry…',
@@ -113,6 +115,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             tmdbKey: 'TheMovieDb — clé d\'API (facultatif) :',
             tmdbKeyHelp: 'Votre propre clé (themoviedb.org → Paramètres → API) : la télécommande affiche alors aussi les bandes-annonces françaises de chaque film.',
             ampEntity: 'Home Assistant — entité de l\'ampli (ex. media_player.denon) :',
+            ampFormatEntity: 'Home Assistant — capteur du format audio de l\'ampli (facultatif, ex. sensor.denon_audio_format) :',
+            ampFormatHelp: 'Ce que l\'ampli décode (Dolby TrueHD, DTS-HD MA…), affiché pendant la lecture d\'un film. Vide : sensor.<ampli>_audio_format s\'il existe, sinon le mode sonore de l\'ampli.',
             save: 'Enregistrer',
             choose: '— choisir —',
             manualEntry: 'Saisie manuelle…',
@@ -366,6 +370,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 config.HomeAssistantToken = view.querySelector('#txtHaToken').value.trim();
                 config.TmdbApiKey = view.querySelector('#txtTmdbApiKey').value.trim();
                 config.AmplifierEntity = view.querySelector('#txtAmpEntity').value.trim();
+                config.AmplifierFormatEntity = view.querySelector('#txtAmpFormatEntity').value.trim();
                 config.Mappings = readAll();
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
                     loading.hide();
@@ -434,6 +439,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtHaToken').value = config.HomeAssistantToken || '';
                 view.querySelector('#txtTmdbApiKey').value = config.TmdbApiKey || '';
                 view.querySelector('#txtAmpEntity').value = config.AmplifierEntity || '';
+                view.querySelector('#txtAmpFormatEntity').value = config.AmplifierFormatEntity || '';
                 state.mappings = config.Mappings || [];
                 var folders = res[1];
                 state.libraries = (folders && folders.Items) ? folders.Items : (folders || []);
