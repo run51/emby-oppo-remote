@@ -439,7 +439,7 @@
   .devcard .dc-state { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .devcard .dc-go { min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 13.5px; flex: none; }
   .resume-hero { display: block; position: relative; margin: 12px 0 0; border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); color: inherit; text-decoration: none; }
-  .resume-hero .rh-img { position: relative; aspect-ratio: 16 / 8; background: var(--surface-2) center / cover no-repeat; }
+  .resume-hero .rh-img { display: block; color: inherit; text-decoration: none; position: relative; aspect-ratio: 16 / 8; background: var(--surface-2) center / cover no-repeat; }
   .resume-hero .rh-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(11,11,13,0) 30%, rgba(11,11,13,.85) 100%); }
   .resume-hero .rh-cap { position: absolute; left: 14px; right: 14px; bottom: 12px; z-index: 1; display: flex; flex-direction: column; gap: 4px; }
   .resume-hero .rh-title { font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: -0.01em; line-height: 1.15; }
@@ -504,6 +504,31 @@
   .amp-box .row.amp { gap: 8px; }
   .amp-box .pill { background: var(--surface-2); }
   .amp-box .amp-level b { color: #c9dbff; }
+  .chap-hero { position: relative; aspect-ratio: 16 / 9; max-height: 210px; width: 100%; border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+  .chap-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .chap-hero .ch-cap { position: absolute; inset: auto 0 0 0; padding: 22px 12px 10px; display: flex; flex-direction: column; gap: 2px;
+    background: linear-gradient(to bottom, rgba(11,11,13,0), rgba(11,11,13,.86)); }
+  .chap-hero .ch-cap span { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
+  .chap-hero .ch-cap b { font-family: var(--display); font-size: 16px; font-weight: 600; }
+  .chap-hero .ch-cap b:empty { display: none; }
+  .track-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ttile { min-height: 58px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); text-align: left; padding: 8px 12px;
+    display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; }
+  .ttile small { font-size: 11.5px; color: var(--muted); }
+  .ttile b { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-box { display: none; }
+  .track-box.sheet { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; max-height: 70vh; overflow-y: auto;
+    border-radius: 22px 22px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); background: var(--surface); }
+  .scrim { position: fixed; inset: 0; z-index: 8; background: rgba(0, 0, 0, .55); }
+  body.sheet-open .tabbar, body.sheet-open .mini { display: none !important; }
+  .room-box { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .dev-head .dh-ic.room { background: rgba(84, 210, 127, .12); color: #7fe0a2; }
+  @media (min-width: 1100px) and (orientation: landscape) {
+    .track-box { display: block; }
+    .now .dev-head { display: none; }   /* the docked remote already says which player it is, with its power key */
+    .track-tiles { display: none; }
+    .track-box.sheet { position: static; border-radius: 18px; max-height: none; }
+  }
   body.tabs { --tabbar-h: 66px; }
   body.tabs .view { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   body.tabs.has-mini .view { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
@@ -603,6 +628,7 @@
 
   <div class="now" aria-live="polite">
     <div class="dev-head"><span class="dh-ic"><svg><use href="#i-disc"/></svg></span><span class="dh-name" id="p-dev">OPPO</span><span class="dh-kind" data-i18n="player_kind">Player</span></div>
+    <div class="chap-hero" id="chap-hero" hidden><img id="ch-img" alt=""><div class="ch-cap"><span id="ch-n"></span><b id="ch-name"></b></div></div>
     <div class="now-top">
       <img class="p-poster" id="p-poster" alt="" hidden>
       <div class="now-text">
@@ -636,6 +662,10 @@
     <button class="pill info" data-key="OSD" aria-label="OPPO information on screen" data-i18n-aria="info_aria"><svg><use href="#i-info"/></svg><span data-i18n="info_short">Info</span></button>
   </div>
 
+  <div class="track-tiles" id="track-tiles">
+    <button class="ttile" type="button" data-sheet="audio-box"><small>Audio</small><b id="tt-audio">—</b></button>
+    <button class="ttile" type="button" data-sheet="subs-box"><small data-i18n="subtitles">Subtitles</small><b id="tt-subs">—</b></button>
+  </div>
   <section class="amp-box" id="amp-row" hidden>
     <div class="dev-head"><span class="dh-ic amp"><svg><use href="#i-vol-up"/></svg></span><span class="dh-name" id="amp-name" data-i18n="amplifier">Amplifier</span><span class="dh-kind" data-i18n="amp_kind">Amplifier</span></div>
     <div class="row amp">
@@ -669,17 +699,20 @@
     </div>
   </div>
 
-  <div class="row">
-    <button class="pill" id="seance-on" type="button" data-i18n="showtime"><svg><use href="#i-seance"/></svg>Showtime</button>
-    <button class="pill" id="seance-off" type="button" data-i18n="all_off"><svg><use href="#i-power"/></svg>All off</button>
-    <button class="pill" data-key="HOM" aria-label="OPPO home menu" data-i18n-aria="oppo_home" data-i18n="home"><svg><use href="#i-home"/></svg>Home</button>
-  </div>
-  <section class="card-box">
+  <section class="room-box" id="room-box">
+    <div class="dev-head"><span class="dh-ic room"><svg><use href="#i-seance"/></svg></span><span class="dh-name" data-i18n="room">Home cinema</span><span class="dh-kind" data-i18n="room_kind">OPPO · TV · amp</span></div>
+    <div class="row">
+      <button class="pill" id="seance-on" type="button" data-i18n="showtime"><svg><use href="#i-seance"/></svg>Showtime</button>
+      <button class="pill" id="seance-off" type="button" data-i18n="all_off"><svg><use href="#i-power"/></svg>All off</button>
+    </div>
+  </section>
+  <div class="scrim" id="scrim" hidden></div>
+  <section class="card-box track-box" id="audio-box">
     <h2>Audio</h2>
     <div class="chips" id="audio"><span class="empty" data-i18n="during_playback">Available during playback</span></div>
   </section>
 
-  <section class="card-box">
+  <section class="card-box track-box" id="subs-box">
     <h2 data-i18n="subtitles">Subtitles</h2>
     <div class="chips" id="subtitles"><span class="empty" data-i18n="during_playback">Available during playback</span></div>
   </section>
@@ -694,7 +727,7 @@
         <button class="color blue" data-key="BLU" aria-label="Blue button" data-i18n-aria="key_blue"></button>
       </div>
       <div class="row">
-        <button class="pill small" data-key="OPT"><svg><use href="#i-more"/></svg>Option</button>
+        <button class="pill small" data-key="HOM" aria-label="OPPO home menu" data-i18n-aria="oppo_home"><svg><use href="#i-home"/></svg><span data-i18n="oppo_home_short">OPPO home</span></button>
         <button class="pill small" data-key="PUP">Page −</button>
         <button class="pill small" data-key="PDN">Page +</button>
       </div>
@@ -792,7 +825,7 @@
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
       during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
       signed_in_as: 'Signed in as {0}',
-      player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
+      chapter_of: 'Chapter {0} of {1}', room: 'Home cinema', room_kind: 'OPPO · TV · amp', oppo_home_short: 'OPPO home', player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
       states: {
         'PLAY': 'Playing', 'PAUSE': 'Paused', 'STOP': 'Stopped', 'DISC MENU': 'Disc menu',
         'HOME MENU': 'OPPO home menu', 'MEDIA CENTER': 'Media center', 'SCREEN SAVER': 'Screen saver',
@@ -850,7 +883,7 @@
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
       during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
       signed_in_as: 'Connecté : {0}',
-      player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
+      chapter_of: 'Chapitre {0} sur {1}', room: 'Salle', room_kind: 'OPPO · télé · ampli', oppo_home_short: 'Accueil OPPO', player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
       states: {
         'PLAY': 'Lecture', 'PAUSE': 'Pause', 'STOP': 'Arrêt', 'DISC MENU': 'Menu du disque',
         'HOME MENU': 'Accueil de l’OPPO', 'MEDIA CENTER': 'Centre multimédia', 'SCREEN SAVER': 'Économiseur d’écran',
@@ -2228,12 +2261,13 @@
 
   var playerItemId = null;
   var chapterTimes = [];   // start of each chapter (s), for the current thumbnail's bar
+  var chapterList = [], chapterItem = null;   // the chapters of the title playing, for the large picture (0.24)
   function loadPlayerItem(itemId) {
     if ((itemId || null) === playerItemId) return;
     playerItemId = itemId || null;
     var bg = $('p-bg'), logo = $('p-logo'), badgeBox = $('p-badges'), box = $('chap-box'), row = $('chapters');
     bg.classList.remove('on'); logo.hidden = true; $('p-title').hidden = false;
-    badgeBox.textContent = ''; row.textContent = ''; box.hidden = true; chapterTimes = [];
+    badgeBox.textContent = ''; row.textContent = ''; box.hidden = true; chapterTimes = []; chapterList = []; $('chap-hero').hidden = true;
     if (!itemId || !uid()) return;
     emby('/Users/' + uid() + '/Items/' + itemId, { Fields: 'MediaSources,PartCount' }).then(function (item) {
       if (playerItemId !== itemId) return;
@@ -2268,6 +2302,7 @@
           row.appendChild(b);
         });
         chapterTimes = list.map(function (c) { return c.Seconds; });
+        chapterList = list; chapterItem = item.Id;
         box.hidden = false;
         markChapter(last.chapterText, true);
       });
@@ -2279,6 +2314,7 @@
     last.chapterText = text;
     var m = /^(\d+)/.exec(text || '');
     var current = m ? +m[1] - 1 : -1;
+    drawChapterHero(current);
     Array.prototype.forEach.call($('chapters').children, function (c) {
       var on = +c.getAttribute('data-index') === current;
       c.classList.toggle('current', on);
@@ -2287,6 +2323,19 @@
         row.scrollTo({ left: Math.max(0, c.offsetLeft - row.clientWidth / 2 + c.clientWidth / 2), behavior: 'smooth' });
       }
     });
+  }
+
+  /** The current chapter's picture, in large in the playback card, with its number and its name when the disc
+      gives a real one (not "Chapter 14"). */
+  function drawChapterHero(current) {
+    var hero = $('chap-hero');
+    var c = current >= 0 ? chapterList[current] : null;
+    if (!c || !chapterItem) { hero.hidden = true; return; }
+    var src = API + '/ChapterImage?Id=' + encodeURIComponent(chapterItem) + '&Index=' + c.Index;
+    if ($('ch-img').getAttribute('src') !== src) $('ch-img').src = src;
+    $('ch-n').textContent = t('chapter_of', c.Index + 1, chapterList.length);
+    $('ch-name').textContent = c.Name && !/^(chap|kapitel|cap[ií]tulo|\d+$)/i.test(c.Name.trim()) ? c.Name : '';
+    hero.hidden = false;
   }
 
   // ---------- Sleep timer
@@ -2337,6 +2386,7 @@
   setInterval(drawProgress, 500);
 
   function emptyTracks(id) {
+    drawTile(id === 'subtitles', []);
     var box = $(id);
     if (box.dataset.empty === '1') return;
     box.dataset.empty = '1';
@@ -2349,7 +2399,26 @@
     var name = (track.Name || '').replace(/^\s*\d+\s*\/\s*\d+\s*/, '').trim();
     return name || t('track_n', track.Index);
   }
+  function closeSheet() {
+    document.querySelectorAll('.track-box.sheet').forEach(function (b) { b.classList.remove('sheet'); });
+    $('scrim').hidden = true;
+    document.body.classList.remove('sheet-open');
+  }
+  document.querySelectorAll('.ttile').forEach(function (b) {
+    b.addEventListener('click', function () {
+      closeSheet();
+      $(b.getAttribute('data-sheet')).classList.add('sheet');
+      $('scrim').hidden = false;
+      document.body.classList.add('sheet-open');   // the remote is its own stacking context: the tab bar must step aside
+    });
+  });
+  $('scrim').addEventListener('click', closeSheet);
+  function drawTile(subtitles, list) {
+    var sel = (list || []).filter(function (x) { return x.Selected; })[0];
+    $(subtitles ? 'tt-subs' : 'tt-audio').textContent = sel ? oppoTrackLabel(sel, subtitles) : '—';
+  }
   function drawTracks(id, list, subtitles) {
+    drawTile(subtitles, list);
     var box = $(id);
     box.dataset.empty = '0';
     box.textContent = '';
@@ -2363,6 +2432,8 @@
         buzz();
         Array.prototype.forEach.call(box.children, function (c) { c.classList.remove('selected'); });
         b.classList.add('selected');
+        $(subtitles ? 'tt-subs' : 'tt-audio').textContent = b.textContent;
+        setTimeout(closeSheet, 250);
         remote(subtitles ? '/Subtitle' : '/Audio', { Index: track.Index }, 'POST').then(function (r) {
           if (r && !r.Ok) toast(r.Message || t('refused_by_oppo'));
           wantTracks = true; schedule(1200);
@@ -2398,7 +2469,7 @@
   $('fwd30').addEventListener('click', function () { jump(30); });
   $('seance-on').addEventListener('click', function () { seance(true); });
   $('seance-off').addEventListener('click', function () { seance(false); });
-  if (!HOME_UI) { $('seance-on').hidden = true; $('seance-off').hidden = true; }
+  if (!HOME_UI) $('room-box').hidden = true;
 
   /** Amplifier volume and mute (home edition, Home Assistant configured on the server). */
   var ampKeysOn = null;
@@ -2571,21 +2642,22 @@
   }
   function drawDevCards() { Array.prototype.forEach.call(document.querySelectorAll('.devcard'), drawDevCard); }
 
-  /** The first title to resume, in large: its backdrop, what is left, and a button that opens its page. */
+  /** The first title to resume, in large: its backdrop and what is left open its page; "Resume" starts it on the
+      OPPO at once, where it stopped (the plugin works out the disc of a multi-disc title from the position). */
   function resumeHero(item) {
     var ud = item.UserData || {}, total = item.RunTimeTicks || 0, pos = ud.PlaybackPositionTicks || 0;
     var pct = ud.PlayedPercentage || (total ? pos / total * 100 : 0);
     var back = image(item, 'Backdrop', 900) || image(item, 'Primary', 600);
-    var img = el('div', { 'class': 'rh-img' }, [el('div', { 'class': 'rh-cap' }, [
+    var img = el('a', { 'class': 'rh-img', href: '#/item/' + item.Id, 'aria-label': item.Name }, [el('div', { 'class': 'rh-cap' }, [
       el('div', { 'class': 'rh-title', text: item.Name }),
       total ? el('div', { 'class': 'rh-sub', text: t('time_left', runtime(Math.max(0, total - pos))) }) : null])]);
     if (back) img.style.backgroundImage = 'url("' + back + '")';
     var bar = el('div', { 'class': 'rh-bar' }, [el('span')]);
     bar.firstChild.style.width = Math.max(2, Math.min(100, pct)) + '%';
-    var a = el('a', { 'class': 'resume-hero card', href: '#/item/' + item.Id, 'data-id': item.Id }, [img, bar,
-      el('div', { 'class': 'rh-foot' }, [el('span', { 'class': 'rh-fmt', text: item.ProductionYear ? String(item.ProductionYear) : '' }),
-        el('span', { 'class': 'rh-go', html: icon('play') }, [t('resume_go')])])]);
-    return a;
+    var go = el('button', { 'class': 'rh-go', type: 'button', html: icon('play') }, [t('resume_go')]);
+    go.addEventListener('click', function () { buzz(); launch(item, { StartPositionTicks: pos }); });
+    return el('div', { 'class': 'resume-hero', 'data-id': item.Id }, [img, bar,
+      el('div', { 'class': 'rh-foot' }, [el('span', { 'class': 'rh-fmt', text: item.ProductionYear ? String(item.ProductionYear) : '' }), go])]);
   }
 
   function start() {
