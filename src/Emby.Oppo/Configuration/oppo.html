@@ -30,6 +30,19 @@
             <div class="inputContainer">
                 <input is="emby-input" type="number" id="txtStartTimeout" label="Start timeout (seconds):" data-i18n-label="startTimeout" min="10" max="300" />
             </div>
+            <div class="checkboxContainer checkboxContainer-withDescription">
+                <label>
+                    <input is="emby-checkbox" type="checkbox" id="chkSshRestart" />
+                    <span data-i18n="sshRestart">Jailbroken player: allow restarting it over SSH</span>
+                </label>
+                <div class="fieldDescription checkboxFieldDescription" data-i18n="sshRestartHelp">Adds a "Restart the OPPO" button to the remote: the same as unplugging the player, without touching the cable (stuck DLNA, IP control not answering…). Needs the jailbreak's jb_overlay with SSH.</div>
+            </div>
+            <div class="inputContainer">
+                <input is="emby-input" type="password" id="txtSshPassword" label="Root password (SSH):" data-i18n-label="sshPassword" autocomplete="off" />
+                <div class="fieldDescription" data-i18n="sshPasswordHelp">The jb_overlay's ROOT_PWD, "oppo" by default.</div>
+            </div>
+            <button is="emby-button" type="button" class="raised btnTestSsh"><span data-i18n="testSsh">Test SSH</span></button>
+            <div class="testSshStatus fieldDescription" style="margin:1em 0;"></div>
 
             <h2 class="sectionTitle" data-i18n="remote">Remote control</h2>
             <div class="fieldDescription" style="margin-bottom:2em;">

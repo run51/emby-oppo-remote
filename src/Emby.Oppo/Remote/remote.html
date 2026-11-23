@@ -392,6 +392,7 @@
   <symbol id="i-vol-down" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm11 2h8v2h-8z"/></symbol>
   <symbol id="i-vol-up" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm14 2V8h-2v3h-3v2h3v3h2v-3h3v-2z"/></symbol>
   <symbol id="i-mute" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9zm18.4.4L20 8l-2.6 2.6L14.8 8l-1.4 1.4 2.6 2.6-2.6 2.6 1.4 1.4 2.6-2.6 2.6 2.6 1.4-1.4-2.6-2.6z"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></symbol>
   <symbol id="i-power" viewBox="0 0 24 24"><path d="M13 3h-2v10h2zm4.8 2.2-1.4 1.4A7 7 0 1 1 7.6 6.6L6.2 5.2A9 9 0 1 0 17.8 5.2z"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16a6.47 6.47 0 0 0 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></symbol>
   <symbol id="i-remote" viewBox="0 0 24 24"><path d="M15 2H9a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3zm1 17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1zM12 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm-2 9h4v2h-4z"/></symbol>
@@ -523,6 +524,9 @@
         <button class="pill small" data-key="SUB" data-i18n="subtitles">Subtitles</button>
         <button class="pill small" data-key="ANG">Angle</button>
       </div>
+      <div class="row" id="restart-row" hidden>
+        <button class="pill small" id="restart" type="button"><svg><use href="#i-restart"/></svg><span data-i18n="restart_oppo">Restart the OPPO</span></button>
+      </div>
       <div class="row">
         <button class="pill small" data-key="ZOM">Zoom</button>
         <button class="pill small" data-key="RPT" data-i18n="repeat">Repeat</button>
@@ -607,7 +611,7 @@
       oppo_unreachable: 'OPPO unreachable', not_configured: 'OPPO not set up', not_configured_hint: 'Set its address in Emby: Dashboard → Plugins → OPPO', chapter_n: 'Chapter {0}', go_chapter: 'Go to chapter {0}', seek_refused: 'Seek refused',
       ends_at: 'ends at {0}', playing_on: 'Playing on {0}', track_n: 'Track {0}', no_subs_here: 'No subtitles on this title',
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
-      during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', powering_on: 'Turning on the OPPO…',
+      during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
       signed_in_as: 'Signed in as {0}',
       states: {
         'PLAY': 'Playing', 'PAUSE': 'Paused', 'STOP': 'Stopped', 'DISC MENU': 'Disc menu',
@@ -664,7 +668,7 @@
       oppo_unreachable: 'OPPO injoignable', not_configured: 'OPPO non configuré', not_configured_hint: 'Renseignez son adresse dans Emby : Tableau de bord → Plugins → OPPO', chapter_n: 'Chapitre {0}', go_chapter: 'Aller au chapitre {0}', seek_refused: 'Saut refusé',
       ends_at: 'fin à {0}', playing_on: 'Lecture sur {0}', track_n: 'Piste {0}', no_subs_here: 'Aucun sous-titre sur ce titre',
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
-      during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', powering_on: 'Allumage de l’OPPO…',
+      during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
       signed_in_as: 'Connecté : {0}',
       states: {
         'PLAY': 'Lecture', 'PAUSE': 'Pause', 'STOP': 'Arrêt', 'DISC MENU': 'Menu du disque',
@@ -1963,6 +1967,7 @@
 
   function render(s) {
     last.movieDisc = !!s.MovieDisc;   // "Movie without menus" keeps Dolby Vision (reduced disc over DLNA)
+    $('restart-row').hidden = !s.CanRestart;
     var state = (s.State || '').toUpperCase();
     var playing = PLAYING.indexOf(state) >= 0;
     last.state = state;
@@ -2255,6 +2260,13 @@
 
   $('playpause').addEventListener('click', function () { sendKey(last.state === 'PLAY' ? 'PAU' : 'PLA'); });
   $('nav-power').addEventListener('click', function () { $('power').click(); });
+  // Jailbroken player: restart over SSH (as unplugging it), offered when the settings allow it (State.CanRestart).
+  $('restart').addEventListener('click', function () {
+    if (!confirm(t('confirm_restart'))) return;
+    remote('/Restart', null, 'POST').then(function (r) {
+      toast((r && r.Message) || t('restart_failed'));
+    }).catch(function (err) { if (!(err && err.auth)) toast(t('restart_failed')); });
+  });
   $('power').addEventListener('click', function () {
     if (last.reachable) {
       if (confirm(t('confirm_power_off'))) sendKey('POF');

@@ -45,6 +45,14 @@ namespace Emby.Oppo
         public string IpControl { get; set; }
     }
 
+    [Route("/Oppo/TestSsh", "POST", Summary = "Connects to a jailbroken OPPO over SSH (root) and reads its uptime and the jb_overlay's Telnet setting")]
+    public sealed class TestSsh : IReturn<TestMappingResult>
+    {
+        public string Address { get; set; }
+        /// <summary>Root password; empty: the saved one.</summary>
+        public string Password { get; set; }
+    }
+
     [Route("/Oppo/TestMapping", "POST", Summary = "Mounts a share on the OPPO and lists its root")]
     public sealed class TestMapping : IReturn<TestMappingResult>
     {
@@ -192,6 +200,29 @@ namespace Emby.Oppo
             }
             _logger.Info("OPPO: connection test {0}: {1}{2}", target, result, string.IsNullOrEmpty(answer) ? "" : " (" + answer + ")");
             return new TestMappingResult { Success = result == OppoClient.ProbeResult.Ok, Message = message };
+        }
+
+        public async Task<object> Post(TestSsh request)
+        {
+            var config = Plugin.Instance.Configuration;
+            string host = string.IsNullOrWhiteSpace(request.Address) ? config.OppoAddress : request.Address.Trim();
+            if (string.IsNullOrWhiteSpace(host))
+                return new TestMappingResult { Message = L10n.T(Fr, "Enter the OPPO's IP address first.", "Indiquez d'abord l'adresse IP de l'OPPO.") };
+            string password = string.IsNullOrEmpty(request.Password) ? config.SshPassword : request.Password;
+            var (result, output) = await OppoSsh.Run(host.Trim(), password,
+                "cat /proc/uptime; grep '^USE_TELNET' /mnt/ubi_boot/jb_overlay/config.ini 2>/dev/null", TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+            _logger.Info("OPPO: SSH test {0}: {1}", host.Trim(), result);
+            if (result != OppoSsh.Outcome.Ok)
+                return new TestMappingResult { Message = "✘ " + PlayerRestart.Explain(result, output, Fr) };
+            var lines = output.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            double.TryParse(lines.Length > 0 ? lines[0].Split(' ')[0] : "", NumberStyles.Float, CultureInfo.InvariantCulture, out double uptime);
+            var since = TimeSpan.FromSeconds(uptime);
+            string message = L10n.T(Fr, "✔ SSH works: the OPPO can be restarted from the remote (running for ", "✔ SSH fonctionne : l'OPPO peut être redémarré depuis la télécommande (en marche depuis ")
+                + ((int)since.TotalHours > 0 ? (int)since.TotalHours + " h " : "") + since.Minutes + " min).";
+            if (output.IndexOf("USE_TELNET=1", StringComparison.Ordinal) >= 0)
+                message += L10n.T(Fr, " ⚠ The jb_overlay's Telnet is on (USE_TELNET=1): it takes port 23 from the OPPO's IP control. Set it to 0 (see the README).",
+                    " ⚠ Le Telnet du jb_overlay est activé (USE_TELNET=1) : il prend le port 23 au contrôle IP de l'OPPO. Passez-le à 0 (voir le README).");
+            return new TestMappingResult { Success = true, Message = message };
         }
 
         public async Task<object> Post(TestMapping request)

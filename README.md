@@ -125,6 +125,10 @@ Then, from any Emby app: **Play on… → OPPO**.
 
 The plugin's settings page (*Dashboard → Plugins → OPPO*) shows the installed versions and the latest release. **Update** downloads both plugins from GitHub, checks them and replaces the installed files (the previous ones are kept in Emby's cache folder); **Restart Emby** then applies them. Administrators only. Versions older than 0.20.0 are updated once by hand.
 
+### Jailbreak: restart the player from the remote
+
+On a jailbroken player with the jb_overlay (SSH on port 22), the plugin can restart the OPPO, which is what unplugging it does, without touching the cable: useful when its DLNA renderer gets stuck or its IP control stops answering. Tick **Jailbroken player: allow restarting it over SSH** on the settings page, check the root password (`ROOT_PWD` of `/mnt/ubi_boot/jb_overlay/config.ini`, `oppo` by default) with **Test SSH**, and save. The remote then shows **Restart the OPPO** under "More buttons". The player's own `reboot` command does nothing; the plugin runs `sync; reboot -f`, the player comes back after about 25 s, and it is put back in standby if it was in standby.
+
 ### Jailbreak: turn the overlay's Telnet off
 
 The jb_overlay of the Russian jailbreak firmware (Moremodey01's, also used by other overlays such as the Dark Space Theme) reads its settings from `/mnt/ubi_boot/jb_overlay/config.ini`. With `USE_TELNET=1`, which is its documented default, its start-up script runs a Telnet server (`telnetd`) that listens on **port 23**, the port of the OPPO's IP control. The plugin then reaches that Telnet instead of the player: **Test the connection** reports "a Telnet server (the jailbreak's), not the OPPO's IP control" (from version 0.22.4; earlier versions show an "unexpected answer" made of odd characters such as `???? ??#??'??$`). Root access stays available over SSH (`USE_SSH=1`, port 22), so Telnet is not needed.

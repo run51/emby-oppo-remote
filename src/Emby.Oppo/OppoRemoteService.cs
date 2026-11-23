@@ -131,6 +131,11 @@ namespace Emby.Oppo
         public string Kind { get; set; }
     }
 
+    [Route("/Oppo/Remote/Restart", "POST", Summary = "Restarts a jailbroken OPPO over SSH (sync; reboot -f), as unplugging it would")]
+    public sealed class RemoteRestart : IReturn<RemoteActionResult>
+    {
+    }
+
     [Route("/Oppo/Remote/MainMovie", "POST", Summary = "The next play of this item starts its main movie directly, without the disc menus")]
     public sealed class RemoteMainMovie : IReturn<RemoteActionResult>
     {
@@ -209,6 +214,8 @@ namespace Emby.Oppo
         public bool MovieDisc { get; set; }
         /// <summary>The player's address is not set in the plugin's settings yet.</summary>
         public bool NotConfigured { get; set; }
+        /// <summary>The remote may offer "Restart the OPPO" (jailbroken player, restart over SSH allowed in the settings).</summary>
+        public bool CanRestart { get; set; }
     }
 
     public sealed class RemoteActionResult
@@ -325,7 +332,7 @@ namespace Emby.Oppo
 
         public async Task<object> Get(RemoteState request)
         {
-            var result = new RemoteStateResult();
+            var result = new RemoteStateResult { CanRestart = Plugin.Instance.Configuration.SshRestart };
             // Not set up yet: the remote says where to set the player's address (it used to stay on
             // "Connecting…" with "Emby is not responding", the request failing; forum report, 2026-11-20).
             if (string.IsNullOrWhiteSpace(Plugin.Instance.Configuration.OppoAddress))
@@ -559,6 +566,12 @@ namespace Emby.Oppo
             var result = ids.ToArray();
             AudioFilterCache[kind] = (DateTime.UtcNow, result);
             return result;
+        }
+
+        public async Task<object> Post(RemoteRestart request)
+        {
+            var (ok, message) = await PlayerRestart.Start(Oppo, Plugin.Instance.Configuration.OppoAddress.Trim(), _logger, Fr).ConfigureAwait(false);
+            return new RemoteActionResult { Ok = ok, Message = message };
         }
 
         public object Post(RemoteMainMovie request)

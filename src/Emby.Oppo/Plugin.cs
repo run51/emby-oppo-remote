@@ -83,6 +83,15 @@ namespace Emby.Oppo
         /// <summary>Maximum time for playback to start on the OPPO (mount included).</summary>
         public int StartTimeoutSeconds { get; set; } = 60;
 
+        /// <summary>
+        /// The player is jailbroken with SSH (jb_overlay): the plugin may restart it ("reboot -f" over SSH, as root),
+        /// from the remote's "Restart the OPPO" button. Off by default.
+        /// </summary>
+        public bool SshRestart { get; set; } = false;
+
+        /// <summary>Root password of the jailbreak's SSH (jb_overlay's ROOT_PWD, "oppo" by default). Never written to the log.</summary>
+        public string SshPassword { get; set; } = "oppo";
+
         // ---- Legacy settings (v0.1.x), migrated automatically to Mappings / WebhookUrl ----
         public string NfsServer { get; set; }
         public string NfsShares { get; set; }

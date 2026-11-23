@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.23.0
+
+- **"Restart the OPPO" button** (web remote and Android apps, under "More buttons") for jailbroken players with
+  SSH (jb_overlay): the plugin restarts the player over SSH, as unplugging it would, without touching the cable
+  (stuck DLNA renderer, IP control not answering…). The player's own `reboot` does nothing; the plugin runs
+  `sync; reboot -f`, follows the player until it answers again (about 25 s) and puts it back in standby if it was.
+  Off by default: settings page → "Jailbroken player: allow restarting it over SSH", root password (`oppo` by
+  default) and a **Test SSH** button, which also warns when the jb_overlay's Telnet is on (`USE_TELNET=1`).
+- The SSH client is SSH.NET 2023.0.0 (MIT), embedded in Emby.Oppo.dll: the plugin is still two files. Its known
+  advisories concern its SCP client only, which the plugin does not use.
+- Emby.Oppo 0.23.0, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.22.4
 
 - **Jailbreak Telnet on port 23 recognised:** with IP Control off, the jailbroken player answers port 23 with its

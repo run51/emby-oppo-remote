@@ -29,6 +29,11 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             accessHelp: 'Each folder of your Emby libraries must match a share that the OPPO can mount. "Search" turns the OPPO on and lists the shares it sees; a match is suggested automatically. Check it with "Test".',
             discover: 'Search the OPPO\'s shares',
             testOppo: 'Test the connection',
+            sshRestart: 'Jailbroken player: allow restarting it over SSH',
+            sshRestartHelp: 'Adds a "Restart the OPPO" button to the remote: the same as unplugging the player, without touching the cable (stuck DLNA, IP control not answering…). Needs the jailbreak\'s jb_overlay with SSH.',
+            sshPassword: 'Root password (SSH):',
+            sshPasswordHelp: 'The jb_overlay\'s ROOT_PWD, "oppo" by default.',
+            testSsh: 'Test SSH',
             windowsNotice: 'This Emby server runs on Windows. The OPPO cannot use NFS with Windows (no NFS server), and it only speaks SMB 1, which Windows 10/11 disables. If the player has the oppo-dv-mkv mod, tick "Play over DLNA" below instead: the plugin then sends the movies itself, no share needed (allow Emby through the Windows firewall, port 8099). Otherwise, turn on SMB 1 in Windows (Turn Windows features on or off > "SMB 1.0/CIFS File Sharing Support", all its boxes; an old protocol, keep it to your home network) and enter the real share name with a Windows username and password.',
             homeAutomation: 'Home automation',
             webhookUrl: 'Webhook URL (optional):',
@@ -85,6 +90,11 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             accessHelp: 'Chaque dossier de vos bibliothèques Emby doit correspondre à un partage que l\'OPPO sait monter. « Rechercher » allume l\'OPPO et liste les partages qu\'il voit ; une correspondance est proposée automatiquement. Vérifiez-la avec « Tester ».',
             discover: 'Rechercher les partages de l\'OPPO',
             testOppo: 'Tester la connexion',
+            sshRestart: 'Lecteur jailbreaké : autoriser son redémarrage par SSH',
+            sshRestartHelp: 'Ajoute un bouton « Redémarrer l\'OPPO » à la télécommande : comme débrancher le lecteur, sans toucher au câble (DLNA bloqué, contrôle IP muet…). Nécessite le jb_overlay du jailbreak avec SSH.',
+            sshPassword: 'Mot de passe root (SSH) :',
+            sshPasswordHelp: 'Le ROOT_PWD du jb_overlay, « oppo » par défaut.',
+            testSsh: 'Tester SSH',
             windowsNotice: 'Ce serveur Emby tourne sous Windows. L\'OPPO ne peut pas utiliser le NFS avec Windows (pas de serveur NFS), et il ne parle que SMB 1, que Windows 10/11 désactive. Si le lecteur a le mod oppo-dv-mkv, cochez plutôt « Lire par DLNA » ci-dessous : le plugin envoie alors les films lui-même, sans partage (autorisez Emby dans le pare-feu Windows, port 8099). Sinon, activez SMB 1 dans Windows (Activer ou désactiver des fonctionnalités Windows > « Support de partage de fichiers SMB 1.0/CIFS », toutes ses cases ; un protocole ancien, à réserver au réseau de la maison) et indiquez le vrai nom du partage avec un utilisateur et un mot de passe Windows.',
             homeAutomation: 'Domotique',
             webhookUrl: 'URL de webhook (facultatif) :',
@@ -259,6 +269,22 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             });
         });
 
+        view.querySelector('.btnTestSsh').addEventListener('click', function () {
+            var status = view.querySelector('.testSshStatus');
+            status.textContent = t('testing');
+            ApiClient.ajax({
+                type: 'POST',
+                url: ApiClient.getUrl('Oppo/TestSsh'),
+                data: JSON.stringify({ Address: view.querySelector('#txtOppoAddress').value.trim(), Password: view.querySelector('#txtSshPassword').value }),
+                contentType: 'application/json',
+                dataType: 'json'
+            }).then(function (result) {
+                status.textContent = result.Message;
+            }, function () {
+                status.textContent = t('testError');
+            });
+        });
+
         view.querySelector('.btnDiscover').addEventListener('click', function () {
             var status = view.querySelector('.discoverStatus');
             state.mappings = readAll();
@@ -325,6 +351,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 config.DeviceName = view.querySelector('#txtDeviceName').value.trim() || 'OPPO';
                 config.StartTimeoutSeconds = parseInt(view.querySelector('#txtStartTimeout').value, 10) || 60;
                 config.DlnaDiscImages = view.querySelector('#chkDlnaDiscImages').checked;
+                config.SshRestart = view.querySelector('#chkSshRestart').checked;
+                config.SshPassword = view.querySelector('#txtSshPassword').value;
                 config.DiscServerPort = parseInt(view.querySelector('#txtDiscServerPort').value, 10) || 8099;
                 config.WebhookUrl = view.querySelector('#txtWebhookUrl').value.trim();
                 config.RemoteAddress = view.querySelector('#txtRemoteAddress').value.trim();
@@ -390,6 +418,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtDeviceName').value = config.DeviceName || 'OPPO';
                 view.querySelector('#txtStartTimeout').value = config.StartTimeoutSeconds || 60;
                 view.querySelector('#chkDlnaDiscImages').checked = !!config.DlnaDiscImages;
+                view.querySelector('#chkSshRestart').checked = !!config.SshRestart;
+                view.querySelector('#txtSshPassword').value = config.SshPassword == null ? 'oppo' : config.SshPassword;
                 view.querySelector('#txtDiscServerPort').value = config.DiscServerPort || 8099;
                 view.querySelector('#txtWebhookUrl').value = config.WebhookUrl || '';
                 view.querySelector('#txtRemoteAddress').value = config.RemoteAddress || '';
