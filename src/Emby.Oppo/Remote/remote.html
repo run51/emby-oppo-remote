@@ -715,7 +715,11 @@
   .pv-art { aspect-ratio: 16 / 8; max-height: 160px; }
   .pv-head .p-title { font-size: 18px; }
   .pv-card { gap: 8px; }
-  .p-out { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-out { display: grid; gap: 2px; }
+  .p-out[hidden] { display: none; }
+  .po-row { display: flex; gap: 10px; min-width: 0; }
+  .po-row b { flex: 0 0 44px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; line-height: 16px; }
+  .po-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
   .pv-transport .t-btn { width: 48px; height: 48px; }
   .pv-transport .t-btn.main { width: 64px; height: 64px; }
   .track-tiles .ttile { min-height: 50px; }
@@ -2717,12 +2721,17 @@
     drawSleep(s);
     if (!playing) $('p-out').hidden = true;
     else if (s.OutputVideo !== undefined || s.OutputAudio !== undefined) {
+      // Two labelled lines, as in 0.23 but never cut: the picture the OPPO sends, and the sound the amplifier
+      // receives with its volume (the subtitles are on their own tile).
       var out = $('p-out');
       out.textContent = '';
-      [[t('output_oppo'), s.OutputVideo], [' · ', s.OutputAudio], [t('subs_short'), s.OutputSubtitle ? s.OutputSubtitle.toLowerCase() : '']].forEach(function (x) {
+      var vol = !$('amp-row').hidden && $('amp-value').textContent !== '—' ? $('amp-value').textContent : '';
+      [['OPPO', s.OutputVideo], [t('amp_kind'), [s.OutputAudio, s.OutputAudio ? vol : ''].filter(Boolean).join(' · ')]].forEach(function (x) {
         if (!x[1]) return;
-        out.appendChild(el('b', { text: out.childNodes.length ? x[0] : t('output_oppo') }));
-        out.appendChild(document.createTextNode(x[1]));
+        var row = el('div', { class: 'po-row' });
+        row.appendChild(el('b', { text: x[0] }));
+        row.appendChild(el('span', { text: x[1] }));
+        out.appendChild(row);
       });
       out.hidden = !out.childNodes.length;
     }
