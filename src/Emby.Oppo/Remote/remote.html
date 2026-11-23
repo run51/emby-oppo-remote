@@ -492,6 +492,18 @@
   .tabbar a svg { width: 22px; height: 22px; }
   .tabbar a[aria-current="page"] { color: var(--accent); }
   .tabbar .side-only, .tabbar .side-dev { display: none; }
+  /* 0.24: each device has its own block and header (OPPO: the playback; amplifier: the volume) */
+  .dev-head { display: flex; align-items: center; gap: 8px; }
+  .dev-head .dh-ic { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+  .dev-head .dh-ic.amp { background: rgba(143, 180, 255, .13); color: #8fb4ff; }
+  .dev-head .dh-ic svg { width: 16px; height: 16px; }
+  .dev-head .dh-name { font-weight: 600; font-size: 13.5px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dev-head .dh-kind { margin-left: auto; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); flex: none; }
+  .now .dev-head { padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .amp-box { background: var(--surface); border: 1px solid rgba(143, 180, 255, .28); border-radius: 18px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .amp-box .row.amp { gap: 8px; }
+  .amp-box .pill { background: var(--surface-2); }
+  .amp-box .amp-level b { color: #c9dbff; }
   body.tabs { --tabbar-h: 66px; }
   body.tabs .view { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   body.tabs.has-mini .view { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
@@ -590,6 +602,7 @@
   </div>
 
   <div class="now" aria-live="polite">
+    <div class="dev-head"><span class="dh-ic"><svg><use href="#i-disc"/></svg></span><span class="dh-name" id="p-dev">OPPO</span><span class="dh-kind" data-i18n="player_kind">Player</span></div>
     <div class="now-top">
       <img class="p-poster" id="p-poster" alt="" hidden>
       <div class="now-text">
@@ -623,12 +636,15 @@
     <button class="pill info" data-key="OSD" aria-label="OPPO information on screen" data-i18n-aria="info_aria"><svg><use href="#i-info"/></svg><span data-i18n="info_short">Info</span></button>
   </div>
 
-  <div class="row amp" id="amp-row" hidden>
-    <button class="pill" id="vol-down" type="button" aria-label="Volume down" data-i18n-aria="vol_down"><svg><use href="#i-vol-down"/></svg></button>
-    <div class="amp-level" id="amp-level"><small data-i18n="amplifier">Amplifier</small><b id="amp-value">—</b></div>
-    <button class="pill" id="vol-up" type="button" aria-label="Volume up" data-i18n-aria="vol_up"><svg><use href="#i-vol-up"/></svg></button>
-    <button class="pill" id="vol-mute" type="button" aria-label="Mute" data-i18n-aria="mute"><svg><use href="#i-mute"/></svg></button>
-  </div>
+  <section class="amp-box" id="amp-row" hidden>
+    <div class="dev-head"><span class="dh-ic amp"><svg><use href="#i-vol-up"/></svg></span><span class="dh-name" id="amp-name" data-i18n="amplifier">Amplifier</span><span class="dh-kind" data-i18n="amp_kind">Amplifier</span></div>
+    <div class="row amp">
+      <button class="pill" id="vol-down" type="button" aria-label="Volume down" data-i18n-aria="vol_down"><svg><use href="#i-vol-down"/></svg></button>
+      <div class="amp-level" id="amp-level"><small data-i18n="volume_word">Volume</small><b id="amp-value">—</b></div>
+      <button class="pill" id="vol-up" type="button" aria-label="Volume up" data-i18n-aria="vol_up"><svg><use href="#i-vol-up"/></svg></button>
+      <button class="pill" id="vol-mute" type="button" aria-label="Mute" data-i18n-aria="mute"><svg><use href="#i-mute"/></svg></button>
+    </div>
+  </section>
 
   <section class="card-box" id="chap-box" hidden>
     <h2 data-i18n="chapters">Chapters</h2>
@@ -776,7 +792,7 @@
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
       during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
       signed_in_as: 'Signed in as {0}',
-      home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
+      player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
       states: {
         'PLAY': 'Playing', 'PAUSE': 'Paused', 'STOP': 'Stopped', 'DISC MENU': 'Disc menu',
         'HOME MENU': 'OPPO home menu', 'MEDIA CENTER': 'Media center', 'SCREEN SAVER': 'Screen saver',
@@ -834,7 +850,7 @@
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
       during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
       signed_in_as: 'Connecté : {0}',
-      home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
+      player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
       states: {
         'PLAY': 'Lecture', 'PAUSE': 'Pause', 'STOP': 'Arrêt', 'DISC MENU': 'Menu du disque',
         'HOME MENU': 'Accueil de l’OPPO', 'MEDIA CENTER': 'Centre multimédia', 'SCREEN SAVER': 'Économiseur d’écran',
@@ -2146,6 +2162,7 @@
     last.sessionId = s.SessionId || last.sessionId;
     last.deviceName = s.DeviceName || last.deviceName;
     $('device').textContent = last.deviceName || 'OPPO';
+    $('p-dev').textContent = last.deviceName || 'OPPO';
     setOnline(!!s.Reachable);
     $('power').classList.toggle('off', !s.Reachable);
     $('power').setAttribute('aria-label', s.Reachable ? t('power_off_oppo') : t('power_on_oppo'));
@@ -2169,9 +2186,9 @@
     else if (s.OutputVideo !== undefined || s.OutputAudio !== undefined) {
       var out = $('p-out');
       out.textContent = '';
-      [[t('output'), s.OutputVideo], [' · ', s.OutputAudio], [t('subs_short'), s.OutputSubtitle ? s.OutputSubtitle.toLowerCase() : '']].forEach(function (x) {
+      [[t('output_oppo'), s.OutputVideo], [' · ', s.OutputAudio], [t('subs_short'), s.OutputSubtitle ? s.OutputSubtitle.toLowerCase() : '']].forEach(function (x) {
         if (!x[1]) return;
-        out.appendChild(el('b', { text: out.childNodes.length ? x[0] : t('output') }));
+        out.appendChild(el('b', { text: out.childNodes.length ? x[0] : t('output_oppo') }));
         out.appendChild(document.createTextNode(x[1]));
       });
       out.hidden = !out.childNodes.length;
@@ -2394,6 +2411,8 @@
       try { window.OppoAndroid.ampAvailable(keys); ampKeysOn = keys; } catch (e) { /* older app */ }
     }
     if (!show) return;
+    $('amp-name').textContent = a.Name || t('amplifier');
+    $('amp-row').querySelector('.dh-kind').hidden = !a.Name;   // no name: "Amplifier" once, not twice
     var value;
     if (!a.Available) value = '—';
     else if (!a.On) value = t('amp_off');
