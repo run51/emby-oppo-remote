@@ -449,7 +449,8 @@ namespace Emby.Oppo
                         if (string.IsNullOrEmpty(menuAudio)) menuAudio = null;     // a file's tracks have no name ("2/5")
                         if (request.Tracks && !(status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90))
                         {
-                            string early = decoded != null && decoded.ToDolbyVision ? (decoded.SourceHdr == "HDR10" ? "HDR10 → Dolby Vision" : "Dolby Vision") : null;
+                            string early = decoded == null ? null : decoded.SourceHdr == "Dolby Vision" ? "Dolby Vision"
+                                : decoded.ToDolbyVision ? (decoded.SourceHdr != null ? decoded.SourceHdr + " → Dolby Vision" : "Dolby Vision") : null;
                             string video = string.Join(" · ", new[] { picture, early }.Where(x => !string.IsNullOrEmpty(x)));
                             if (video.Length > 0) result.OutputVideo = video;
                             if (menuAudio != null) result.OutputAudio = menuAudio;

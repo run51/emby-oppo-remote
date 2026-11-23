@@ -26,15 +26,17 @@ namespace Emby.Oppo.Oppo
             /// <summary>MPEG frame_rate_code: 1 = 23.976, 2 = 24, 3 = 25, 4 = 29.97, 5 = 30, 6 = 50, 7 = 59.94, 8 = 60.</summary>
             public int FpsCode { get; set; }
             public int Bits { get; set; }
-            /// <summary>"HDR10", "SDR" or null when the decoder's HDR type is not one of these.</summary>
+            /// <summary>"Dolby Vision" (two layers), "HDR10", "SDR", or null when the decoder does not say.</summary>
             public string SourceHdr { get; set; }
             public bool ToDolbyVision { get; set; }
+            /// <summary>The start line closing the film's group is there (both layers of a dual-layer disc are in).</summary>
+            public bool Complete { get; set; }
         }
 
         private static readonly Dictionary<int, double> Rates = new Dictionary<int, double>
             { [1] = 23.976, [2] = 24, [3] = 25, [4] = 29.97, [5] = 30, [6] = 50, [7] = 59.94, [8] = 60 };
 
-        private const string Command = "dmesg | grep -E 'NotiDataInfo|NotiHdrInfo|HDR_Type|DOVI output' | tail -12";
+        private const string Command = "dmesg | grep -E 'NotiDataInfo|NotiHdrInfo|HDR_Type|DOVI output|Size Change start' | tail -24";
 
         private static Info _current;
         private static readonly object Gate = new object();
@@ -73,6 +75,7 @@ namespace Emby.Oppo.Oppo
             {
                 try
                 {
+                    var started = DateTime.UtcNow;
                     var waits = new List<int> { 0, 3, 5, 7 };
                     while (waits.Count < 25) waits.Add(5);
                     foreach (int wait in waits)
@@ -86,7 +89,8 @@ namespace Emby.Oppo.Oppo
                             return;
                         }
                         var info = Parse(output);
-                        if (info == null) continue;
+                        // Without its start line the group may still lack the enhancement layer: wait for it 30 s.
+                        if (info == null || (!info.Complete && DateTime.UtcNow - started < TimeSpan.FromSeconds(30))) continue;
                         _current = info;
                         string found = string.Format(CultureInfo.InvariantCulture, "{0}x{1}, frame rate code {2}, {3} bits, source {4}{5}", info.Width,
                             info.Height, info.FpsCode, info.Bits, info.SourceHdr ?? "?", info.ToDolbyVision ? " -> Dolby Vision" : "");
@@ -106,28 +110,50 @@ namespace Emby.Oppo.Oppo
             });
         }
 
+        /// <summary>
+        /// The last film's lines: those since the previous "Nfy Size Change start" (logged once per start, after the
+        /// decoders' data lines) up to the last one. A Dolby Vision dual-layer disc has two decoders: "[H265-0]" for the
+        /// base layer (3840 x 2160) and "[H265-1]" for the enhancement layer (1920 x 1080, Alerte !, 24/11): the picture
+        /// is the larger one, and two layers mean a Dolby Vision source.
+        /// </summary>
         internal static Info Parse(string text)
         {
-            Match data = null;
-            foreach (Match m in Regex.Matches(text ?? "", @"NotiDataInfo, w:(\d+), h:(\d+), fps:(\d+)")) data = m;
-            if (data == null) return null;
-            var info = new Info
+            var lines = (text ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            int last = -1, previous = -1;
+            for (int i = lines.Length - 1; i >= 0; i--)
             {
-                Width = int.Parse(data.Groups[1].Value, CultureInfo.InvariantCulture),
-                Height = int.Parse(data.Groups[2].Value, CultureInfo.InvariantCulture),
-                FpsCode = int.Parse(data.Groups[3].Value, CultureInfo.InvariantCulture),
-            };
-            if (info.Height <= 0) return null;
-            // Only this film's lines: from its HDR line (logged just before the data line) to the end.
-            int from = text.LastIndexOf("HDR_Type", data.Index, StringComparison.Ordinal);
-            text = text.Substring(from >= 0 ? from : data.Index);
-            Match bits = null;
-            foreach (Match m in Regex.Matches(text, @"ucBitMode:(\d+)")) bits = m;
-            if (bits != null) info.Bits = int.Parse(bits.Groups[1].Value, CultureInfo.InvariantCulture);
-            Match hdr = null;
-            foreach (Match m in Regex.Matches(text, @"HDR_Type\s*:\s*(\d+)")) hdr = m;
-            if (hdr != null) info.SourceHdr = hdr.Groups[1].Value == "1" ? "HDR10" : hdr.Groups[1].Value == "0" ? "SDR" : null;
-            info.ToDolbyVision = text.IndexOf("-> DOVI output", StringComparison.Ordinal) >= 0;
+                if (lines[i].IndexOf("Size Change start", StringComparison.Ordinal) < 0) continue;
+                if (last < 0) last = i; else { previous = i; break; }
+            }
+            // No start line yet: the data lines at the end of the log.
+            int from = previous + 1, to = last >= 0 ? last : lines.Length - 1;
+            Info info = null;
+            var decoders = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = from; i <= to; i++)
+            {
+                var m = Regex.Match(lines[i], @"\[(\w+(?:-\d+)?)\]:? ?\w*NotiDataInfo, w:(\d+), h:(\d+), fps:(\d+)");
+                if (!m.Success) continue;
+                decoders.Add(m.Groups[1].Value);
+                int h = int.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture);
+                if (info != null && h <= info.Height) continue;
+                info = new Info
+                {
+                    Width = int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture),
+                    Height = h,
+                    FpsCode = int.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture),
+                };
+            }
+            if (info == null || info.Height <= 0) return null;
+            for (int i = from; i < lines.Length; i++)
+            {
+                var bits = Regex.Match(lines[i], @"ucBitMode:(\d+)");
+                if (bits.Success && i <= to) info.Bits = Math.Max(info.Bits, int.Parse(bits.Groups[1].Value, CultureInfo.InvariantCulture));
+                var hdr = Regex.Match(lines[i], @"HDR_Type\s*:\s*(\d+)");
+                if (hdr.Success && i <= to) info.SourceHdr = hdr.Groups[1].Value == "1" ? "HDR10" : hdr.Groups[1].Value == "0" ? "SDR" : null;
+                if (lines[i].IndexOf("-> DOVI output", StringComparison.Ordinal) >= 0) info.ToDolbyVision = true;
+            }
+            if (decoders.Count > 1) { info.SourceHdr = "Dolby Vision"; info.ToDolbyVision = false; }
+            info.Complete = last >= 0;
             return info;
         }
 
