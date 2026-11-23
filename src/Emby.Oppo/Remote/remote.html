@@ -439,7 +439,7 @@
   .devcard .dc-state { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .devcard .dc-go { min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 13.5px; flex: none; }
   .resume-hero { display: block; position: relative; margin: 12px 0 0; border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); color: inherit; text-decoration: none; }
-  .resume-hero .rh-img { display: block; color: inherit; text-decoration: none; position: relative; aspect-ratio: 16 / 8; background: var(--surface-2) center / cover no-repeat; }
+  .resume-hero .rh-img { display: block; color: inherit; text-decoration: none; position: relative; aspect-ratio: 16 / 7; background: var(--surface-2) center / cover no-repeat; }
   .resume-hero .rh-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(11,11,13,0) 30%, rgba(11,11,13,.85) 100%); }
   .resume-hero .rh-cap { position: absolute; left: 14px; right: 14px; bottom: 12px; z-index: 1; display: flex; flex-direction: column; gap: 4px; }
   .resume-hero .rh-title { font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: -0.01em; line-height: 1.15; }
@@ -618,7 +618,7 @@
     .tabbar a[aria-current="page"] svg { color: var(--accent); }
     .tabbar a svg { width: 20px; height: 20px; }
     .tabbar .side-only { display: flex; }
-    .tabbar .tab-remote, .tabbar #tab-lib { display: none; }
+    .tabbar .tab-remote { display: none; }
     /* the docked remote shows the player: no card on the home page, no library chips (they are in the side bar) */
     .view > .devcard, .libs > a.lib-btn { display: none; }
     .resume-hero .rh-img { aspect-ratio: 21 / 8; }
@@ -700,6 +700,17 @@
   .badge { background: var(--accent); color: var(--accent-ink); }
   html.lite .backdrop .art { display: none; }
   .login { background: var(--ink); }
+  .resume-hero { margin-bottom: 16px; }
+  .resume-hero .rh-title { font-size: 19px; }
+  .resume-hero .rh-fmt { text-transform: uppercase; }
+  /* 0.24: the Library tab */
+  .lib-tools { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 18px; }
+  .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .lib-tile { display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; }
+  .lib-tile .lt-art { aspect-ratio: 16 / 9; border-radius: 16px; border: 1px solid var(--line); background: var(--surface) center / cover no-repeat;
+    display: grid; place-items: center; color: var(--muted); }
+  .lib-tile .lt-art svg { width: 34px; height: 34px; }
+  .lib-tile .lt-name { font-weight: 600; font-size: 15px; }
   /* 0.24: trailers */
   .hero { position: relative; }
   .trailer-btn { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 2; display: inline-flex; align-items: center; gap: 10px;
@@ -797,7 +808,7 @@
 <nav class="tabbar" id="tabbar" aria-label="Navigation" data-i18n-aria="navigation" hidden>
   <span class="side-brand">OPPO Remote</span>
   <a href="#/" data-tab="home"><svg><use href="#i-home"/></svg><span data-i18n="home_tab">Home</span></a>
-  <a href="#/" data-tab="lib" id="tab-lib"><svg><use href="#i-film"/></svg><span id="tab-lib-name" data-i18n="library_tab">Library</span></a>
+  <a href="#/libs" data-tab="libs" id="tab-lib"><svg><use href="#i-film"/></svg><span data-i18n="library_tab">Library</span></a>
   <span id="side-libs" class="side-only" style="flex-direction: column; gap: 4px"></span>
   <a href="#/search" data-tab="search"><svg><use href="#i-search"/></svg><span data-i18n="search">Search</span></a>
   <a href="#/player" data-tab="player" class="tab-remote"><svg><use href="#i-remote"/></svg><span data-i18n="remote">Remote</span></a>
@@ -1600,6 +1611,7 @@
     if ((m = h.match(/^\/lib\/([^/?#]+)/))) return { name: 'lib', id: m[1], key: '/lib/' + m[1] };
     if ((m = h.match(/^\/person\/([^/?#]+)/))) return { name: 'person', id: m[1], key: '/person/' + m[1] };
     if (h.indexOf('/search') === 0) return { name: 'search', key: '/search' };
+    if (h.indexOf('/libs') === 0) return { name: 'libs', key: '/libs' };
     if (h.indexOf('/player') === 0) return { name: 'player', key: '/player' };
     return { name: 'home', key: '/' };
   }
@@ -1627,7 +1639,7 @@
     $('player').hidden = true;
     currentKey = r.key;
     currentRoute = r;
-    document.body.classList.toggle('on-home', r.name === 'home');
+    document.body.classList.toggle('on-home', r.name === 'home' || r.name === 'libs');   // their own large title
     markTab(r);
     ambientFor(r);
     $('nav-back').hidden = r.name === 'home';
@@ -1685,6 +1697,7 @@
       case 'person': return buildPerson(entry, r.id);
       case 'item': return buildItem(entry, r.id);
       case 'search': return buildSearch(entry);
+      case 'libs': return buildLibraries(entry);
       default: return buildHome(entry);
     }
   }
@@ -1698,7 +1711,7 @@
     var latest = el('div');
     var search = el('a', { 'class': 'icon-btn greet-search', href: '#/search', 'aria-label': t('search'), html: icon('search') });
     var head = el('div', { 'class': 'home-head' }, [el('h1', { 'class': 'greet', text: greeting() }), search]);
-    var node = el('div', { 'class': 'view home' }, [head, devCard(), resume, libsBox, latest]);
+    var node = el('div', { 'class': 'view home' }, [head, devCard(), resume, latest]);
     getLibs().then(function (list) {
       list.forEach(function (lib) {
         libsBox.appendChild(el('a', { 'class': 'lib-btn', href: '#/lib/' + lib.Id, html: icon(libIcon(lib.CollectionType)) }, [lib.Name]));
@@ -2984,8 +2997,6 @@
 
   function fillTabs() {
     getLibs().then(function (list) {
-      var main = list.filter(function (l) { return l.CollectionType !== 'boxsets'; })[0] || list[0];
-      if (main) { $('tab-lib').setAttribute('href', '#/lib/' + main.Id); $('tab-lib').setAttribute('data-lib', main.Id); $('tab-lib-name').textContent = main.Name; }
       var side = $('side-libs');
       side.textContent = '';
       list.forEach(function (lib) {
@@ -2998,9 +3009,33 @@
     if (!r) return;
     Array.prototype.forEach.call(document.querySelectorAll('#tabbar a'), function (a) {
       var tab = a.getAttribute('data-tab');
-      var on = tab === r.name && (tab !== 'lib' || a.getAttribute('data-lib') === r.id);
+      var on = tab === r.name && (tab !== 'lib' || a.getAttribute('data-lib') === r.id) || (tab === 'libs' && r.name === 'lib');
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
+  }
+
+  /** The Library tab: one tile per Emby library, "Surprise me", and the Android app links. */
+  function buildLibraries(entry) {
+    entry.title = t('library_tab');
+    var grid = el('div', { 'class': 'lib-grid' });
+    var tools = el('div', { 'class': 'lib-tools' });
+    var node = el('div', { 'class': 'view' }, [el('h1', { 'class': 'greet', text: t('library_tab') }), tools, grid]);
+    var sur = el('button', { 'class': 'lib-btn', type: 'button', html: icon('dice') }, [t('surprise')]);
+    sur.addEventListener('click', function () { surprise(); });
+    tools.appendChild(sur);
+    if (!window.OppoAndroid && /Android/i.test(navigator.userAgent)) {
+      tools.appendChild(el('a', { 'class': 'lib-btn', href: API + '/oppo.apk', download: 'OPPO.apk', html: icon('remote') }, [t('install_app')]));
+      tools.appendChild(el('a', { 'class': 'lib-btn', href: API + '/oppo-home.apk', download: 'OPPO-Home.apk', html: icon('remote') }, [t('install_app_home')]));
+    }
+    getLibs().then(function (list) {
+      list.forEach(function (lib) {
+        var img = image(lib, 'Primary', 360);
+        var art = el('div', { 'class': 'lt-art', html: img ? '' : icon(libIcon(lib.CollectionType)) });
+        if (img) art.style.backgroundImage = 'url("' + img + '")';
+        grid.appendChild(el('a', { 'class': 'lib-tile', href: '#/lib/' + lib.Id }, [art, el('span', { 'class': 'lt-name', text: lib.Name })]));
+      });
+    }).catch(function () { grid.appendChild(el('div', { 'class': 'loading', text: t('cant_reach_emby') })); });
+    return node;
   }
 
   /** "Good evening" (mock-up): by the hour of the phone. */
@@ -3047,8 +3082,16 @@
     bar.firstChild.style.width = Math.max(2, Math.min(100, pct)) + '%';
     var go = el('button', { 'class': 'rh-go', type: 'button', html: icon('play') }, [t('resume_go')]);
     go.addEventListener('click', function () { buzz(); launch(item, { StartPositionTicks: pos }); });
-    return el('div', { 'class': 'resume-hero', 'data-id': item.Id }, [img, bar,
+    var hero = el('div', { 'class': 'resume-hero', 'data-id': item.Id }, [img, bar,
       el('div', { 'class': 'rh-foot' }, [el('span', { 'class': 'rh-fmt', text: item.ProductionYear ? String(item.ProductionYear) : '' }), go])]);
+    var fmt = hero.querySelector('.rh-fmt');
+    remote('/Badges', { Ids: item.Id }).then(function (list) {
+      var b = (list || [])[0];
+      if (!b) return;
+      var tags = [b.Resolution === '4K' ? '4K' : null, b.Hdr === 'DV' ? 'Dolby Vision' : b.Hdr || null, b.Is3D ? '3D' : null].filter(Boolean);
+      if (tags.length) fmt.textContent = [item.ProductionYear].concat(tags).filter(Boolean).join(' · ');
+    }).catch(function () { /* the year only */ });
+    return hero;
   }
 
   function start() {
