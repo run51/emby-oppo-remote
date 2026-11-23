@@ -536,7 +536,8 @@ namespace Emby.Oppo.Oppo
                         var buffer = new byte[512];
                         var received = new StringBuilder();
                         string expected = "@" + code;
-                        var deadline = DateTime.UtcNow.AddSeconds(3);
+                        // #PON: up to 12 s, as another client's unanswered query can hold an oppo-multiplexer 10 s.
+                        var deadline = DateTime.UtcNow.AddSeconds(code == "PON" ? 12 : 3);
                         while (DateTime.UtcNow < deadline)
                         {
                             var read = stream.ReadAsync(buffer, 0, buffer.Length, ct);
@@ -595,9 +596,28 @@ namespace Emby.Oppo.Oppo
         {
             try
             {
+                // In network standby the OPPO answers #QPW ("@OK OFF") but not #QPL, and through an oppo-multiplexer
+                // each unanswered #QPL holds the link for 10 s. Polled every few seconds by the web remote, the link
+                // was never free and a #PON sent meanwhile was lost: "the OPPO does not start" (2026-11-23). So once
+                // #QPL goes unanswered, ask #QPW first until the player is on again.
+                if (_maybeOff)
+                {
+                    string power = await Command("QPW", ct).ConfigureAwait(false);
+                    if (power.IndexOf("OFF", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        IpControlAnswers("the player is in standby (#QPW OFF)");
+                        return "";
+                    }
+                    if (power.IndexOf(" ON", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        IpControlAnswers(power.Length == 0 ? "no answer" : "answer \"" + power + "\"");
+                        return "";
+                    }
+                }
                 string answer = await Command("QPL", ct).ConfigureAwait(false);
                 const string prefix = "@QPL OK ";
-                if (answer.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                _maybeOff = !answer.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+                if (!_maybeOff)
                 {
                     IpControlAnswers(null);
                     return answer.Substring(prefix.Length).Trim().ToUpperInvariant();
@@ -616,6 +636,8 @@ namespace Emby.Oppo.Oppo
         }
 
         private static string _ipFailure;
+        // #QPL went unanswered (player off, starting or unreachable): the next state query asks #QPW first.
+        private static volatile bool _maybeOff = true;
 
         /// <summary>
         /// Writes to Emby's log, once per change, why IP control does not answer (it used to be in the debug log

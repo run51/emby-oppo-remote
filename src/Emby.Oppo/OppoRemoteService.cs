@@ -851,7 +851,7 @@ namespace Emby.Oppo
         {
             string code = (request.Code ?? "").Trim().ToUpperInvariant();
             if (!AllowedKeys.Contains(code)) return new RemoteActionResult { Message = L10n.T(Fr, "Unknown key: ", "Touche inconnue : ") + code };
-            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(code == "PON" ? 15 : 10)))
             {
                 if ((code == "NXT" || code == "PRE") && await OppoSessionController.JumpChapter(Oppo, code == "NXT", cts.Token).ConfigureAwait(false))
                     return new RemoteActionResult { Ok = true };   // main movie without menus: chapters by time
