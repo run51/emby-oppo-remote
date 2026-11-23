@@ -521,6 +521,77 @@
     border-radius: 22px 22px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); background: var(--surface); }
   .scrim { position: fixed; inset: 0; z-index: 8; background: rgba(0, 0, 0, .55); }
   body.sheet-open .tabbar, body.sheet-open .mini { display: none !important; }
+  /* 0.24: playback screen of the mock-up */
+  #player { gap: 12px; }
+  .pv-head { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .pv-head .p-title { font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pv-head .p-logo { max-height: 40px; object-position: left; }
+  .pv-head .sub { font-size: 12.5px; }
+  .pv-card { padding: 10px; gap: 10px; }
+  .pv-card .dev-head { padding: 2px 2px 8px; }
+  .pv-art { position: relative; aspect-ratio: 16 / 9; max-height: 230px; width: 100%; border-radius: 12px; overflow: hidden;
+    background: var(--surface-2) center / cover no-repeat; }
+  .pv-art .p-poster { display: none !important; }
+  .pv-art .chap-hero { position: absolute; inset: 0; max-height: none; aspect-ratio: auto; border-radius: 0; }
+  .pv-card .progress { padding: 0 2px; gap: 4px; }
+  .p-badges { gap: 6px; }
+  .p-badges:empty, .p-out[hidden] { display: none; }
+  .pv-transport { padding: 0 2px; }
+  .pv-transport .t-btn { width: 52px; height: 52px; }
+  .pv-transport .t-btn.jump { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .pv-transport .t-btn.main { width: 72px; height: 72px; }
+  .track-tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 72px; }
+  .ttile.info { align-items: center; justify-content: center; text-align: center; font-weight: 600; font-size: 12.5px; gap: 4px;
+    border-color: var(--accent); background: var(--accent-soft); }
+  .ttile.info svg { width: 20px; height: 20px; }
+  .pv-control { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 4px; }
+  .pv-col { display: flex; flex-direction: column; gap: 8px; }
+  .pv-key { min-height: 44px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); font-size: 12.5px; font-weight: 500;
+    padding: 0 8px; display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.15; }
+  .pv-key svg { width: 14px; height: 14px; }
+  .pv-key.stop { color: #ff8a80; }
+  .pv-control .pad { width: 176px; height: 176px; }
+  .pv-control .pad .arrow { width: 56px; height: 56px; }
+  .pv-control .pad .up { top: 2px; left: 60px; } .pv-control .pad .down { bottom: 2px; left: 60px; }
+  .pv-control .pad .left { left: 2px; top: 60px; } .pv-control .pad .right { right: 2px; top: 60px; }
+  .pv-control .pad .ok { inset: 54px; }
+  .amp-col { align-items: center; padding: 8px 6px; border-radius: 16px; border: 1px solid rgba(143, 180, 255, .28); background: rgba(143, 180, 255, .05); gap: 6px; }
+  .amp-col .amp-tag { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #8fb4ff;
+    max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .amp-col .dh-kind { display: none !important; }
+  .pv-vol { width: 52px; height: 48px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); font-size: 22px; font-weight: 500; }
+  .amp-col .amp-level { min-height: 0; }
+  .amp-col .amp-level b { font-size: 12.5px; color: #c9dbff; }
+  .pv-mute { width: 40px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--muted); }
+  .pv-mute svg { width: 18px; height: 18px; }
+  .pv-mute.on { color: #ff8a80; }
+  .pv-extra { grid-template-columns: 1fr 1fr 2fr; }
+  /* 0.24: film page of the mock-up */
+  .fields-hidden { display: none !important; }
+  .dhead { align-items: flex-end; }
+  .dtitle { display: flex; flex-direction: column; gap: 6px; }
+  .dtitle h1 { margin: 0; font-size: 23px; }
+  .meta.mono { font-family: var(--mono); font-size: 11.5px; }
+  .ver-box { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .ver-box:empty { display: none; }
+  .ver-label { font-size: 12px; color: var(--muted); }
+  .ver-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+  .ver-btn { min-height: 54px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); text-align: left; padding: 8px 12px;
+    display: flex; flex-direction: column; justify-content: center; gap: 2px; font-weight: 600; font-size: 14px; }
+  .ver-btn small { font-family: var(--mono); font-weight: 500; font-size: 11px; color: var(--muted); }
+  .ver-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .actions { margin: 14px 0 12px; }
+  .act-row { display: flex; align-items: flex-start; gap: 12px; }
+  .act-row .btn.primary { flex: 1; min-height: 54px; border-radius: 27px; font-size: 15.5px; }
+  .round-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; font-size: 11px; color: var(--muted); text-align: center; line-height: 1.15; }
+  .round-btn { width: 54px; height: 54px; border-radius: 27px; background: var(--surface); border: 1px solid var(--line); display: grid; place-items: center; }
+  .round-btn svg { width: 22px; height: 22px; }
+  .d-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .sheet-box { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; max-height: 70vh; overflow-y: auto; border-radius: 22px 22px 0 0;
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); background: var(--surface); max-width: 640px; margin: 0 auto; }
+  @media (min-width: 700px) { .actions { flex-direction: column; } }
+  @media (max-width: 360px) { .pv-control .pad { width: 156px; height: 156px; } .pv-control .pad .ok { inset: 46px; }
+    .pv-control .pad .up, .pv-control .pad .down { left: 50px; } .pv-control .pad .left, .pv-control .pad .right { top: 50px; } }
   .room-box { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
   .dev-head .dh-ic.room { background: rgba(84, 210, 127, .12); color: #7fe0a2; }
   @media (min-width: 1100px) and (orientation: landscape) {
@@ -558,6 +629,81 @@
   }
   @media (max-width: 1099px), (orientation: portrait) { .tabbar .side-brand { display: none; } }
   html.lite .tabbar, html.lite .mini, html.lite .appbar { background: var(--bg); }
+
+  /* ---------------------------------------------------------------- 0.24: OPPO Music's look
+     A blurred picture of the film behind every page (two layers, cross-faded), a veil that darkens towards the bottom,
+     translucent surfaces, and an accent colour taken from the film's picture (pale blue when there is none). */
+  :root {
+    --ink: #0b0b0e;
+    --bg: transparent;
+    --surface: rgba(255, 255, 255, .055);
+    --surface-2: rgba(255, 255, 255, .09);
+    --surface-3: rgba(255, 255, 255, .14);
+    --line: rgba(255, 255, 255, .11);
+    --text: #f6f3ee;
+    --text-2: rgba(246, 243, 238, .86);
+    --muted: rgba(246, 243, 238, .66);
+    --accent: #9db8e8;
+    --accent-ink: #0d1016;
+    --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+    --deep: #1d2333;
+    --glass: rgba(14, 15, 20, .62);
+  }
+  /* the page's colour on the root only: a body background would cover the blurred picture (z-index -1) */
+  html { background: var(--ink); }
+  body { background: transparent; }
+  .backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: var(--ink); }
+  .backdrop .art { position: absolute; inset: -14%; background-size: cover; background-position: center; filter: blur(46px) saturate(1.45);
+    opacity: 0; transform: scale(1.08); transition: opacity .9s ease; }
+  .backdrop .art.on { opacity: .95; }
+  .backdrop .veil { position: absolute; inset: 0; background:
+    radial-gradient(130% 70% at 50% -10%, rgba(11, 11, 14, .05), rgba(11, 11, 14, .55) 55%, rgba(11, 11, 14, .9) 100%),
+    linear-gradient(180deg, rgba(11, 11, 14, 0) 40%, var(--ink) 100%); }
+  .p-bg { display: none !important; }
+  .appbar { background: rgba(14, 15, 20, .45); -webkit-backdrop-filter: blur(30px) saturate(160%); backdrop-filter: blur(30px) saturate(160%); }
+  .tabbar, .mini, .sheet-box, .track-box.sheet { background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(160%); backdrop-filter: blur(30px) saturate(160%); }
+  .tabbar { border-color: var(--line); }
+  .toolbar, .search-box { background: rgba(11, 11, 14, .55); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+  .now { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .devcard, .resume-hero, .now, section.card-box, details.card-box, .room-box { background: var(--surface); border-color: var(--line); border-radius: 22px; }
+  .icon-btn, .lib-btn, .pill, .toggle, .chip, .ttile, .ver-btn, .round-btn, .pv-key, .pv-vol, .t-btn, .btn.secondary, select, input[type=search] { background: rgba(255, 255, 255, .08); border-color: var(--line); }
+  .appbar .icon-btn { background: transparent; border-color: transparent; }
+  .lib-btn svg, .lib-btn.alt svg { color: var(--text); }
+  .btn.primary, .devcard .dc-go, .login .submit { background: var(--accent); color: var(--accent-ink);
+    box-shadow: 0 12px 26px -12px color-mix(in srgb, var(--accent) 80%, transparent); }
+  .resume-hero .rh-go { background: var(--accent); color: var(--accent-ink); }
+  .t-btn.main, .mini .icon-btn { background: var(--text); color: var(--ink); }
+  .pad { background: rgba(255, 255, 255, .06); }
+  .pad .ok { background: rgba(255, 255, 255, .16); color: var(--text); }
+  .pad .ok:active { background: var(--accent); color: var(--accent-ink); }
+  .ttile.info { border-color: var(--line); background: rgba(255, 255, 255, .08); }
+  .ttile.info svg { color: var(--accent); }
+  .chip.selected, .ver-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 70%, transparent); color: var(--text); }
+  .toggle[aria-pressed="true"] { background: var(--text); color: var(--ink); border-color: var(--text); }
+  .tabbar a[aria-current="page"] { color: var(--text); }
+  .tabbar a[aria-current="page"] svg { color: var(--accent); }
+  @media (min-width: 1100px) and (orientation: landscape) {
+    .tabbar { background: rgba(14, 15, 20, .5); }
+    .tabbar a[aria-current="page"] { background: rgba(255, 255, 255, .1); }
+    #player, #player[hidden] { background: rgba(14, 15, 20, .45); -webkit-backdrop-filter: blur(30px) saturate(160%); backdrop-filter: blur(30px) saturate(160%); }
+  }
+  .vb.res { border-color: color-mix(in srgb, var(--accent) 70%, transparent); color: var(--accent); }
+  .fill, .bar-mini span, .resume-hero .rh-bar span, .chap .cbar span { background: var(--accent); }
+  .chap.current .thumb { border-color: var(--accent); }
+  .chap.current .ct, h2.section a { color: var(--accent); }
+  .dev-head .dh-ic { background: var(--accent-soft); color: var(--accent); }
+  /* the amplifier stays neutral (white), so it never takes the film's colour of the OPPO's card */
+  .dev-head .dh-ic.amp { background: rgba(255, 255, 255, .1); color: var(--text); }
+  .amp-col { border-color: var(--line); background: rgba(255, 255, 255, .04); }
+  .amp-col .amp-tag { color: var(--muted); }
+  .amp-col .amp-level b, .amp-box .amp-level b { color: var(--text); }
+  .badge { background: var(--accent); color: var(--accent-ink); }
+  html.lite .backdrop .art { display: none; }
+  .login { background: var(--ink); }
+  .ttile { overflow: hidden; align-items: stretch; }
+  .ttile b { display: block; max-width: 100%; }
+  .ttile.info { align-items: center; }
+  html.lite .tabbar, html.lite .mini, html.lite .appbar, html.lite .sheet-box, html.lite .track-box.sheet { background: #111115; }
 </style>
 </head>
 <body>
@@ -599,6 +745,8 @@
   <symbol id="i-folder" viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z"/></symbol>
 </svg>
 
+<div class="backdrop" aria-hidden="true"><div class="art" id="art1"></div><div class="art" id="art2"></div><div class="veil"></div></div>
+
 <header class="appbar" id="appbar">
   <button class="icon-btn" id="nav-back" aria-label="Back" data-i18n-aria="back" hidden><svg><use href="#i-back"/></svg></button>
   <div class="appbar-title" id="appbar-title">OPPO</div>
@@ -626,19 +774,21 @@
     <button class="icon-btn" id="power" aria-label="Turn the OPPO on or off" data-i18n-aria="power_toggle"><svg><use href="#i-power"/></svg></button>
   </div>
 
-  <div class="now" aria-live="polite">
+  <!-- 0.24: the playback screen of the mock-up. A card with the current chapter's picture (else the film's backdrop) and
+       the progress in it; the transport keys with -10 s and +30 s around play/pause; Audio, Subtitles and Info; then the
+       D-pad between the disc keys and the amplifier's volume. The rest (chapters, room, more keys) below. -->
+  <div class="pv-head">
+    <img class="p-logo" id="p-logo" alt="" hidden>
+    <div class="p-title" id="p-title" data-i18n="connecting">Connecting…</div>
+    <div class="sub"><span class="dot" id="dot2" aria-hidden="true"></span><span id="p-state"></span><span id="p-chapter"></span><span id="p-end"></span></div>
+  </div>
+
+  <div class="now pv-card" aria-live="polite">
     <div class="dev-head"><span class="dh-ic"><svg><use href="#i-disc"/></svg></span><span class="dh-name" id="p-dev">OPPO</span><span class="dh-kind" data-i18n="player_kind">Player</span></div>
-    <div class="chap-hero" id="chap-hero" hidden><img id="ch-img" alt=""><div class="ch-cap"><span id="ch-n"></span><b id="ch-name"></b></div></div>
-    <div class="now-top">
+    <div class="pv-art" id="pv-art">
       <img class="p-poster" id="p-poster" alt="" hidden>
-      <div class="now-text">
-        <img class="p-logo" id="p-logo" alt="" hidden>
-        <div class="p-title" id="p-title" data-i18n="connecting">Connecting…</div>
-        <div class="sub"><span class="dot" id="dot2" aria-hidden="true"></span><span id="p-state"></span><span id="p-chapter"></span><span id="p-end"></span></div>
-        <div class="p-badges" id="p-badges"></div>
-      </div>
+      <div class="chap-hero" id="chap-hero" hidden><img id="ch-img" alt=""><div class="ch-cap"><span id="ch-n"></span><b id="ch-name"></b></div></div>
     </div>
-    <div class="p-out" id="p-out" hidden></div>
     <div class="progress" id="progress" hidden>
       <div class="bar" id="bar" role="slider" aria-label="Playback position" data-i18n-aria="seek_bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
         <div class="track"><div class="fill" id="fill"></div></div>
@@ -646,45 +796,29 @@
       <div class="times"><span id="pos">0:00</span><span id="dur">0:00</span></div>
     </div>
   </div>
+  <div class="p-badges" id="p-badges"></div>
+  <div class="p-out" id="p-out" hidden></div>
 
-  <div class="transport">
+  <div class="transport pv-transport">
     <button class="t-btn" data-key="PRE" aria-label="Previous chapter" data-i18n-aria="prev_chapter"><svg><use href="#i-prev"/></svg></button>
-    <button class="t-btn" data-key="REV" aria-label="Rewind" data-i18n-aria="rewind"><svg><use href="#i-rew"/></svg></button>
+    <button class="t-btn jump" id="back30" type="button" aria-label="Back 10 seconds" data-i18n-aria="back10">−10</button>
     <button class="t-btn main" id="playpause" aria-label="Play / pause" data-i18n-aria="play_pause"><svg><use href="#i-play" class="pp-icon"/></svg></button>
-    <button class="t-btn" data-key="FWD" aria-label="Fast forward" data-i18n-aria="ffwd"><svg><use href="#i-ff"/></svg></button>
+    <button class="t-btn jump" id="fwd30" type="button" aria-label="Forward 30 seconds" data-i18n-aria="fwd30">+30</button>
     <button class="t-btn" data-key="NXT" aria-label="Next chapter" data-i18n-aria="next_chapter"><svg><use href="#i-next"/></svg></button>
-  </div>
-
-  <div class="row row3">
-    <button class="pill" id="back30" type="button" aria-label="Back 10 seconds" data-i18n-aria="back10">−10 s</button>
-    <button class="pill stop" data-key="STP"><svg><use href="#i-stop"/></svg>Stop</button>
-    <button class="pill" id="fwd30" type="button" aria-label="Forward 30 seconds" data-i18n-aria="fwd30">+30 s</button>
-    <button class="pill info" data-key="OSD" aria-label="OPPO information on screen" data-i18n-aria="info_aria"><svg><use href="#i-info"/></svg><span data-i18n="info_short">Info</span></button>
   </div>
 
   <div class="track-tiles" id="track-tiles">
     <button class="ttile" type="button" data-sheet="audio-box"><small>Audio</small><b id="tt-audio">—</b></button>
     <button class="ttile" type="button" data-sheet="subs-box"><small data-i18n="subtitles">Subtitles</small><b id="tt-subs">—</b></button>
+    <button class="ttile info" type="button" data-key="OSD" aria-label="OPPO information on screen" data-i18n-aria="info_aria"><svg><use href="#i-info"/></svg><span data-i18n="info_short">Info</span></button>
   </div>
-  <section class="amp-box" id="amp-row" hidden>
-    <div class="dev-head"><span class="dh-ic amp"><svg><use href="#i-vol-up"/></svg></span><span class="dh-name" id="amp-name" data-i18n="amplifier">Amplifier</span><span class="dh-kind" data-i18n="amp_kind">Amplifier</span></div>
-    <div class="row amp">
-      <button class="pill" id="vol-down" type="button" aria-label="Volume down" data-i18n-aria="vol_down"><svg><use href="#i-vol-down"/></svg></button>
-      <div class="amp-level" id="amp-level"><small data-i18n="volume_word">Volume</small><b id="amp-value">—</b></div>
-      <button class="pill" id="vol-up" type="button" aria-label="Volume up" data-i18n-aria="vol_up"><svg><use href="#i-vol-up"/></svg></button>
-      <button class="pill" id="vol-mute" type="button" aria-label="Mute" data-i18n-aria="mute"><svg><use href="#i-mute"/></svg></button>
-    </div>
-  </section>
 
-  <section class="card-box" id="chap-box" hidden>
-    <h2 data-i18n="chapters">Chapters</h2>
-    <div class="hrow chap-row" id="chapters"></div>
-  </section>
-
-  <div class="nav">
-    <div class="side left">
-      <div class="labelled" data-i18n="back"><button class="icon-btn" data-key="RET" aria-label="Back" data-i18n-aria="back"><svg><use href="#i-back"/></svg></button>Back</div>
-      <div class="labelled" data-i18n="disc_menu"><button class="icon-btn" data-key="TTL" aria-label="Disc menu" data-i18n-aria="disc_menu_aria"><svg><use href="#i-disc"/></svg></button>Disc menu</div>
+  <div class="pv-control">
+    <div class="pv-col">
+      <button class="pv-key" data-key="TTL" type="button" data-i18n="disc_menu">Disc menu</button>
+      <button class="pv-key" data-key="MNU" type="button" data-i18n="popup_menu">Pop-up menu</button>
+      <button class="pv-key" data-key="RET" type="button" data-i18n="back">Back</button>
+      <button class="pv-key stop" data-key="STP" type="button"><svg><use href="#i-stop"/></svg>Stop</button>
     </div>
     <div class="pad">
       <button class="arrow up" data-key="NUP" aria-label="Up" data-i18n-aria="up"><svg><use href="#i-up"/></svg></button>
@@ -693,10 +827,24 @@
       <button class="arrow right" data-key="NRT" aria-label="Right" data-i18n-aria="right"><svg><use href="#i-right"/></svg></button>
       <button class="arrow down" data-key="NDN" aria-label="Down" data-i18n-aria="down"><svg><use href="#i-down"/></svg></button>
     </div>
-    <div class="side right">
-      <div class="labelled" data-i18n="options_key"><button class="icon-btn" data-key="OPT" aria-label="Options" data-i18n-aria="options_key"><svg><use href="#i-more"/></svg></button>Options</div>
-      <div class="labelled" data-i18n="popup_menu"><button class="icon-btn" data-key="MNU" aria-label="Pop-up menu" data-i18n-aria="popup_menu"><svg><use href="#i-menu"/></svg></button>Pop-up menu</div>
+    <div class="pv-col amp-col" id="amp-row" hidden>
+      <span class="amp-tag" id="amp-name" data-i18n="amplifier">Amplifier</span><span class="dh-kind" hidden></span>
+      <button class="pv-vol" id="vol-up" type="button" aria-label="Volume up" data-i18n-aria="vol_up">+</button>
+      <div class="amp-level" id="amp-level"><b id="amp-value">—</b></div>
+      <button class="pv-vol" id="vol-down" type="button" aria-label="Volume down" data-i18n-aria="vol_down">−</button>
+      <button class="pv-mute" id="vol-mute" type="button" aria-label="Mute" data-i18n-aria="mute"><svg><use href="#i-mute"/></svg></button>
     </div>
+  </div>
+
+  <section class="card-box" id="chap-box" hidden>
+    <h2 data-i18n="chapters">Chapters</h2>
+    <div class="hrow chap-row" id="chapters"></div>
+  </section>
+
+  <div class="row pv-extra">
+    <button class="pill" data-key="REV" aria-label="Rewind" data-i18n-aria="rewind"><svg><use href="#i-rew"/></svg></button>
+    <button class="pill" data-key="FWD" aria-label="Fast forward" data-i18n-aria="ffwd"><svg><use href="#i-ff"/></svg></button>
+    <button class="pill" data-key="OPT" type="button"><svg><use href="#i-more"/></svg><span data-i18n="options_key">Options</span></button>
   </div>
 
   <section class="room-box" id="room-box">
@@ -825,7 +973,7 @@
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
       during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
       signed_in_as: 'Signed in as {0}',
-      chapter_of: 'Chapter {0} of {1}', room: 'Home cinema', room_kind: 'OPPO · TV · amp', oppo_home_short: 'OPPO home', player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
+      from_start_short: 'From the start', no_menus_short: 'No menus', chapter_of: 'Chapter {0} of {1}', room: 'Home cinema', room_kind: 'OPPO · TV · amp', oppo_home_short: 'OPPO home', player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
       states: {
         'PLAY': 'Playing', 'PAUSE': 'Paused', 'STOP': 'Stopped', 'DISC MENU': 'Disc menu',
         'HOME MENU': 'OPPO home menu', 'MEDIA CENTER': 'Media center', 'SCREEN SAVER': 'Screen saver',
@@ -883,7 +1031,7 @@
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
       during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
       signed_in_as: 'Connecté : {0}',
-      chapter_of: 'Chapitre {0} sur {1}', room: 'Salle', room_kind: 'OPPO · télé · ampli', oppo_home_short: 'Accueil OPPO', player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
+      from_start_short: 'Du début', no_menus_short: 'Sans menus', chapter_of: 'Chapitre {0} sur {1}', room: 'Salle', room_kind: 'OPPO · télé · ampli', oppo_home_short: 'Accueil OPPO', player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
       states: {
         'PLAY': 'Lecture', 'PAUSE': 'Pause', 'STOP': 'Arrêt', 'DISC MENU': 'Menu du disque',
         'HOME MENU': 'Accueil de l’OPPO', 'MEDIA CENTER': 'Centre multimédia', 'SCREEN SAVER': 'Économiseur d’écran',
@@ -1444,6 +1592,7 @@
     currentKey = r.key;
     currentRoute = r;
     markTab(r);
+    ambientFor(r);
     $('nav-back').hidden = r.name === 'home';
     $('nav-search').hidden = r.name === 'search';
     $('nav-player').hidden = r.name === 'player';
@@ -1555,6 +1704,8 @@
             if (rest.length) fillRow(resume, t('resume'), null, rest);
             else resume.appendChild(el('h2', { 'class': 'section' }, [el('span', { text: t('resume') })]));
             resume.insertBefore(resumeHero(r.Items[0]), resume.firstChild.nextSibling);
+            homeArt = image(r.Items[0], 'Backdrop', 640) || image(r.Items[0], 'Primary', 400);
+            if (currentRoute && currentRoute.name !== 'item') ambientFor(currentRoute);
           }
         }).catch(function () { /* section skipped */ });
       emby('/Users/' + uid() + '/Items', { Filters: 'IsFavorite', Recursive: true, IncludeItemTypes: 'Movie,MusicVideo,BoxSet', SortBy: 'SortName',
@@ -1845,8 +1996,90 @@
     return el('label', { 'class': 'field' }, [label, control]);
   }
 
+  // ---------- 0.24: the blurred picture behind the pages and the accent colour taken from it (as OPPO Music)
+
+  var artNow = null, artFlip = 0, homeArt = null, playerArt = null, colorCache = {};
+  function setAmbient(url) {
+    if (url === artNow) return;
+    artNow = url;
+    var layers = [$('art1'), $('art2')], next = layers[artFlip ^ 1];
+    next.style.backgroundImage = url ? 'url("' + url + '")' : 'none';
+    next.classList.add('on'); layers[artFlip].classList.remove('on');
+    artFlip ^= 1;
+    filmColour(url);
+  }
+  /** Accent readable on the dark page from the picture's main colour (same rule as OPPO Music: lightness 70 %). */
+  function filmColour(url) {
+    var root = document.documentElement.style;
+    function apply(c) { root.setProperty('--accent', c ? c.accent : '#9db8e8'); root.setProperty('--deep', c ? c.deep : '#1d2333'); }
+    if (!url) return apply(null);
+    if (colorCache[url] !== undefined) return apply(colorCache[url]);
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var cv = document.createElement('canvas'); cv.width = cv.height = 32;
+        var g = cv.getContext('2d'); g.drawImage(img, 0, 0, 32, 32);
+        var d = g.getImageData(0, 0, 32, 32).data, bins = {};
+        for (var i = 0; i < d.length; i += 4) {
+          var hsl = toHsl(d[i], d[i + 1], d[i + 2]);
+          if (hsl[2] < .12 || hsl[2] > .92) continue;
+          var k = Math.round(hsl[0] * 18) % 18, w = .25 + hsl[1];
+          var b = bins[k] || (bins[k] = { w: 0, h: 0, s: 0 });
+          b.w += w; b.h += hsl[0] * w; b.s += hsl[1] * w;
+        }
+        var best = null;
+        Object.keys(bins).forEach(function (k) { if (!best || bins[k].w > best.w) best = bins[k]; });
+        var c = null;
+        if (best && best.w > 20) {
+          var h = best.h / best.w, sat = best.s / best.w;
+          sat = sat > .08 ? Math.max(sat, .42) : sat;
+          c = { accent: 'hsl(' + Math.round(h * 360) + ' ' + Math.round(Math.min(sat, .85) * 100) + '% 70%)',
+                deep: 'hsl(' + Math.round(h * 360) + ' ' + Math.round(Math.min(sat, .55) * 100) + '% 16%)' };
+        }
+        colorCache[url] = c;
+        if (url === artNow) apply(c);
+      } catch (e) { colorCache[url] = null; }
+    };
+    img.onerror = function () { colorCache[url] = null; };
+    img.src = url;
+  }
+  function toHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0;
+    if (max !== min) {
+      var dd = max - min;
+      s = l > .5 ? dd / (2 - max - min) : dd / (max + min);
+      h = max === r ? (g - b) / dd + (g < b ? 6 : 0) : max === g ? (b - r) / dd + 2 : (r - g) / dd + 4;
+      h /= 6;
+    }
+    return [h, s, l];
+  }
+  /** The picture for the page shown: the film of its page, else the film playing, else the one to resume. */
+  function ambientFor(r) {
+    if (!r || r.name === 'item') return;   // the film page sets its own
+    setAmbient(playerArt || homeArt);
+  }
+
+  /** Bottom sheet listing choices (audio, subtitles…): one tap picks and closes. */
+  function openSheet(title, options, current, onPick) {
+    var scrim = el('div', { 'class': 'scrim' });
+    var box = el('div', { 'class': 'card-box sheet-box', role: 'dialog', 'aria-label': title }, [el('h2', { text: title })]);
+    var chips = el('div', { 'class': 'chips' });
+    function close() { scrim.remove(); box.remove(); document.body.classList.remove('sheet-open'); }
+    options.forEach(function (o) {
+      var b = el('button', { 'class': 'chip' + (o.value === current ? ' selected' : ''), type: 'button', text: o.label });
+      b.addEventListener('click', function () { buzz(); onPick(o.value); close(); });
+      chips.appendChild(b);
+    });
+    box.appendChild(chips);
+    scrim.addEventListener('click', close);
+    document.body.appendChild(scrim); document.body.appendChild(box);
+    document.body.classList.add('sheet-open');
+  }
+
   function renderItem(node, item) {
     var backdrop = image(item, 'Backdrop', 1100);
+    setAmbient(image(item, 'Backdrop', 640) || image(item, 'Primary', 400));
     var poster = image(item, 'Primary', 420);
     node.appendChild(el('div', { 'class': 'hero' }, backdrop ? [el('img', { src: backdrop, alt: '' })] : []));
 
@@ -1864,25 +2097,29 @@
     node.appendChild(el('div', { 'class': 'dhead' }, [
       poster ? el('img', { 'class': 'dposter', src: poster, alt: '' }) : el('div', { 'class': 'dposter' }),
       el('div', { 'class': 'dtitle' }, [
-        logo ? el('img', { 'class': 'dlogo', src: logo, alt: '' }) : null,
-        el('h1', { 'class': logo ? 'sr' : null, text: item.Name }),
-        el('div', { 'class': 'meta', text: meta.join(' · ') }),
-        item.Genres && item.Genres.length ? el('div', { 'class': 'meta', text: item.Genres.slice(0, 3).join(', ') }) : null,
-        endLine ? el('div', { 'class': 'meta', text: endLine }) : null
+        el('div', { 'class': 'meta', text: [item.ProductionYear, item.Genres && item.Genres.slice(0, 2).join(', '), item.OfficialRating].filter(Boolean).join(' · ') }),
+        el('h1', { text: item.Name }),
+        el('div', { 'class': 'meta mono', text: meta.filter(function (m) { return m !== String(item.ProductionYear) && m !== item.OfficialRating; }).join(' · ') })
       ])
     ]));
 
     var sources = item.MediaSources || [];
     var badges = el('div', { 'class': 'badges', 'aria-label': t('video_format') });
     var actions = el('div', { 'class': 'actions' });
-    var fields = el('div', { 'class': 'fields' });
+    var fields = el('div', { 'class': 'fields fields-hidden' });   // 0.24: the selects drive everything, shown as buttons and tiles
+    var verBox = el('div', { 'class': 'ver-box' });
+    var discBox = el('div', { 'class': 'fields' });
+    var tileBox = el('div', { 'class': 'd-tiles' });
     // Two columns on landscape tablets (stacked on phones).
     var head = node.lastChild;
     var colL = el('div', { 'class': 'dcol-l' }), colR = el('div', { 'class': 'dcol-r' });
     node.appendChild(el('div', { 'class': 'dcols' }, [colL, colR]));
     colL.appendChild(head);
     colL.appendChild(badges);
+    colL.appendChild(verBox);
+    colL.appendChild(discBox);
     colL.appendChild(actions);
+    colL.appendChild(tileBox);
     colL.appendChild(fields);
 
     // Multi-disc item: choice of the starting disc (the following ones then play in sequence).
@@ -1891,7 +2128,7 @@
       discs = [item];
       discSel = el('select');
       discSel.appendChild(el('option', { value: '0', text: discLabel(0, item) }));
-      fields.appendChild(field(t('disc'), discSel));
+      discBox.appendChild(field(t('disc'), discSel));
       emby('/Videos/' + item.Id + '/AdditionalParts', { UserId: uid(), Fields: 'MediaSources' }).then(function (r) {
         ((r && r.Items) || []).forEach(function (part) {
           discs.push(part);
@@ -1909,6 +2146,23 @@
       sourceSel = el('select');
       sources.forEach(function (s, i) { sourceSel.appendChild(el('option', { value: String(i), text: s.Name || t('version_n', i + 1) })); });
       fields.appendChild(field(t('version'), sourceSel));
+      // Versions as large buttons (mock-up): the chosen one drives the hidden select.
+      verBox.appendChild(el('div', { 'class': 'ver-label', text: t('version') }));
+      var verRow = el('div', { 'class': 'ver-row' });
+      sources.forEach(function (src, i) {
+        var size = src.Size ? (src.Size / 1e9).toFixed(1).replace('.', LANG === 'fr' ? ',' : '.') + ' ' + (LANG === 'fr' ? 'Go' : 'GB') : '';
+        var v = (src.MediaStreams || []).filter(function (x) { return x.Type === 'Video'; })[0];
+        var sub = [v && v.Height ? (v.Height >= 2000 ? '4K' : v.Height >= 1000 ? '1080p' : v.Height + 'p') : '', src.Container ? src.Container.toUpperCase() : '', size].filter(Boolean).join(' · ');
+        var b = el('button', { 'class': 'ver-btn', type: 'button', 'aria-pressed': i === 0 ? 'true' : 'false' }, [
+          el('span', { text: src.Name || t('version_n', i + 1) }), sub ? el('small', { text: sub }) : null]);
+        b.addEventListener('click', function () {
+          sourceSel.value = String(i);
+          Array.prototype.forEach.call(verRow.children, function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+          fillTracks(); drawActions();
+        });
+        verRow.appendChild(b);
+      });
+      verBox.appendChild(verRow);
     }
     var movieOk = false;   // "Movie without menus" offered (set once the disc format is known)
     var audioSel = el('select'), subSel = el('select');
@@ -1951,6 +2205,7 @@
       var current = audio.filter(function (a) { return String(a.Index) === audioSel.value; })[0];
       subSel.value = String(defaultSubtitle(s, current));
       drawAudioBadges(bestAudio(audio));
+      drawItemTiles();
       // Dolby Atmos / DTS:X, found by the plugin in the audio itself (first time: a few seconds, then cached)
       if (audio.length && !s._extras) {
         s._extras = true;
@@ -1964,6 +2219,7 @@
             var st = audio.filter(function (a) { return String(a.Index) === o.value; })[0];
             if (st && (st._atmos || st._dtsx)) o.textContent = numberedLabel(audio, st);
           });
+          drawItemTiles();
           drawAudioBadges(bestAudio(audio));
         }).catch(function () { /* no analysis: Emby's labels stay */ });
       }
@@ -1973,13 +2229,31 @@
       audioBadges(stream).forEach(function (t) { badges.appendChild(el('span', { 'class': 'vb aud', text: t })); });
     }
     if (sourceSel) sourceSel.addEventListener('change', fillTracks);
+    var audioTile = el('button', { 'class': 'ttile', type: 'button' }, [el('small', { text: t('audio') }), el('b', { text: '—' })]);
+    var subTile = el('button', { 'class': 'ttile', type: 'button' }, [el('small', { text: t('subtitles') }), el('b', { text: '—' })]);
+    tileBox.appendChild(audioTile); tileBox.appendChild(subTile);
+    function drawItemTiles() {
+      audioTile.hidden = audioField.hidden; subTile.hidden = subField.hidden;
+      var a = audioSel.options[audioSel.selectedIndex], b = subSel.options[subSel.selectedIndex];
+      audioTile.lastChild.textContent = a ? a.textContent : '—';
+      subTile.lastChild.textContent = b ? b.textContent : '—';
+    }
+    function pickFrom(sel, title) {
+      openSheet(title, Array.prototype.map.call(sel.options, function (o) { return { value: o.value, label: o.textContent }; }), sel.value, function (v) {
+        sel.value = v; sel.dispatchEvent(new Event('change')); drawItemTiles();
+      });
+    }
+    audioTile.addEventListener('click', function () { pickFrom(audioSel, t('audio')); });
+    subTile.addEventListener('click', function () { pickFrom(subSel, t('subtitles')); });
+    subSel.addEventListener('change', drawItemTiles);
     audioSel.addEventListener('change', function () {
       var s = source();
       var current = streams(s, 'Audio').filter(function (a) { return String(a.Index) === audioSel.value; })[0];
       subSel.value = String(defaultSubtitle(s, current));   // the badges keep showing the disc's best track
+      drawItemTiles();
     });
     fillTracks();
-    if (item.PartCount > 1) fields.appendChild(el('p', { 'class': 'note', text: t('discs_chain') }));
+    if (item.PartCount > 1) discBox.appendChild(el('p', { 'class': 'note', text: t('discs_chain') }));
 
     function go(startTicks, startIndex, mainMovie) {
       buzz();
@@ -1991,6 +2265,11 @@
         StartIndex: startIndex,
         MainMovie: !!mainMovie
       });
+    }
+    function roundBtn(iconName, caption, label, onClick) {
+      var b = el('button', { 'class': 'round-btn', type: 'button', 'aria-label': label, html: icon(iconName) });
+      b.addEventListener('click', onClick);
+      return el('div', { 'class': 'round-wrap' }, [b, el('span', { text: caption })]);
     }
     function button(cls, iconName, text, onClick) {
       var b = el('button', { 'class': 'btn ' + cls, type: 'button', html: iconName ? icon(iconName) : '' }, [el('span', { text: text })]);
@@ -2014,16 +2293,18 @@
     function drawActions() {
       actions.textContent = '';
       var d = disc(), multi = !!discSel;
+      var main, extra = [];
       if (pos > 0) {
         var rp = resumePoint();
-        actions.appendChild(button('primary', 'play', t('resume_at', fmt(rp.inner / 1e7)) + (multi ? t('resume_disc', rp.part + 1) : ''), function () { go(pos, null); }));
-        actions.appendChild(button('secondary', null, d > 0 ? t('play_disc_from_start', d + 1) : t('play_from_start'), function () { go(0, multi ? d : null); }));
+        main = button('primary', 'play', t('resume_at', fmt(rp.inner / 1e7)) + (multi ? t('resume_disc', rp.part + 1) : ''), function () { go(pos, null); });
+        extra.push(roundBtn('restart', t('from_start_short'), d > 0 ? t('play_disc_from_start', d + 1) : t('play_from_start'), function () { go(0, multi ? d : null); }));
       } else {
-        actions.appendChild(button('primary', 'play', d > 0 ? t('play_disc_on', d + 1, deviceLabel()) : t('play_on', deviceLabel()), function () { go(0, multi ? d : null); }));
+        main = button('primary', 'play', d > 0 ? t('play_disc_on', d + 1, deviceLabel()) : t('play_on', deviceLabel()), function () { go(0, multi ? d : null); });
       }
       if (movieOk) {
-        actions.appendChild(button('secondary', 'play', pos > 0 ? t('play_movie_at', fmt(pos / 1e7)) : t('play_movie'), function () { go(pos, null, true); }));
+        extra.push(roundBtn('next', t('no_menus_short'), pos > 0 ? t('play_movie_at', fmt(pos / 1e7)) : t('play_movie'), function () { go(pos, null, true); }));
       }
+      actions.appendChild(el('div', { 'class': 'act-row' }, [main].concat(extra)));
     }
     drawActions();
 
@@ -2267,14 +2548,19 @@
     playerItemId = itemId || null;
     var bg = $('p-bg'), logo = $('p-logo'), badgeBox = $('p-badges'), box = $('chap-box'), row = $('chapters');
     bg.classList.remove('on'); logo.hidden = true; $('p-title').hidden = false;
+    $('pv-art').style.backgroundImage = '';
+    playerArt = null;
     badgeBox.textContent = ''; row.textContent = ''; box.hidden = true; chapterTimes = []; chapterList = []; $('chap-hero').hidden = true;
     if (!itemId || !uid()) return;
     emby('/Users/' + uid() + '/Items/' + itemId, { Fields: 'MediaSources,PartCount' }).then(function (item) {
       if (playerItemId !== itemId) return;
       var back = image(item, 'Backdrop', 1100);
       if (back) { bg.style.backgroundImage = 'url("' + back + '")'; bg.classList.add('on'); }
+      if (back) $('pv-art').style.backgroundImage = 'url("' + back + '")';
+      playerArt = image(item, 'Backdrop', 640) || image(item, 'Primary', 400);
+      if (currentRoute && currentRoute.name !== 'item') setAmbient(playerArt);
       var lg = image(item, 'Logo', 160);
-      if (lg) { logo.src = lg; logo.hidden = false; $('p-title').hidden = true; }
+      if (lg) { logo.onerror = function () { logo.hidden = true; $('p-title').hidden = false; }; logo.src = lg; logo.hidden = false; $('p-title').hidden = true; }
       var src = (item.MediaSources || [])[0];
       videoBadges(src, item).forEach(function (b) { badgeBox.appendChild(el('span', { 'class': 'vb ' + b.cls, text: b.text })); });
       discFormat({ Id: item.Id }).then(function (f) {
@@ -2404,7 +2690,7 @@
     $('scrim').hidden = true;
     document.body.classList.remove('sheet-open');
   }
-  document.querySelectorAll('.ttile').forEach(function (b) {
+  document.querySelectorAll('.ttile[data-sheet]').forEach(function (b) {
     b.addEventListener('click', function () {
       closeSheet();
       $(b.getAttribute('data-sheet')).classList.add('sheet');
