@@ -733,6 +733,27 @@
   .toolbar .toggle svg { width: 17px; height: 17px; margin-right: 4px; vertical-align: -3px; }
   .toolbar .count { flex: none; margin-left: auto; padding-left: 6px; font-size: 11.5px; align-self: center; }
   .filters { padding: 0 0 16px; }
+  /* ---------------------------------------------------------------- 0.24: finishing pass
+     One badge style (only the resolution in the film's colour), round pills everywhere, the film page's picture fading
+     into the page, buttons that keep their label on one line, the search box on the same glass band as the filters. */
+  .vb, .vb.dv, .vb.hdr, .vb.aud, .vb.src, .vb.src.bluray, .vb.src.uhd, .vb.src.dvd, .vb.src.file, .vb.src.iso, .vb.src.folder {
+    font-family: var(--mono); font-style: normal; font-weight: 500; font-size: 11px; letter-spacing: 0; line-height: 1;
+    padding: 5px 7px; border-radius: 6px; background: rgba(255, 255, 255, .05); border: 1px solid var(--line); color: var(--text-2); }
+  .vb.res, .vb.src.uhd { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+  .chip, .pill, .toggle, .lib-btn, .toolbar select, .pv-extra .pill, .room-box .pill, .row-btns .pill { border-radius: 999px; }
+  .hero { -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent); mask-image: linear-gradient(to bottom, #000 45%, transparent); }
+  .hero::after { display: none; }
+  .act-row .btn.primary { white-space: nowrap; font-size: 14.5px; padding: 0 14px; min-width: 0; }
+  .act-row .btn.primary span { overflow: hidden; text-overflow: ellipsis; }
+  .row-btns { gap: 8px; margin: 0 0 16px; }
+  .row-btns .pill { min-height: 40px; font-size: 13.5px; padding: 0 14px; white-space: nowrap; }
+  .row-btns .pill svg { width: 18px; height: 18px; }
+  .pv-key { font-size: 13px; }
+  .search-box { margin: 0 -16px 16px; padding: 8px 16px 10px; background: rgba(14, 15, 20, .55); border-bottom: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%); }
+  .search-box input { border-radius: 999px; min-height: 42px; padding: 0 16px; }
+  .search-box .icon-btn { width: 42px; height: 42px; }
+  .card-box h2, details.card-box summary { color: var(--muted); }
   /* 0.24: trailers */
   .hero { position: relative; }
   .trailer-btn { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 2; display: inline-flex; align-items: center; gap: 10px;
@@ -890,8 +911,8 @@
 
   <div class="pv-control">
     <div class="pv-col">
-      <button class="pv-key" data-key="TTL" type="button" data-i18n="disc_menu">Disc menu</button>
-      <button class="pv-key" data-key="MNU" type="button" data-i18n="popup_menu">Pop-up menu</button>
+      <button class="pv-key" data-key="TTL" type="button" aria-label="Disc menu" data-i18n-aria="disc_menu_aria" data-i18n="disc_short">Menu</button>
+      <button class="pv-key" data-key="MNU" type="button" aria-label="Pop-up menu" data-i18n-aria="popup_menu" data-i18n="popup_short">Pop-up</button>
       <button class="pv-key" data-key="RET" type="button" data-i18n="back">Back</button>
       <button class="pv-key stop" data-key="STP" type="button"><svg><use href="#i-stop"/></svg>Stop</button>
     </div>
@@ -1043,7 +1064,7 @@
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
       during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
       signed_in_as: 'Signed in as {0}',
-      trailer: 'Trailer', trailer_n: 'Trailer {0}', trailer_open: 'Open the trailer', trailer_on_tv: 'Play the trailer on the TV (OPPO)', trailer_local_only: 'This film’s trailer is a file: play it on the TV.', close: 'Close', greet_morning: 'Good morning', greet_afternoon: 'Good afternoon', greet_evening: 'Good evening', from_start_short: 'From the start', no_menus_short: 'No menus', chapter_of: 'Chapter {0} of {1}', room: 'Home cinema', room_kind: 'OPPO · TV · amp', oppo_home_short: 'OPPO home', player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
+      trailer: 'Trailer', trailer_n: 'Trailer {0}', trailer_open: 'Open the trailer', trailer_on_tv: 'Play the trailer on the TV (OPPO)', trailer_local_only: 'This film’s trailer is a file: play it on the TV.', close: 'Close', disc_short: 'Menu', popup_short: 'Pop-up', greet_morning: 'Good morning', greet_afternoon: 'Good afternoon', greet_evening: 'Good evening', from_start_short: 'From the start', no_menus_short: 'No menus', chapter_of: 'Chapter {0} of {1}', room: 'Home cinema', room_kind: 'OPPO · TV · amp', oppo_home_short: 'OPPO home', player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
       states: {
         'PLAY': 'Playing', 'PAUSE': 'Paused', 'STOP': 'Stopped', 'DISC MENU': 'Disc menu',
         'HOME MENU': 'OPPO home menu', 'MEDIA CENTER': 'Media center', 'SCREEN SAVER': 'Screen saver',
@@ -1101,7 +1122,7 @@
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
       during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
       signed_in_as: 'Connecté : {0}',
-      trailer: 'Bande-annonce', trailer_n: 'Bande-annonce {0}', trailer_open: 'Ouvrir la bande-annonce', trailer_on_tv: 'Lire la bande-annonce sur la télé (OPPO)', trailer_local_only: 'La bande-annonce de ce film est un fichier : lis-la sur la télé.', close: 'Fermer', greet_morning: 'Bonjour', greet_afternoon: 'Bonjour', greet_evening: 'Bonsoir', from_start_short: 'Du début', no_menus_short: 'Sans menus', chapter_of: 'Chapitre {0} sur {1}', room: 'Salle', room_kind: 'OPPO · télé · ampli', oppo_home_short: 'Accueil OPPO', player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
+      trailer: 'Bande-annonce', trailer_n: 'Bande-annonce {0}', trailer_open: 'Ouvrir la bande-annonce', trailer_on_tv: 'Lire la bande-annonce sur la télé (OPPO)', trailer_local_only: 'La bande-annonce de ce film est un fichier : lis-la sur la télé.', close: 'Fermer', disc_short: 'Menu', popup_short: 'Pop-up', greet_morning: 'Bonjour', greet_afternoon: 'Bonjour', greet_evening: 'Bonsoir', from_start_short: 'Du début', no_menus_short: 'Sans menus', chapter_of: 'Chapitre {0} sur {1}', room: 'Salle', room_kind: 'OPPO · télé · ampli', oppo_home_short: 'Accueil OPPO', player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
       states: {
         'PLAY': 'Lecture', 'PAUSE': 'Pause', 'STOP': 'Arrêt', 'DISC MENU': 'Menu du disque',
         'HOME MENU': 'Accueil de l’OPPO', 'MEDIA CENTER': 'Centre multimédia', 'SCREEN SAVER': 'Économiseur d’écran',
@@ -3059,7 +3080,7 @@
     if (!r) return;
     Array.prototype.forEach.call(document.querySelectorAll('#tabbar a'), function (a) {
       var tab = a.getAttribute('data-tab');
-      var on = tab === r.name && (tab !== 'lib' || a.getAttribute('data-lib') === r.id) || (tab === 'libs' && r.name === 'lib');
+      var on = tab === r.name && (tab !== 'lib' || a.getAttribute('data-lib') === r.id) || (tab === 'libs' && r.name === 'lib' && !wide());
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
   }
