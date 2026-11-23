@@ -719,7 +719,7 @@
   .p-out[hidden] { display: none; }
   .po-row { display: flex; gap: 10px; min-width: 0; }
   .po-row b { flex: 0 0 44px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; line-height: 16px; }
-  .po-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+  .po-row span { min-width: 0; color: var(--text); }   /* wraps: the OPPO line can be long */
   .pv-transport .t-btn { width: 48px; height: 48px; }
   .pv-transport .t-btn.main { width: 64px; height: 64px; }
   .track-tiles .ttile { min-height: 50px; }
@@ -2750,15 +2750,13 @@
     drawSleep(s);
     if (!playing) $('p-out').hidden = true;
     else {
-      // Two labelled lines: the picture the OPPO sends (#QHS and its output message), then what the amplifier decodes
-      // (its format sensor in Home Assistant, else its sound mode) with its volume. Without an amplifier (standard
-      // edition, or none configured) the second line is the OPPO's sound track.
+      // As in 0.23, the OPPO's output on one line (resolution and frame rate, HDR or Dolby Vision, sound track), then in
+      // the home edition what the amplifier decodes (its format sensor in Home Assistant, else its sound mode) with its volume.
       var out = $('p-out');
       out.textContent = '';
       var vol = !$('amp-row').hidden && $('amp-value').textContent !== '—' ? $('amp-value').textContent : '';
-      var ampLine = HOME_UI && last.ampFormat;
-      [['OPPO', last.outVideo],
-       [ampLine ? t('amp_kind') : t('src_out_audio'), ampLine ? [last.ampFormat, vol].filter(Boolean).join(' · ') : last.outAudio]].forEach(function (x) {
+      [['OPPO', [last.outVideo, last.outAudio].filter(Boolean).join(' · ')],
+       [t('amp_kind'), HOME_UI && last.ampFormat ? [last.ampFormat, vol].filter(Boolean).join(' · ') : '']].forEach(function (x) {
         if (!x[1]) return;
         var row = el('div', { class: 'po-row' });
         row.appendChild(el('b', { text: x[0] }));
