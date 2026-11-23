@@ -307,6 +307,9 @@ namespace Emby.Oppo
                 }
 
                 _logger.Info("OPPO: {0}{1} started (state \"{2}\")", title, label, state);
+                // What the decoder reports is in the player's log for about 30 s only: read it now.
+                DecoderInfo.Reset();
+                DecoderInfo.Capture(oppo.Host, _logger);
                 if (!wasStarted())
                 {
                     markStarted();

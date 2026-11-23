@@ -410,6 +410,9 @@ namespace Emby.Oppo
                         if (now.ImageTags != null && now.ImageTags.TryGetValue(ImageType.Primary, out var tag)) result.ImageTag = tag;
                     }
 
+                    // Back on the home menu (or stopped): the next film gets its own decoder values.
+                    if (result.Reachable && (result.State == "HOME MENU" || result.State == "STOP" || result.State == "NO DISC" || result.State == "MEDIA CENTER"))
+                        DecoderInfo.Reset();
                     if (result.Reachable && PlayingStates.Contains(result.State))
                     {
                         var status = await oppo.GetStatus(ct).ConfigureAwait(false);
@@ -422,23 +425,29 @@ namespace Emby.Oppo
                         // stops answering IP control for a while (seen on a UHD ISO menu: the web remote's STOP was lost).
                         // Not in the first 90 s either: 18 s into a movie disc started without menus, #QHS got no answer
                         // and the OPPO then refused IP control until it was switched off (2026-11-20).
-                        // Resolution and frame rate of the film (HTTP, any time: it does not hold the IP-control link),
-                        // else the output the player announced (UVO); HDR from #QHS after the first 90 s (see below).
+                        // Only what the OPPO itself reports. Picture: a file's size and frame rate from the HTTP interface
+                        // (it does not hold the IP-control link); for a disc, what the decoder wrote in the player's log
+                        // when the film started (SSH, jailbroken player), else an UVO announcement caught in an answer.
+                        // Bit depth and the source's HDR from the decoder too; the output's HDR from #QHS after 90 s.
                         string picture = null;
+                        var decoded = DecoderInfo.Current;
                         if (request.Tracks)
                         {
                             picture = await oppo.GetVideoFormat(Fr, ct).ConfigureAwait(false);
-                            // A disc (ISO, Blu-ray folder): the player's HTTP interface gives no picture, Emby's media
-                            // info of the version playing does (as for the badges).
-                            if (picture == null) picture = EmbyPicture(session);
+                            if (decoded == null) DecoderInfo.Capture(oppo.Host, _logger, true);
+                            if (picture == null && decoded != null) picture = DecoderInfo.Picture(decoded, Fr);
                             if (picture == null && OppoClient.Events.TryGetValue("UVO", out var uvo)) picture = VideoOutLabel(uvo, Fr);
+                            if (picture != null && decoded != null && decoded.Bits >= 10) picture += " · " + decoded.Bits + L10n.T(Fr, "-bit", " bits");
                             if (picture != null) result.OutputVideo = picture;
                         }
                         if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90)
                         {
                             string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
                             bool fr = Fr;
-                            result.OutputVideo = string.Join(" · ", new[] { picture, HdrLabel(hdr) }.Where(x => !string.IsNullOrEmpty(x)));
+                            string output = HdrLabel(hdr);
+                            // "HDR10 → Dolby Vision" when the player converts the source (its "Dolby Vision" HDR setting).
+                            if (decoded != null && decoded.ToDolbyVision && decoded.SourceHdr != null && output == "Dolby Vision") output = decoded.SourceHdr + " → " + output;
+                            result.OutputVideo = string.Join(" · ", new[] { picture, output }.Where(x => !string.IsNullOrEmpty(x)));
                             result.OutputAudio = TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
                             result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
                         }
@@ -479,30 +488,6 @@ namespace Emby.Oppo
 
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, (DateTime At, RemoteBadge Badge)> BadgeCache =
             new System.Collections.Concurrent.ConcurrentDictionary<long, (DateTime, RemoteBadge)>();
-
-        /// <summary>Height and frame rate of the version playing on the OPPO, from Emby's media info; null if unknown.</summary>
-        private string EmbyPicture(SessionInfo session)
-        {
-            var now = session?.NowPlayingItem;
-            if (now == null) return null;
-            long id = 0;
-            var m = System.Text.RegularExpressions.Regex.Match(session.PlayState?.MediaSourceId ?? "", @"(\d+)$");
-            if (!m.Success || !long.TryParse(m.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out id))
-                long.TryParse(now.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out id);
-            if (id <= 0) return null;
-            try
-            {
-                var video = _itemRepository.GetMediaStreams(new MediaStreamQuery { ItemId = id }, CancellationToken.None)
-                                           .FirstOrDefault(s => s.Type == MediaStreamType.Video && !s.IsExternal);
-                if (video == null || (video.Height ?? 0) <= 0) return null;
-                return OppoClient.PictureLabel(video.Height.Value, video.RealFrameRate ?? video.AverageFrameRate ?? 0, video.IsInterlaced, Fr);
-            }
-            catch (Exception ex)
-            {
-                _logger.Debug("OPPO: media info of {0}: {1}", id, ex.Message);
-                return null;
-            }
-        }
 
         // Badge values (4K, 1080p, DV, HDR10…) are language-neutral, so the cache is shared by all languages.
         public object Get(RemoteBadges request)
