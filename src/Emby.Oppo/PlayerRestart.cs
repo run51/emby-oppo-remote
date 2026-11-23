@@ -94,6 +94,12 @@ namespace Emby.Oppo
                             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15)))
                                 logger.Info("OPPO: put back in standby after the restart ({0})", await oppo.Command("POF", cts.Token).ConfigureAwait(false));
                         }
+                        else if (power.IndexOf(" ON", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            // Back on: open its HTTP interface (position, chapters, tracks), closed after a restart.
+                            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(40)))
+                                logger.Info("OPPO: HTTP interface after the restart: {0}", await oppo.WaitForHttp(TimeSpan.FromSeconds(30), cts.Token).ConfigureAwait(false) ? "open" : "still closed");
+                        }
                         return;
                     }
                     await Task.Delay(3000).ConfigureAwait(false);

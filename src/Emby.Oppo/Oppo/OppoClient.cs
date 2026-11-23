@@ -347,9 +347,21 @@ namespace Emby.Oppo.Oppo
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 _logger.Debug("OPPO unreachable: {0}", ex.Message);
+                // Port 436 refused: after a restart or a power cut the player keeps its HTTP interface closed until
+                // a control app announces itself, even when it is on and playing. Without it the web remote lost the
+                // position, the chapters and the output line after an SSH restart (2026-11-23).
+                if (ex is WebException web && web.Status == WebExceptionStatus.ConnectFailure && DateTime.UtcNow - _lastNotice > TimeSpan.FromSeconds(5))
+                {
+                    if (_lastNotice == DateTime.MinValue || DateTime.UtcNow - _lastNotice > TimeSpan.FromMinutes(5))
+                        _logger.Info("OPPO: HTTP interface (port {0}) closed, sending the control-app login notice (UDP {1})", 436, 7624);
+                    _lastNotice = DateTime.UtcNow;
+                    NotifyLogin();
+                }
             }
             return status;
         }
+
+        private static DateTime _lastNotice = DateTime.MinValue;
 
         /// <summary>Entry of an OPPO track menu. Audio: index 1…n. Subtitles: 0 = "Off", then 1…n.</summary>
         public sealed class TrackEntry
