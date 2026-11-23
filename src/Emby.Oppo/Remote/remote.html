@@ -368,6 +368,159 @@
     .t-btn.main { width: 64px; height: 64px; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
   }
+
+  /* ================================================================ 0.24: new look
+     Same family as OPPO Music: near-black ground, one gold accent, Inter for text, Inter Tight for titles,
+     IBM Plex Mono for formats and times. Phone: a tab bar at the bottom. Landscape (1100 px and more): a side
+     bar on the left, the library in the middle, the remote docked on the right. */
+  @font-face { font-family: "Inter"; src: url("Remote/fonts/inter-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+  @font-face { font-family: "Inter Tight"; src: url("Remote/fonts/inter-tight-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+  @font-face { font-family: "Plex Mono"; src: url("Remote/fonts/plex-mono-500-latin.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+  :root {
+    --bg: #0b0b0d;
+    --surface: #17171b;
+    --surface-2: #1f1f24;
+    --surface-3: #2a2a30;
+    --line: #2a2a30;
+    --text: #f2f2f3;
+    --text-2: #d4d4d8;
+    --muted: #a1a1aa;
+    --accent: #e2b15b;
+    --accent-ink: #17120a;
+    --accent-soft: rgba(226, 177, 91, .12);
+    --radius: 16px;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: "Inter Tight", "Inter", system-ui, sans-serif;
+    --mono: "Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --tabbar-h: 0px;
+  }
+  body { font-family: var(--sans); letter-spacing: -0.003em; }
+  .appbar { background: rgba(11, 11, 13, .94); }
+  .appbar-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; }
+  h2.section { font-family: var(--display); font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin: 26px 0 12px; }
+  h2.section a { color: var(--accent); }
+
+  /* Buttons and chips */
+  .icon-btn { background: var(--surface); border: 1px solid var(--line); }
+  .appbar .icon-btn { border-color: transparent; }
+  .lib-btn { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; min-height: 44px; font-weight: 600; font-size: 14.5px; }
+  .lib-btn svg { color: var(--accent); }
+  .lib-btn.alt svg { color: var(--accent); }
+  .pill { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; font-weight: 500; }
+  .pill.small { background: var(--surface-2); }
+  .btn { border-radius: 26px; min-height: 52px; font-weight: 600; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.secondary { background: var(--surface); border: 1px solid var(--line); }
+  .toggle { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; font-weight: 500; }
+  .toggle[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; }
+  .chip.selected { background: var(--accent-soft); color: var(--text); border-color: var(--accent); font-weight: 600; }
+  select, input[type=search] { background: var(--surface); border-color: var(--line); border-radius: 14px; }
+  .count { font-family: var(--mono); font-size: 12px; }
+
+  /* Posters and badges */
+  .card .poster { border-radius: 12px; }
+  .card .name { font-weight: 500; }
+  .card .year { font-family: var(--mono); font-size: 11.5px; }
+  .badge { background: var(--accent); color: var(--accent-ink); }
+  .bar-mini span { background: var(--accent); }
+  .cb span { font-family: var(--mono); font-weight: 500; font-size: 10px; letter-spacing: 0; border-radius: 5px; background: rgba(11, 11, 13, .82); }
+  .vb { font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: 0; border-radius: 6px; padding: 5px 7px; background: transparent; }
+  .vb.res { border-color: var(--accent); color: var(--accent); }
+
+  /* Home: the player's card, then the title to resume in large */
+  .devcard { display: flex; align-items: center; gap: 12px; padding: 14px; margin: 6px 0 4px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+  .devcard .dc-ic { width: 44px; height: 44px; border-radius: 12px; background: var(--surface-3); display: grid; place-items: center; color: var(--accent); flex: none; }
+  .devcard .dc-ic svg { width: 22px; height: 22px; }
+  .devcard .dc-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .devcard .dc-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .devcard .dc-dev { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .devcard .dot { flex: none; }
+  .devcard .dc-state { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .devcard .dc-go { min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 13.5px; flex: none; }
+  .resume-hero { display: block; position: relative; margin: 12px 0 0; border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); color: inherit; text-decoration: none; }
+  .resume-hero .rh-img { position: relative; aspect-ratio: 16 / 8; background: var(--surface-2) center / cover no-repeat; }
+  .resume-hero .rh-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(11,11,13,0) 30%, rgba(11,11,13,.85) 100%); }
+  .resume-hero .rh-cap { position: absolute; left: 14px; right: 14px; bottom: 12px; z-index: 1; display: flex; flex-direction: column; gap: 4px; }
+  .resume-hero .rh-title { font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: -0.01em; line-height: 1.15; }
+  .resume-hero .rh-sub { font-size: 12.5px; color: var(--text-2); }
+  .resume-hero .rh-bar { height: 3px; background: var(--surface-3); }
+  .resume-hero .rh-bar span { display: block; height: 100%; background: var(--accent); }
+  .resume-hero .rh-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; }
+  .resume-hero .rh-fmt { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .resume-hero .rh-go { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 22px; background: var(--text); color: var(--bg); font-weight: 600; font-size: 13.5px; }
+  .resume-hero .rh-go svg { width: 16px; height: 16px; }
+
+  /* Item page */
+  .dtitle h1 { font-family: var(--display); font-weight: 700; letter-spacing: -0.015em; font-size: 24px; line-height: 1.12; }
+  .meta { font-size: 13px; }
+  .dposter { border-radius: 12px; border: 1px solid rgba(242, 242, 243, .12); }
+
+  /* Remote */
+  .now { border: 1px solid var(--line); border-radius: 18px; }
+  .p-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; }
+  .p-out { font-family: var(--mono); font-size: 11.5px; }
+  .times { font-family: var(--mono); font-size: 11.5px; }
+  .fill { background: var(--accent); }
+  .t-btn { background: var(--surface); border: 1px solid var(--line); }
+  .t-btn.main { background: var(--text); color: var(--bg); border: 0; }
+  .row3 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .row3 .pill { font-family: var(--mono); font-size: 13px; }
+  .row3 .pill.info { font-family: var(--sans); font-weight: 600; border-color: var(--accent); background: var(--accent-soft); }
+  .pill.stop { color: #ff8a80; }
+  .amp-level b { font-family: var(--mono); font-weight: 500; }
+  .pad { background: var(--surface); border: 1px solid var(--line); }
+  .pad .ok { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .pad .ok:active { filter: brightness(.9); }
+  .labelled .icon-btn { background: var(--surface); }
+  section.card-box, details.card-box { border: 1px solid var(--line); border-radius: 18px; }
+  .card-box h2, details.card-box summary { letter-spacing: .08em; font-size: 12px; }
+  .chap .thumb { border-radius: 10px; }
+  .chap.current .thumb { border-color: var(--accent); }
+  .chap .ct { font-family: var(--mono); font-size: 11px; }
+  .chap.current .ct { color: var(--accent); }
+  .mini { background: rgba(23, 23, 27, .96); border: 1px solid var(--line); border-radius: 16px; }
+  .mini .icon-btn { background: var(--text); color: var(--bg); border: 0; }
+  .login .submit { background: var(--accent); color: var(--accent-ink); border-radius: 24px; }
+  .login h1 { font-family: var(--display); }
+
+  /* Phone: tab bar at the bottom */
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 6px 4px max(6px, env(safe-area-inset-bottom)); background: rgba(17, 17, 20, .97); border-top: 1px solid var(--line); }
+  .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; text-decoration: none;
+    color: var(--muted); font-size: 11px; font-weight: 500; border-radius: 12px; }
+  .tabbar a svg { width: 22px; height: 22px; }
+  .tabbar a[aria-current="page"] { color: var(--accent); }
+  .tabbar .side-only, .tabbar .side-dev { display: none; }
+  body.tabs { --tabbar-h: 66px; }
+  body.tabs .view { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  body.tabs.has-mini .view { padding-bottom: calc(170px + env(safe-area-inset-bottom)); }
+  body.tabs .mini { bottom: calc(72px + env(safe-area-inset-bottom)); }
+  body.tabs .toast { bottom: calc(max(20px, env(safe-area-inset-bottom)) + 150px); }
+  body.tabs #nav-search, body.tabs #nav-player { display: none !important; }
+
+  /* Landscape (1100 px and more): side bar on the left, the remote stays docked on the right */
+  @media (min-width: 1100px) and (orientation: landscape) {
+    body.tabs { --tabbar-h: 0px; }
+    .tabbar { top: 0; right: auto; width: 232px; bottom: 0; display: flex; flex-direction: column; gap: 4px; padding: 20px 14px 18px;
+      border-top: 0; border-right: 1px solid var(--line); background: #111114; overflow-y: auto; }
+    .tabbar .side-brand { display: block; font-family: var(--display); font-weight: 700; font-size: 19px; padding: 0 10px 16px; color: var(--text); }
+    .tabbar a { flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 44px; padding: 0 12px; font-size: 14.5px; color: var(--text-2); }
+    .tabbar a[aria-current="page"] { background: var(--surface-3); color: var(--text); }
+    .tabbar a[aria-current="page"] svg { color: var(--accent); }
+    .tabbar a svg { width: 20px; height: 20px; }
+    .tabbar .side-only { display: flex; }
+    .tabbar .tab-remote, .tabbar #tab-lib { display: none; }
+    /* the docked remote shows the player: no card on the home page, no library chips (they are in the side bar) */
+    .view > .devcard, .libs > a.lib-btn { display: none; }
+    .resume-hero .rh-img { aspect-ratio: 21 / 8; }
+    .appbar { margin-left: 232px; }
+    #views { margin-left: 232px; }
+    body.tabs .view { padding-bottom: 28px; }
+    body.tabs .toast { bottom: 28px; }
+  }
+  @media (max-width: 1099px), (orientation: portrait) { .tabbar .side-brand { display: none; } }
+  html.lite .tabbar, html.lite .mini, html.lite .appbar { background: var(--bg); }
 </style>
 </head>
 <body>
@@ -420,6 +573,15 @@
 
 <div id="views"></div>
 
+<nav class="tabbar" id="tabbar" aria-label="Navigation" data-i18n-aria="navigation" hidden>
+  <span class="side-brand">OPPO Remote</span>
+  <a href="#/" data-tab="home"><svg><use href="#i-home"/></svg><span data-i18n="home_tab">Home</span></a>
+  <a href="#/" data-tab="lib" id="tab-lib"><svg><use href="#i-film"/></svg><span id="tab-lib-name" data-i18n="library_tab">Library</span></a>
+  <span id="side-libs" class="side-only" style="flex-direction: column; gap: 4px"></span>
+  <a href="#/search" data-tab="search"><svg><use href="#i-search"/></svg><span data-i18n="search">Search</span></a>
+  <a href="#/player" data-tab="player" class="tab-remote"><svg><use href="#i-remote"/></svg><span data-i18n="remote">Remote</span></a>
+</nav>
+
 <main class="view" id="player" hidden>
   <div class="p-bg" id="p-bg" aria-hidden="true"></div>
   <div class="status-row">
@@ -455,9 +617,10 @@
   </div>
 
   <div class="row row3">
-    <button class="pill" id="back30" type="button">−30 s</button>
+    <button class="pill" id="back30" type="button" aria-label="Back 10 seconds" data-i18n-aria="back10">−10 s</button>
     <button class="pill stop" data-key="STP"><svg><use href="#i-stop"/></svg>Stop</button>
-    <button class="pill" id="fwd30" type="button">+30 s</button>
+    <button class="pill" id="fwd30" type="button" aria-label="Forward 30 seconds" data-i18n-aria="fwd30">+30 s</button>
+    <button class="pill info" data-key="OSD" aria-label="OPPO information on screen" data-i18n-aria="info_aria"><svg><use href="#i-info"/></svg><span data-i18n="info_short">Info</span></button>
   </div>
 
   <div class="row amp" id="amp-row" hidden>
@@ -485,7 +648,7 @@
       <button class="arrow down" data-key="NDN" aria-label="Down" data-i18n-aria="down"><svg><use href="#i-down"/></svg></button>
     </div>
     <div class="side right">
-      <div class="labelled"><button class="icon-btn" data-key="OSD" aria-label="Info"><svg><use href="#i-info"/></svg></button>Info</div>
+      <div class="labelled" data-i18n="options_key"><button class="icon-btn" data-key="OPT" aria-label="Options" data-i18n-aria="options_key"><svg><use href="#i-more"/></svg></button>Options</div>
       <div class="labelled" data-i18n="popup_menu"><button class="icon-btn" data-key="MNU" aria-label="Pop-up menu" data-i18n-aria="popup_menu"><svg><use href="#i-menu"/></svg></button>Pop-up menu</div>
     </div>
   </div>
@@ -613,6 +776,7 @@
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
       during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
       signed_in_as: 'Signed in as {0}',
+      home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
       states: {
         'PLAY': 'Playing', 'PAUSE': 'Paused', 'STOP': 'Stopped', 'DISC MENU': 'Disc menu',
         'HOME MENU': 'OPPO home menu', 'MEDIA CENTER': 'Media center', 'SCREEN SAVER': 'Screen saver',
@@ -670,6 +834,7 @@
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
       during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
       signed_in_as: 'Connecté : {0}',
+      home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
       states: {
         'PLAY': 'Lecture', 'PAUSE': 'Pause', 'STOP': 'Arrêt', 'DISC MENU': 'Menu du disque',
         'HOME MENU': 'Accueil de l’OPPO', 'MEDIA CENTER': 'Centre multimédia', 'SCREEN SAVER': 'Économiseur d’écran',
@@ -715,7 +880,7 @@
   // Paths relative to the page address (…/emby/Oppo/Remote), with or without a trailing slash.
   var BASE = location.pathname.replace(/\/Oppo\/Remote\/?$/i, '');
   var API = BASE + '/Oppo/Remote';
-  var VERSION = '0.13.0';
+  var VERSION = '0.14.0';
   var STORE = 'oppoRemote.auth';
   var FIELDS = 'PrimaryImageAspectRatio,ProductionYear';
   var STATES = I18N[LANG].states;
@@ -1229,6 +1394,7 @@
     $('player').hidden = true;
     currentKey = r.key;
     currentRoute = r;
+    markTab(r);
     $('nav-back').hidden = r.name === 'home';
     $('nav-search').hidden = r.name === 'search';
     $('nav-player').hidden = r.name === 'player';
@@ -1295,7 +1461,7 @@
     var libsBox = el('nav', { 'class': 'libs', 'aria-label': t('libraries') });
     var resume = el('section');
     var latest = el('div');
-    var node = el('div', { 'class': 'view' }, [libsBox, resume, latest]);
+    var node = el('div', { 'class': 'view' }, [devCard(), libsBox, resume, latest]);
     getLibs().then(function (list) {
       list.forEach(function (lib) {
         libsBox.appendChild(el('a', { 'class': 'lib-btn', href: '#/lib/' + lib.Id, html: icon(libIcon(lib.CollectionType)) }, [lib.Name]));
@@ -1326,7 +1492,7 @@
     var seanceBtn = el('button', { 'class': 'lib-btn alt', type: 'button', html: icon('seance') }, [t('showtime')]);
     seanceBtn.addEventListener('click', function () { seance(true); });
     libsBox.appendChild(surpriseBtn);
-    if (HOME_UI) libsBox.appendChild(seanceBtn);
+    // Showtime: on the player's card (0.24)
     if (!window.OppoAndroid && /Android/i.test(navigator.userAgent)) {
       libsBox.appendChild(el('a', { 'class': 'lib-btn alt', href: API + '/oppo.apk', download: 'OPPO.apk', html: icon('remote') }, [t('install_app')]));
       libsBox.appendChild(el('a', { 'class': 'lib-btn alt', href: API + '/oppo-home.apk', download: 'OPPO-Home.apk', html: icon('remote') }, [t('install_app_home')]));
@@ -1335,7 +1501,12 @@
       emby('/Users/' + uid() + '/Items/Resume', { Limit: 12, MediaTypes: 'Video', Fields: FIELDS, ImageTypeLimit: 1, EnableImageTypes: 'Primary' })
         .then(function (r) {
           resume.textContent = '';
-          if (r && r.Items && r.Items.length) fillRow(resume, t('resume'), null, r.Items);
+          if (r && r.Items && r.Items.length) {
+            var rest = r.Items.slice(1);
+            if (rest.length) fillRow(resume, t('resume'), null, rest);
+            else resume.appendChild(el('h2', { 'class': 'section' }, [el('span', { text: t('resume') })]));
+            resume.insertBefore(resumeHero(r.Items[0]), resume.firstChild.nextSibling);
+          }
         }).catch(function () { /* section skipped */ });
       emby('/Users/' + uid() + '/Items', { Filters: 'IsFavorite', Recursive: true, IncludeItemTypes: 'Movie,MusicVideo,BoxSet', SortBy: 'SortName',
         Limit: 30, Fields: FIELDS, ImageTypeLimit: 1, EnableImageTypes: 'Primary' })
@@ -1991,6 +2162,7 @@
     last.itemId = itemId; last.imageTag = tag; last.stateText = stateText;
 
     androidMedia(s.Reachable ? state : '', title, s.Chapter, s.Position, s.Duration, itemId, tag, s.Amp);
+    drawDevCards();
     loadPlayerItem(itemId);
     drawSleep(s);
     if (!playing) $('p-out').hidden = true;
@@ -2205,7 +2377,7 @@
       schedule(800);
     }).catch(onError);
   }
-  $('back30').addEventListener('click', function () { jump(-30); });
+  $('back30').addEventListener('click', function () { jump(-10); });
   $('fwd30').addEventListener('click', function () { jump(30); });
   $('seance-on').addEventListener('click', function () { seance(true); });
   $('seance-off').addEventListener('click', function () { seance(false); });
@@ -2333,9 +2505,76 @@
   }
   window.addEventListener('resize', measureAppbar);
 
+  // ---------- 0.24: tab bar (phone) / side bar (landscape), player cards
+
+  function fillTabs() {
+    getLibs().then(function (list) {
+      var main = list.filter(function (l) { return l.CollectionType !== 'boxsets'; })[0] || list[0];
+      if (main) { $('tab-lib').setAttribute('href', '#/lib/' + main.Id); $('tab-lib').setAttribute('data-lib', main.Id); $('tab-lib-name').textContent = main.Name; }
+      var side = $('side-libs');
+      side.textContent = '';
+      list.forEach(function (lib) {
+        side.appendChild(el('a', { href: '#/lib/' + lib.Id, 'data-tab': 'lib', 'data-lib': lib.Id, html: icon(libIcon(lib.CollectionType)) }, [el('span', { text: lib.Name })]));
+      });
+      markTab(currentRoute);
+    }).catch(function () { /* libraries come later */ });
+  }
+  function markTab(r) {
+    if (!r) return;
+    Array.prototype.forEach.call(document.querySelectorAll('#tabbar a'), function (a) {
+      var tab = a.getAttribute('data-tab');
+      var on = tab === r.name && (tab !== 'lib' || a.getAttribute('data-lib') === r.id);
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+  }
+
+  /** The OPPO's card (home page and side bar): name, what it does, and the main action. */
+  function devCard() {
+    var go = el('button', { 'class': 'dc-go', type: 'button' });
+    var card = el('div', { 'class': 'devcard' }, [
+      el('div', { 'class': 'dc-ic', html: icon('disc') }),
+      el('div', { 'class': 'dc-text' }, [
+        el('div', { 'class': 'dc-name' }, [el('span', { 'class': 'dot' }), el('span', { 'class': 'dc-dev', text: last.deviceName || 'OPPO' })]),
+        el('div', { 'class': 'dc-state', text: t('connecting') })
+      ]), go]);
+    go.addEventListener('click', function () {
+      if (HOME_UI && !(last.title && last.reachable)) seance(true); else location.hash = '#/player';
+    });
+    drawDevCard(card);
+    return card;
+  }
+  function drawDevCard(card) {
+    var on = !!last.reachable;
+    card.querySelector('.dot').className = 'dot ' + (on ? 'on' : 'off');
+    card.querySelector('.dc-dev').textContent = last.deviceName || 'OPPO';
+    card.querySelector('.dc-state').textContent = !on ? t('player_off') : last.title ? (last.stateText || '') + ' · ' + last.title : (last.stateText || t('player_ready'));
+    card.querySelector('.dc-go').textContent = HOME_UI && !(last.title && on) ? t('showtime') : t('open_remote_short');
+  }
+  function drawDevCards() { Array.prototype.forEach.call(document.querySelectorAll('.devcard'), drawDevCard); }
+
+  /** The first title to resume, in large: its backdrop, what is left, and a button that opens its page. */
+  function resumeHero(item) {
+    var ud = item.UserData || {}, total = item.RunTimeTicks || 0, pos = ud.PlaybackPositionTicks || 0;
+    var pct = ud.PlayedPercentage || (total ? pos / total * 100 : 0);
+    var back = image(item, 'Backdrop', 900) || image(item, 'Primary', 600);
+    var img = el('div', { 'class': 'rh-img' }, [el('div', { 'class': 'rh-cap' }, [
+      el('div', { 'class': 'rh-title', text: item.Name }),
+      total ? el('div', { 'class': 'rh-sub', text: t('time_left', runtime(Math.max(0, total - pos))) }) : null])]);
+    if (back) img.style.backgroundImage = 'url("' + back + '")';
+    var bar = el('div', { 'class': 'rh-bar' }, [el('span')]);
+    bar.firstChild.style.width = Math.max(2, Math.min(100, pct)) + '%';
+    var a = el('a', { 'class': 'resume-hero card', href: '#/item/' + item.Id, 'data-id': item.Id }, [img, bar,
+      el('div', { 'class': 'rh-foot' }, [el('span', { 'class': 'rh-fmt', text: item.ProductionYear ? String(item.ProductionYear) : '' }),
+        el('span', { 'class': 'rh-go', html: icon('play') }, [t('resume_go')])])]);
+    return a;
+  }
+
   function start() {
     $('who').textContent = auth.userName ? t('signed_in_as', auth.userName) : '';
     started = true;
+    $('tabbar').hidden = false;
+    document.body.classList.add('tabs');
+    fillTabs();
     measureAppbar();
     getUser().catch(function () { /* default preferences */ });
     stack = [];

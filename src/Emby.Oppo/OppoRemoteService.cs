@@ -51,6 +51,13 @@ namespace Emby.Oppo
     [Unauthenticated]
     public sealed class RemoteIcon512 { }
 
+    [Route("/Oppo/Remote/fonts/{Name}", "GET", Summary = "Fonts of the remote (Inter, Inter Tight, IBM Plex Mono; SIL Open Font License)")]
+    [Unauthenticated]
+    public sealed class RemoteFont
+    {
+        public string Name { get; set; }
+    }
+
     // ------------------------------------------------------------------ API (signed-in Emby user)
 
     [Route("/Oppo/Remote/State", "GET", Summary = "OPPO state for the remote")]
@@ -327,6 +334,16 @@ namespace Emby.Oppo
         public object Get(RemoteIcon192 request) => Embedded("icon192.png", "image/png");
 
         public object Get(RemoteIcon512 request) => Embedded("icon512.png", "image/png");
+
+        private static readonly HashSet<string> Fonts = new HashSet<string>(StringComparer.Ordinal)
+            { "inter-latin.woff2", "inter-tight-latin.woff2", "plex-mono-500-latin.woff2" };
+
+        // Fonts change only with the plugin: cached for a year by the phone.
+        public object Get(RemoteFont request)
+        {
+            if (request.Name == null || !Fonts.Contains(request.Name)) throw new FileNotFoundException(request.Name);
+            return Embedded("fonts." + request.Name, "font/woff2", new Dictionary<string, string> { ["Cache-Control"] = "public, max-age=31536000, immutable" });
+        }
 
         // ---------------------------------------------------------------- API
 

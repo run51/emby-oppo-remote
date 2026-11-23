@@ -10,7 +10,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>Emby.Oppo</RootNamespace>
     <AssemblyName>Emby.Oppo</AssemblyName>
-    <Version>0.23.0</Version>
+    <Version>0.24.0-test1</Version>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
@@ -46,6 +46,9 @@
     <EmbeddedResource Include="Remote\oppo.apk" LogicalName="Emby.Oppo.Remote.oppo.apk" Condition="Exists('Remote\oppo.apk')" />
     <EmbeddedResource Include="Remote\oppo-home.apk" LogicalName="Emby.Oppo.Remote.oppo-home.apk" Condition="Exists('Remote\oppo-home.apk')" />
     <EmbeddedResource Include="Remote\icon192.png" LogicalName="Emby.Oppo.Remote.icon192.png" />
+    <EmbeddedResource Include="Remote\fonts\inter-latin.woff2" LogicalName="Emby.Oppo.Remote.fonts.inter-latin.woff2" />
+    <EmbeddedResource Include="Remote\fonts\inter-tight-latin.woff2" LogicalName="Emby.Oppo.Remote.fonts.inter-tight-latin.woff2" />
+    <EmbeddedResource Include="Remote\fonts\plex-mono-500-latin.woff2" LogicalName="Emby.Oppo.Remote.fonts.plex-mono-500-latin.woff2" />
     <EmbeddedResource Include="Remote\icon512.png" LogicalName="Emby.Oppo.Remote.icon512.png" />
   </ItemGroup>
 
