@@ -811,6 +811,31 @@
     box-shadow: 0 0 0 5px rgba(255, 255, 255, .16), 0 0 14px rgba(255, 255, 255, .3);
     box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 28%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent); }
   .pv-card .bar.dragging .knob { transform: scale(1.3); }
+  /* 0.24 layout "C": picture behind the head, the chapter and the progress */
+  .pv-card { padding: 0; overflow: hidden; }
+  .pv-card .dev-head { display: none; }
+  .pv-art { aspect-ratio: auto; max-height: none; min-height: 188px; border-radius: 0; display: flex; flex-direction: column; gap: 6px;
+    padding: 12px 14px 6px; }
+  .pv-art::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(rgba(0, 0, 0, .58), rgba(0, 0, 0, .06) 38%, rgba(0, 0, 0, .18) 55%, rgba(0, 0, 0, .84)); }
+  .pv-art .chap-hero { z-index: 0; }
+  .pv-art > .pv-head, .pv-art > .ch-cap, .pv-art > .progress { position: relative; z-index: 2; }
+  .pv-art .pv-head { text-shadow: 0 1px 8px rgba(0, 0, 0, .7); }
+  .pv-art .pv-head .sub { color: rgba(255, 255, 255, .82); }
+  .pv-art > .ch-cap { margin-top: auto; display: flex; flex-direction: column; gap: 1px; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
+  .pv-art > .ch-cap span { font-family: var(--mono); font-size: 11px; color: rgba(255, 255, 255, .85); }
+  .pv-art > .ch-cap b { font-family: var(--display); font-size: 17px; font-weight: 600; }
+  .pv-art > .ch-cap b:empty, .pv-art > .chap-hero[hidden] ~ .ch-cap { display: none; }
+  .pv-art > .chap-hero[hidden] ~ .progress { margin-top: auto; }
+  .pv-art > .progress { padding: 0; }
+  .pv-art .progress #dur { color: rgba(255, 255, 255, .75); }
+  /* tighter phone layout so that the keys stay above the tab bar (measured at 411 x 970) */
+  #player { gap: 10px; }
+  .chap-row { grid-auto-columns: 100px; gap: 8px; }
+  .pv-transport .t-btn.main { width: 64px; height: 64px; }
+  .pv-transport .t-btn { width: 48px; height: 48px; }
+  .pv-key { min-height: 40px; }
+  @media (min-width: 1100px) and (orientation: landscape) { .wide-now .pv-art { aspect-ratio: 16 / 9; } .wide-now .chap-row { grid-auto-columns: 170px; gap: 12px; } }
   .trailer-box { position: fixed; left: 0; right: 0; top: max(10px, env(safe-area-inset-top)); z-index: 9; max-width: 900px; margin: 0 auto; padding: 12px 14px 16px;
     display: flex; flex-direction: column; gap: 12px; background: rgba(14, 15, 20, .9); -webkit-backdrop-filter: blur(30px) saturate(160%); backdrop-filter: blur(30px) saturate(160%);
     border: 1px solid var(--line); border-radius: 22px; max-height: calc(100vh - 20px); overflow-y: auto; }
@@ -921,24 +946,27 @@
   <!-- 0.24: the playback screen of the mock-up. A card with the current chapter's picture (else the film's backdrop) and
        the progress in it; the transport keys with -10 s and +30 s around play/pause; Audio, Subtitles and Info; then the
        D-pad between the disc keys and the amplifier's volume. The rest (chapters, room, more keys) below. -->
-  <div class="pv-head">
-    <img class="p-logo" id="p-logo" alt="" hidden>
-    <div class="p-title" id="p-title" data-i18n="connecting">Connecting…</div>
-    <div class="sub"><span class="dot" id="dot2" aria-hidden="true"></span><span id="p-state"></span><span id="p-chapter"></span><span id="p-end"></span></div>
-  </div>
-
+  <!-- 0.24 layout "C" (chosen 24/11): the chapter's picture (else the film's backdrop) behind the title, the chapter and
+       the progress, so that everything down to the remote keys fits a phone without scrolling. In landscape the title
+       is moved out above the card (showWideNow). -->
   <div class="now pv-card" aria-live="polite">
     <div class="dev-head"><span class="dh-ic"><svg><use href="#i-disc"/></svg></span><span class="dh-name" id="p-dev">OPPO</span><span class="dh-kind" data-i18n="player_kind">Player</span></div>
     <div class="pv-art" id="pv-art">
       <img class="p-poster" id="p-poster" alt="" hidden>
-      <div class="chap-hero" id="chap-hero" hidden><img id="ch-img" alt=""><div class="ch-cap"><span id="ch-n"></span><b id="ch-name"></b></div></div>
-    </div>
+      <div class="chap-hero" id="chap-hero" hidden><img id="ch-img" alt=""></div>
+      <div class="pv-head">
+        <img class="p-logo" id="p-logo" alt="" hidden>
+        <div class="p-title" id="p-title" data-i18n="connecting">Connecting…</div>
+        <div class="sub"><span class="dot" id="dot2" aria-hidden="true"></span><span id="p-state"></span><span id="p-chapter"></span><span id="p-end"></span></div>
+      </div>
+      <div class="ch-cap"><span id="ch-n"></span><b id="ch-name"></b></div>
     <div class="progress" id="progress" hidden>
       <div class="bar" id="bar" role="slider" aria-label="Playback position" data-i18n-aria="seek_bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
         <div class="track"><div class="fill" id="fill"></div></div>
         <span class="knob" id="knob"></span>
       </div>
       <div class="times"><span id="pos">0:00</span><span id="dur">0:00</span></div>
+    </div>
     </div>
   </div>
   <div class="p-badges" id="p-badges"></div>
