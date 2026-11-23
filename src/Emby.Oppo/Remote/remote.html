@@ -829,12 +829,25 @@
   .pv-art > .chap-hero[hidden] ~ .progress { margin-top: auto; }
   .pv-art > .progress { padding: 0; }
   .pv-art .progress #dur { color: rgba(255, 255, 255, .75); }
-  /* tighter phone layout so that the keys stay above the tab bar (measured at 411 x 970) */
-  #player { gap: 10px; }
-  .chap-row { grid-auto-columns: 100px; gap: 8px; }
-  .pv-transport .t-btn.main { width: 64px; height: 64px; }
-  .pv-transport .t-btn { width: 48px; height: 48px; }
-  .pv-key { min-height: 40px; }
+  /* Phone: everything down to Stop and the fast keys above the tab bar. Measured on the user's phone (360 x 850 points
+     in the app, 24/11): the format badges are left out (the OPPO line says the same), no "Chapters" heading, smaller
+     logo, keys and pad. In landscape these parts are moved out of #player and keep their look. */
+  #player { gap: 8px; }
+  #player .p-badges { display: none; }
+  #player #chap-box h2 { display: none; }
+  #player #chap-box { padding: 8px 10px; }
+  .chap-row { grid-auto-columns: 92px; gap: 8px; }
+  .pv-art { min-height: 150px; padding: 10px 12px 4px; }
+  .pv-art .pv-head .p-logo { max-height: 30px; }
+  .p-out { font-size: 12px; }
+  .ttile { min-height: 46px; padding: 5px 12px; }
+  .pv-transport .t-btn.main { width: 60px; height: 60px; }
+  .pv-transport .t-btn { width: 46px; height: 46px; }
+  .pv-key { min-height: 36px; }
+  .pv-col { gap: 6px; }
+  .pv-control .pad { width: 156px; height: 156px; } .pv-control .pad .ok { inset: 46px; }
+  .pv-control .pad .up, .pv-control .pad .down { left: 50px; } .pv-control .pad .left, .pv-control .pad .right { top: 50px; }
+  .pv-extra .pill { min-height: 40px; }
   @media (min-width: 1100px) and (orientation: landscape) { .wide-now .pv-art { aspect-ratio: 16 / 9; } .wide-now .chap-row { grid-auto-columns: 170px; gap: 12px; } }
   .trailer-box { position: fixed; left: 0; right: 0; top: max(10px, env(safe-area-inset-top)); z-index: 9; max-width: 900px; margin: 0 auto; padding: 12px 14px 16px;
     display: flex; flex-direction: column; gap: 12px; background: rgba(14, 15, 20, .9); -webkit-backdrop-filter: blur(30px) saturate(160%); backdrop-filter: blur(30px) saturate(160%);
@@ -2783,7 +2796,7 @@
       var out = $('p-out');
       out.textContent = '';
       var vol = !$('amp-row').hidden && $('amp-value').textContent !== '—' ? $('amp-value').textContent : '';
-      [['OPPO', [last.outVideo, last.outAudio].filter(Boolean).join(' · ')],
+      [['OPPO', [last.outVideo, last.outAudio && last.outAudio.replace(/\s*·\s*(piste|track) \d+\/\d+/, '')].filter(Boolean).join(' · ')],
        [t('amp_kind'), HOME_UI && last.ampFormat ? [last.ampFormat, vol].filter(Boolean).join(' · ') : '']].forEach(function (x) {
         if (!x[1]) return;
         var row = el('div', { class: 'po-row' });
