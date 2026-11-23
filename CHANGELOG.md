@@ -2,6 +2,16 @@
 
 ## v0.24.0
 
+**A redesigned remote.** The web remote, which is also what both Android apps show, has a new interface: the film's
+artwork behind every page, a colour taken from each film's poster, a playback screen that fits a phone without
+scrolling, French trailers, and what the OPPO and the amplifier really output. Screenshots in the README.
+
+<p>
+  <img src="https://raw.githubusercontent.com/run51/emby-oppo-remote/v0.24.0/docs/screenshots/phone-home.jpg" width="180" alt="Home">
+  <img src="https://raw.githubusercontent.com/run51/emby-oppo-remote/v0.24.0/docs/screenshots/phone-title.jpg" width="180" alt="Film page">
+  <img src="https://raw.githubusercontent.com/run51/emby-oppo-remote/v0.24.0/docs/screenshots/phone-player.jpg" width="180" alt="Playback screen">
+</p>
+
 - **New web remote** (browser and both Android apps): a new design with the film's artwork behind the pages and a
   colour taken from each film's poster; tabs Home, Library, Search and Remote on a phone, a side bar in landscape
   (from 1100 px). Home shows the film to resume in large with its formats; the Library tab lists Emby's libraries.
@@ -10,9 +20,9 @@
   artwork (language shown: VF, VOSTFR or VO). Trailers play on the phone (YouTube); a local trailer file can be
   played on the TV. With your own **TheMovieDb API key** (settings page, optional) the French trailers of each film are
   listed first.
-- **Playback screen:** the chapter's picture behind the title, the chapter and a thin progress bar with a handle
-  (drag to seek, sent on release); everything down to Stop and the fast keys fits a phone without scrolling. One
-  chapter number everywhere (from the player's position and the film's chapter marks).
+- **Playback screen:** the current chapter's picture behind the film's title, the chapter's name and a thin progress
+  bar with a handle (drag to seek; the position is sent on release). Everything down to Stop and the fast keys fits a
+  phone without scrolling. One chapter number everywhere, from the player's position and the film's chapter marks.
 - **What the OPPO outputs**, only as the player reports it: resolution and frame rate (HTTP interface for files; for
   discs, on a jailbroken player with SSH set up, what its decoder logs at the start), bit depth, Dolby Vision / HDR10
   (and "HDR10 → Dolby Vision" when the player converts), and the selected sound track from its own audio menu. Dolby
@@ -27,8 +37,9 @@
 - **Power on from standby fixed:** in network standby the player answers #QPW but not #QPL, and each unanswered query
   held the oppo-multiplexer for 10 s, so a power-on sent while the remote was open could be lost. The plugin now asks
   #QPW first while the player is off, and waits up to 12 s for #PON.
-- **After a restart or a power cut** the player keeps its HTTP interface closed until a control app announces itself:
-  the plugin now sends the announcement when it finds it closed (position, chapters and output came back).
+- **After a restart or a power cut** the player keeps its HTTP interface closed until a control app announces itself,
+  and the remote lost the position, the chapters and the output line. The plugin now sends the announcement when it
+  finds that interface closed.
 - Emby.Oppo 0.24.0, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged (the remote is served by the plugin).
 
 ## v0.23.0
