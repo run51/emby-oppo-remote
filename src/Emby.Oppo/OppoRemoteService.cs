@@ -440,6 +440,20 @@ namespace Emby.Oppo
                             if (picture != null && decoded != null && decoded.Bits >= 10) picture += " · " + decoded.Bits + L10n.T(Fr, "-bit", " bits");
                             if (picture != null) result.OutputVideo = picture;
                         }
+                        // From the start of the film, without the IP queries that a disc may leave unanswered: the
+                        // sound track the OPPO's own audio menu has selected (HTTP, e.g. "1/2 Français DTS-HD MA 5.1"), and
+                        // its Dolby Vision output as its decoder logged it. #QHS / #QAT / #QST after 90 s, as before.
+                        List<OppoClient.TrackEntry> audioMenu = request.Tracks ? await oppo.GetTrackMenu(true, ct).ConfigureAwait(false) : null;
+                        string menuAudio = audioMenu?.FirstOrDefault(t => t.selected)?.name;
+                        menuAudio = menuAudio == null ? null : System.Text.RegularExpressions.Regex.Replace(menuAudio, @"^\s*\d+/\d+\s*", "").Trim();
+                        if (string.IsNullOrEmpty(menuAudio)) menuAudio = null;     // a file's tracks have no name ("2/5")
+                        if (request.Tracks && !(status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90))
+                        {
+                            string early = decoded != null && decoded.ToDolbyVision ? (decoded.SourceHdr == "HDR10" ? "HDR10 → Dolby Vision" : "Dolby Vision") : null;
+                            string video = string.Join(" · ", new[] { picture, early }.Where(x => !string.IsNullOrEmpty(x)));
+                            if (video.Length > 0) result.OutputVideo = video;
+                            if (menuAudio != null) result.OutputAudio = menuAudio;
+                        }
                         if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90)
                         {
                             string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
@@ -448,12 +462,12 @@ namespace Emby.Oppo
                             // "HDR10 → Dolby Vision" when the player converts the source (its "Dolby Vision" HDR setting).
                             if (decoded != null && decoded.ToDolbyVision && decoded.SourceHdr != null && output == "Dolby Vision") output = decoded.SourceHdr + " → " + output;
                             result.OutputVideo = string.Join(" · ", new[] { picture, output }.Where(x => !string.IsNullOrEmpty(x)));
-                            result.OutputAudio = TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
+                            result.OutputAudio = menuAudio ?? TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
                             result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
                         }
                         if (request.Tracks)
                         {
-                            result.Audio = (await oppo.GetTrackMenu(true, ct).ConfigureAwait(false))
+                            result.Audio = (audioMenu ?? new List<OppoClient.TrackEntry>())
                                 .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();
                             result.Subtitles = (await oppo.GetTrackMenu(false, ct).ConfigureAwait(false))
                                 .Select(t => new RemoteTrack { Index = t.index, Name = t.name, Selected = t.selected }).ToArray();

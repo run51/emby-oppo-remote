@@ -37,32 +37,48 @@ namespace Emby.Oppo.Oppo
         private const string Command = "dmesg | grep -E 'NotiDataInfo|NotiHdrInfo|HDR_Type|DOVI output' | tail -12";
 
         private static Info _current;
-        private static int _capturing;
+        private static readonly object Gate = new object();
+        private static int _capturingGeneration = -1;   // the film whose log is being watched, -1: none
         private static DateTime _lastAttempt = DateTime.MinValue;
 
         public static Info Current => _current;
 
         /// <summary>A new film: forget the previous one's values.</summary>
-        public static void Reset() => _current = null;
+        public static void Reset()
+        {
+            _current = null;
+            Interlocked.Increment(ref _generation);
+        }
+
+        private static int _generation;
 
         /// <summary>
-        /// Reads the log now and again after 3, 8 and 15 s until the decoder's line is there. One capture at a time, and
-        /// from the remote's polling at most every 20 s.
+        /// Reads the log now, after 3, 8 and 15 s, then every 5 s for 2 minutes, until the decoder's line is there: a disc
+        /// may log it only when its main title starts (2012, VC-1: after the first 15 s). One capture at a time, and from
+        /// the remote's polling at most every 20 s; a new film stops it.
         /// </summary>
         public static void Capture(string host, ILogger logger, bool fromPolling = false)
         {
             var config = Plugin.Instance?.Configuration;
             if (config == null || !config.SshRestart || string.IsNullOrWhiteSpace(host)) return;
             if (fromPolling && DateTime.UtcNow - _lastAttempt < TimeSpan.FromSeconds(20)) return;
-            if (Interlocked.Exchange(ref _capturing, 1) == 1) return;
+            int generation = _generation;
+            lock (Gate)
+            {
+                if (_capturingGeneration == generation) return;   // already watching this film's start
+                _capturingGeneration = generation;
+            }
             _lastAttempt = DateTime.UtcNow;
             Task.Run(async () =>
             {
                 try
                 {
-                    foreach (int wait in new[] { 0, 3, 5, 7 })
+                    var waits = new List<int> { 0, 3, 5, 7 };
+                    while (waits.Count < 25) waits.Add(5);
+                    foreach (int wait in waits)
                     {
                         if (wait > 0) await Task.Delay(TimeSpan.FromSeconds(wait)).ConfigureAwait(false);
+                        if (generation != _generation || _current != null) return;
                         var (result, output) = await OppoSsh.Run(host, config.SshPassword, Command, TimeSpan.FromSeconds(10)).ConfigureAwait(false);
                         if (result != OppoSsh.Outcome.Ok)
                         {
@@ -85,7 +101,7 @@ namespace Emby.Oppo.Oppo
                 }
                 finally
                 {
-                    Interlocked.Exchange(ref _capturing, 0);
+                    lock (Gate) { if (_capturingGeneration == generation) _capturingGeneration = -1; }
                 }
             });
         }
