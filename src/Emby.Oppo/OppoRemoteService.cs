@@ -461,7 +461,8 @@ namespace Emby.Oppo
                             bool fr = Fr;
                             string output = HdrLabel(hdr);
                             // "HDR10 → Dolby Vision" when the player converts the source (its "Dolby Vision" HDR setting).
-                            if (decoded != null && decoded.ToDolbyVision && decoded.SourceHdr != null && output == "Dolby Vision") output = decoded.SourceHdr + " → " + output;
+                            // An HDR10 or SDR source sent out in Dolby Vision: the player converts it.
+                            if ((decoded?.SourceHdr == "HDR10" || decoded?.SourceHdr == "SDR") && output == "Dolby Vision") output = decoded.SourceHdr + " → " + output;
                             result.OutputVideo = string.Join(" · ", new[] { picture, output }.Where(x => !string.IsNullOrEmpty(x)));
                             result.OutputAudio = menuAudio ?? TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
                             result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
