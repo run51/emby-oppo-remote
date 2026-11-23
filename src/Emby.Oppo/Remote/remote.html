@@ -785,6 +785,8 @@
   .src-out { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 13.5px; }
   .src-out dt { color: var(--muted); }
   .src-out dd { margin: 0; font-family: var(--mono); font-size: 12.5px; }
+  .room-box.link-only { background: none; border: 0; padding: 0; }
+  .room-box.link-only > .dev-head, .room-box.link-only > .row { display: none; }
   .room-link { margin-top: 2px; justify-content: center; font-size: 13.5px; min-height: 40px; text-decoration: none; }
   /* 0.24: trailers */
   .hero { position: relative; }
@@ -2750,7 +2752,8 @@
       var out = $('p-out');
       out.textContent = '';
       var vol = !$('amp-row').hidden && $('amp-value').textContent !== '—' ? $('amp-value').textContent : '';
-      [['OPPO', s.OutputVideo], [t('amp_kind'), [s.OutputAudio, s.OutputAudio ? vol : ''].filter(Boolean).join(' · ')]].forEach(function (x) {
+      // Standard edition: no amplifier in the app, the sound line says "Sound".
+      [['OPPO', s.OutputVideo], [HOME_UI ? t('amp_kind') : t('src_out_audio'), [s.OutputAudio, s.OutputAudio ? vol : ''].filter(Boolean).join(' · ')]].forEach(function (x) {
         if (!x[1]) return;
         var row = el('div', { class: 'po-row' });
         row.appendChild(el('b', { text: x[0] }));
@@ -3038,7 +3041,8 @@
   $('fwd30').addEventListener('click', function () { jump(30); });
   $('seance-on').addEventListener('click', function () { seance(true); });
   $('seance-off').addEventListener('click', function () { seance(false); });
-  if (!HOME_UI) { $('seance-on').hidden = true; $('seance-off').hidden = true; }
+  // Standard edition (OPPO app): no Showtime / All off, so the block keeps only the link to the OPPO's input and outputs.
+  if (!HOME_UI) { $('seance-on').hidden = true; $('seance-off').hidden = true; $('room-box').classList.add('link-only'); }
 
   /** Amplifier volume and mute (home edition, Home Assistant configured on the server). */
   var ampKeysOn = null;
