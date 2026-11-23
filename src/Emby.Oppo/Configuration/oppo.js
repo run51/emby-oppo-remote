@@ -47,6 +47,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             haUrlHelp: 'Used for the amplifier volume and mute buttons of the remote.',
             haToken: 'Home Assistant — long-lived access token:',
             haTokenHelp: 'Create it in Home Assistant: your profile → Security → Long-lived access tokens.',
+            tmdbKey: 'TheMovieDb — API key (optional):',
+            tmdbKeyHelp: 'Your own key (themoviedb.org → Settings → API): the remote then also shows the French trailers of each film.',
             ampEntity: 'Home Assistant — amplifier entity (e.g. media_player.denon):',
             save: 'Save',
             choose: '— choose —',
@@ -108,6 +110,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             haUrlHelp: 'Sert aux boutons de volume et de sourdine de l\'ampli dans la télécommande.',
             haToken: 'Home Assistant — jeton d\'accès longue durée :',
             haTokenHelp: 'À créer dans Home Assistant : votre profil → Sécurité → Jetons d\'accès longue durée.',
+            tmdbKey: 'TheMovieDb — clé d\'API (facultatif) :',
+            tmdbKeyHelp: 'Votre propre clé (themoviedb.org → Paramètres → API) : la télécommande affiche alors aussi les bandes-annonces françaises de chaque film.',
             ampEntity: 'Home Assistant — entité de l\'ampli (ex. media_player.denon) :',
             save: 'Enregistrer',
             choose: '— choisir —',
@@ -360,6 +364,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 config.RemoteTvEntity = view.querySelector('#txtRemoteTvEntity').value.trim();
                 config.HomeAssistantUrl = view.querySelector('#txtHaUrl').value.trim();
                 config.HomeAssistantToken = view.querySelector('#txtHaToken').value.trim();
+                config.TmdbApiKey = view.querySelector('#txtTmdbApiKey').value.trim();
                 config.AmplifierEntity = view.querySelector('#txtAmpEntity').value.trim();
                 config.Mappings = readAll();
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
@@ -427,6 +432,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtRemoteTvEntity').value = config.RemoteTvEntity || '';
                 view.querySelector('#txtHaUrl').value = config.HomeAssistantUrl || '';
                 view.querySelector('#txtHaToken').value = config.HomeAssistantToken || '';
+                view.querySelector('#txtTmdbApiKey').value = config.TmdbApiKey || '';
                 view.querySelector('#txtAmpEntity').value = config.AmplifierEntity || '';
                 state.mappings = config.Mappings || [];
                 var folders = res[1];

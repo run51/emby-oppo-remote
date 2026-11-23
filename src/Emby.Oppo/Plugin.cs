@@ -69,6 +69,12 @@ namespace Emby.Oppo
         /// </summary>
         public string HomeAssistantUrl { get; set; } = "";
         public string HomeAssistantToken { get; set; } = "";
+
+        /// <summary>
+        /// Optional: the user's own TheMovieDb API key (v3 key, or v4 read access token), for the French trailers of the
+        /// remote's film pages. Empty: the trailers are the ones Emby already knows.
+        /// </summary>
+        public string TmdbApiKey { get; set; } = "";
         public string AmplifierEntity { get; set; } = "";
 
         /// <summary>

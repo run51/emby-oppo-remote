@@ -97,6 +97,10 @@
                 <div class="fieldDescription" data-i18n="haTokenHelp">Create it in Home Assistant: your profile → Security → Long-lived access tokens.</div>
             </div>
             <div class="inputContainer">
+                <input is="emby-input" type="password" id="txtTmdbApiKey" label="TheMovieDb — API key (optional):" data-i18n-label="tmdbKey" />
+                <div class="fieldDescription" data-i18n="tmdbKeyHelp">Your own key (themoviedb.org → Settings → API): the remote then also shows the French trailers of each film.</div>
+            </div>
+            <div class="inputContainer">
                 <input is="emby-input" type="text" id="txtAmpEntity" label="Home Assistant — amplifier entity (e.g. media_player.denon):" data-i18n-label="ampEntity" />
             </div>
 

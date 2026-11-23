@@ -177,6 +177,12 @@ namespace Emby.Oppo
         public int Steps { get; set; }
     }
 
+    [Route("/Oppo/Remote/Trailers", "GET", Summary = "French trailers of a title from TheMovieDb (the API key of the settings page)")]
+    public sealed class RemoteTrailers : IReturn<TrailerEntry[]>
+    {
+        public string Id { get; set; }
+    }
+
     [Route("/Oppo/Remote/Seek", "POST", Summary = "Seeks to a time in the current title")]
     public sealed class RemoteSeek : IReturn<RemoteActionResult>
     {
@@ -538,6 +544,9 @@ namespace Emby.Oppo
             var item = Resolve(request.Id, request.MediaSourceId);
             return item == null ? Array.Empty<ChapterEntry>() : ChapterSource.List(item, Fr).ToArray();
         }
+
+        public async Task<object> Get(RemoteTrailers request) =>
+            await FrenchTrailers.Get(Resolve(request.Id, null), _json, _logger).ConfigureAwait(false);
 
         public async Task<object> Get(RemoteAudioExtras request)
         {

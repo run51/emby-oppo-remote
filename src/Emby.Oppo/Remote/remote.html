@@ -2151,10 +2151,16 @@
   }
   /** Emby's online trailers, French first (VF, then VOSTFR, then the others, each group in Emby's order). */
   function trailersOf(item) {
-    var rank = { VF: 0, VOSTFR: 1, VO: 2 };
-    return (item.RemoteTrailers || []).filter(function (x) { return x && x.Url; })
-      .map(function (x, i) { return { Url: x.Url, Name: x.Name, lang: trailerLang(x.Name), i: i }; })
-      .sort(function (a, b) { return rank[a.lang] - rank[b.lang] || a.i - b.i; });
+    var rank = { VF: 0, VOSTFR: 1, VO: 2 }, seen = {};
+    var tmdb = (item._frTrailers || []).map(function (x, i) { return { Url: x.Url, Name: x.Name, lang: x.Lang || 'VF', i: i - 1000 }; });
+    var emby = (item.RemoteTrailers || []).filter(function (x) { return x && x.Url; })
+      .map(function (x, i) { return { Url: x.Url, Name: x.Name, lang: trailerLang(x.Name), i: i }; });
+    return tmdb.concat(emby).filter(function (x) {
+      var k = youtubeId(x.Url) || x.Url;
+      if (seen[k]) return false;
+      seen[k] = true;
+      return true;
+    }).sort(function (a, b) { return rank[a.lang] - rank[b.lang] || a.i - b.i; });
   }
   function openTrailer(item) {
     var list = trailersOf(item);
@@ -2225,11 +2231,19 @@
     var poster = image(item, 'Primary', 420);
     var heroBox = el('div', { 'class': 'hero' }, backdrop ? [el('img', { src: backdrop, alt: '' })] : []);
     node.appendChild(heroBox);
-    if (trailersOf(item).length || item.LocalTrailerCount > 0) {
+    function trailerButton() {
+      if (heroBox.querySelector('.trailer-btn')) return;
       var tb = el('button', { 'class': 'trailer-btn', type: 'button', html: icon('play') }, [t('trailer')]);
       tb.addEventListener('click', function () { openTrailer(item); });
       heroBox.appendChild(tb);
     }
+    if (trailersOf(item).length || item.LocalTrailerCount > 0) trailerButton();
+    // French trailers from TheMovieDb (with the key of the settings page): added first, the button shown if needed.
+    remote('/Trailers', { Id: item.Id }).then(function (list) {
+      if (!list || !list.length) return;
+      item._frTrailers = list;
+      trailerButton();
+    }).catch(function () { /* Emby's trailers only */ });
 
     var meta = [];
     if (item.ProductionYear) meta.push(String(item.ProductionYear));
