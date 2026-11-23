@@ -711,6 +711,28 @@
     display: grid; place-items: center; color: var(--muted); }
   .lib-tile .lt-art svg { width: 34px; height: 34px; }
   .lib-tile .lt-name { font-weight: 600; font-size: 15px; }
+  /* 0.24: the playback screen fits a phone down to the chapters (no scrolling to reach them) */
+  .pv-art { aspect-ratio: 16 / 8; max-height: 160px; }
+  .pv-head .p-title { font-size: 18px; }
+  .pv-card { gap: 8px; }
+  .p-out { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pv-transport .t-btn { width: 48px; height: 48px; }
+  .pv-transport .t-btn.main { width: 64px; height: 64px; }
+  .track-tiles .ttile { min-height: 50px; }
+  #chap-box { padding: 8px 10px 10px; }
+  #chap-box h2 { margin: 0 0 6px; }
+  .chap-row { grid-auto-columns: 112px; gap: 8px; }
+  .chap .ct { font-size: 10.5px; }
+  /* 0.24: library toolbar: one row of chips on a glass band across the screen, clear of the posters */
+  .toolbar { margin: 0 -16px 16px; padding: 8px 16px 10px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 8px;
+    background: rgba(14, 15, 20, .55); -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+    border-bottom: 1px solid var(--line); }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .toolbar select, .toolbar .toggle { flex: none; min-height: 38px; height: 38px; border-radius: 19px; font-size: 13.5px; padding: 0 14px; }
+  .toolbar select { padding-right: 30px; width: auto; max-width: 160px; }
+  .toolbar .toggle svg { width: 17px; height: 17px; margin-right: 4px; vertical-align: -3px; }
+  .toolbar .count { flex: none; margin-left: auto; padding-left: 6px; font-size: 11.5px; align-self: center; }
+  .filters { padding: 0 0 16px; }
   /* 0.24: trailers */
   .hero { position: relative; }
   .trailer-btn { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 2; display: inline-flex; align-items: center; gap: 10px;
@@ -860,6 +882,11 @@
     <button class="ttile info" type="button" data-key="OSD" aria-label="OPPO information on screen" data-i18n-aria="info_aria"><svg><use href="#i-info"/></svg><span data-i18n="info_short">Info</span></button>
   </div>
 
+  <section class="card-box" id="chap-box" hidden>
+    <h2 data-i18n="chapters">Chapters</h2>
+    <div class="hrow chap-row" id="chapters"></div>
+  </section>
+
   <div class="pv-control">
     <div class="pv-col">
       <button class="pv-key" data-key="TTL" type="button" data-i18n="disc_menu">Disc menu</button>
@@ -882,11 +909,6 @@
       <button class="pv-mute" id="vol-mute" type="button" aria-label="Mute" data-i18n-aria="mute"><svg><use href="#i-mute"/></svg></button>
     </div>
   </div>
-
-  <section class="card-box" id="chap-box" hidden>
-    <h2 data-i18n="chapters">Chapters</h2>
-    <div class="hrow chap-row" id="chapters"></div>
-  </section>
 
   <div class="row pv-extra">
     <button class="pill" data-key="REV" aria-label="Rewind" data-i18n-aria="rewind"><svg><use href="#i-rew"/></svg></button>
