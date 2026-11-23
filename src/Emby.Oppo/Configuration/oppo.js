@@ -18,6 +18,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             updChecking: 'Looking for updates…', updInstalled: 'Installed: OPPO {0}, ISO Blu-ray {1}.',
             updAvailable: 'Version {0} is available.', updUpToDate: 'Up to date (latest release: {0}).', updInstalling: 'Downloading and installing…',
             updRestarting: 'Emby is restarting. Reload this page in a minute.', updConfirm: 'Install version {0} of both plugins? Emby must be restarted afterwards.',
+            resumeWithoutMenus: 'Resume Blu-rays without their menus',
+            resumeWithoutMenusHelp: 'When a Blu-ray is resumed, its main movie starts directly at the resume point instead of the disc\'s menu.',
             dlnaDiscImagesHelp: 'Requires the oppo-dv-mkv mod on the player with "DLNA Disc Images" on. The plugin serves the movie itself to the player: an ISO, a Blu-ray folder or a DVD folder (VIDEO_TS) plays as a disc (menus and Dolby Vision included), an MKV, MP4 or M2TS file as a file. No share is mounted; the share above is only used if the movie does not start.',
             discServerPort: 'Disc image server port:',
             discServerPortHelp: 'A free port on this server, reachable by the player. Restart Emby after changing it.',
@@ -83,6 +85,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             updChecking: 'Recherche de mises à jour…', updInstalled: 'Installé : OPPO {0}, ISO Blu-ray {1}.',
             updAvailable: 'La version {0} est disponible.', updUpToDate: 'À jour (dernière version publiée : {0}).', updInstalling: 'Téléchargement et installation…',
             updRestarting: 'Emby redémarre. Rechargez cette page dans une minute.', updConfirm: 'Installer la version {0} des deux plugins ? Emby devra ensuite être redémarré.',
+            resumeWithoutMenus: 'Reprendre les Blu-ray sans leurs menus',
+            resumeWithoutMenusHelp: 'À la reprise d\'un Blu-ray, son film principal démarre directement au point de reprise au lieu du menu du disque.',
             dlnaDiscImagesHelp: 'Nécessite le mod oppo-dv-mkv sur le lecteur, avec « DLNA Disc Images » activé. Le plugin sert lui-même le film au lecteur : un ISO, un dossier Blu-ray ou un dossier DVD (VIDEO_TS) est lu comme un disque (menus et Dolby Vision compris), un fichier MKV, MP4 ou M2TS comme un fichier. Aucun partage n\'est monté ; le partage ci-dessus ne sert que si le film ne démarre pas.',
             discServerPort: 'Port du serveur d\'images disque :',
             discServerPortHelp: 'Un port libre sur ce serveur, joignable par le lecteur. Redémarrez Emby après l\'avoir changé.',
@@ -359,6 +363,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 config.DeviceName = view.querySelector('#txtDeviceName').value.trim() || 'OPPO';
                 config.StartTimeoutSeconds = parseInt(view.querySelector('#txtStartTimeout').value, 10) || 60;
                 config.DlnaDiscImages = view.querySelector('#chkDlnaDiscImages').checked;
+                config.ResumeWithoutMenus = view.querySelector('#chkResumeWithoutMenus').checked;
                 config.SshRestart = view.querySelector('#chkSshRestart').checked;
                 config.SshPassword = view.querySelector('#txtSshPassword').value;
                 config.DiscServerPort = parseInt(view.querySelector('#txtDiscServerPort').value, 10) || 8099;
@@ -428,6 +433,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtDeviceName').value = config.DeviceName || 'OPPO';
                 view.querySelector('#txtStartTimeout').value = config.StartTimeoutSeconds || 60;
                 view.querySelector('#chkDlnaDiscImages').checked = !!config.DlnaDiscImages;
+                view.querySelector('#chkResumeWithoutMenus').checked = config.ResumeWithoutMenus !== false;
                 view.querySelector('#chkSshRestart').checked = !!config.SshRestart;
                 view.querySelector('#txtSshPassword').value = config.SshPassword == null ? 'oppo' : config.SshPassword;
                 view.querySelector('#txtDiscServerPort').value = config.DiscServerPort || 8099;

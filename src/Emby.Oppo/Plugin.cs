@@ -90,6 +90,12 @@ namespace Emby.Oppo
         /// </summary>
         public bool DlnaDiscImages { get; set; } = false;
 
+        /// <summary>
+        /// Resuming a Blu-ray (ISO or folder) plays its main movie directly from the resume point, without going through
+        /// the disc's menus first (as the web remote's "No menus" button).
+        /// </summary>
+        public bool ResumeWithoutMenus { get; set; } = true;
+
         /// <summary>Port of the plugin's disc image server (must be free on the Emby server and reachable by the OPPO).</summary>
         public int DiscServerPort { get; set; } = 8099;
 

@@ -2809,10 +2809,11 @@
     $('dot2').classList.toggle('on', !!s.Reachable);
     $('dot2').classList.toggle('off', !s.Reachable);
     $('nav-power').classList.toggle('off', !s.Reachable);
-    markChapter(playing ? s.Chapter : null);
+    var chapNow = playing ? chapterText(s) : null;
+    markChapter(chapNow);
     $('p-title').textContent = title || (s.NotConfigured ? t('not_configured') : s.Reachable ? t('no_film') : t('oppo_unreachable'));
     $('p-state').textContent = stateText;
-    $('p-chapter').textContent = playing && s.Chapter ? t('chapter_n', s.Chapter) : '';
+    $('p-chapter').textContent = chapNow ? t('chapter_n', chapNow) : '';
     setPoster($('p-poster'), itemId, tag, 252);
 
     var pp = state === 'PLAY' || state === 'FFWD' || state === 'FREV' ? '#i-pause' : '#i-play';
@@ -2894,6 +2895,19 @@
     }).catch(function () { /* item unavailable: plain display */ });
   }
 
+  /** Current chapter from the OPPO's position and the film's chapter marks (the list the thumbnails show), so that
+      the number, the picture and the strip agree. The OPPO's own count (#QCH counts every mark of the disc's playlist:
+      77 for 51 chapters on Alerte !, 24/11) only when the title playing is not the film (menu, trailer). */
+  function chapterText(s) {
+    var n = chapterTimes.length;
+    // The film: a long title that reaches (about) its last chapter mark; a menu or a trailer is much shorter.
+    if (n > 1 && s.Duration > 1200 && s.Duration >= chapterTimes[n - 1] * 0.8) {
+      var pos = s.Position || 0, i = 0;
+      while (i + 1 < n && chapterTimes[i + 1] <= pos + 0.5) i++;
+      return (i + 1) + ' / ' + n;
+    }
+    return s.Chapter || null;
+  }
   function markChapter(text, force) {
     if (text === last.chapterText && !force) return;
     last.chapterText = text;

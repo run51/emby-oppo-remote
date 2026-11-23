@@ -131,6 +131,9 @@ namespace Emby.Oppo
             }
             mainMovie = mainMovie || (DateTime.UtcNow < _pendingMainMovieUntil && _pendingMainMovie == item.InternalId);
             _pendingMainMovie = 0;
+            // Resume: straight into the main movie at the resume point, not through the disc's menus (only applies to
+            // Blu-rays, see PlayPart; the 24/11 request).
+            if (!mainMovie && Config.ResumeWithoutMenus && (request.StartPositionTicks ?? 0) > TimeSpan.TicksPerMinute) mainMovie = true;
 
             // The Android app sometimes resends the same request a few seconds later:
             // do not restart a movie that is already starting.
