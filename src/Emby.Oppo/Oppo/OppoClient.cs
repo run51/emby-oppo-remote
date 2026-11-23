@@ -83,19 +83,26 @@ namespace Emby.Oppo.Oppo
                     info = _json.DeserializeFromString<MoviePlayInfo>(await reader.ReadToEndAsync().ConfigureAwait(false));
                 var p = info?.playinfo;
                 if (p == null || !int.TryParse(p.height, NumberStyles.Integer, CultureInfo.InvariantCulture, out int h) || h <= 0) return null;
-                string res = h + "p";
-                if (double.TryParse(p.frame_rate, NumberStyles.Float, CultureInfo.InvariantCulture, out double fps) && fps > 0)
-                {
-                    string n = fps.ToString(fps == Math.Floor(fps) ? "0" : "0.###", CultureInfo.InvariantCulture);
-                    res += " " + (fr ? n.Replace('.', ',') + " i/s" : n + " fps");
-                }
-                return res;
+                double.TryParse(p.frame_rate, NumberStyles.Float, CultureInfo.InvariantCulture, out double fps);
+                return PictureLabel(h, fps, false, fr);
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 _logger.Debug("OPPO getmovieplayinfo: {0}", ex.Message);
                 return null;
             }
+        }
+
+        /// <summary>"2160p 23,976 i/s" (French) / "1080i 29.97 fps": the picture's height and frame rate.</summary>
+        internal static string PictureLabel(int height, double fps, bool interlaced, bool fr)
+        {
+            string res = height + (interlaced ? "i" : "p");
+            if (fps > 0)
+            {
+                string n = fps.ToString(Math.Abs(fps - Math.Round(fps)) < 0.001 ? "0" : "0.###", CultureInfo.InvariantCulture);
+                res += " " + (fr ? n.Replace('.', ',') + " i/s" : n + " fps");
+            }
+            return res;
         }
 
         private async Task<Dictionary<string, object>> Call(string endpoint, object args, TimeSpan timeout, CancellationToken ct, bool logRequest = true)

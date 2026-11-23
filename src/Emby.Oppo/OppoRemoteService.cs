@@ -428,6 +428,9 @@ namespace Emby.Oppo
                         if (request.Tracks)
                         {
                             picture = await oppo.GetVideoFormat(Fr, ct).ConfigureAwait(false);
+                            // A disc (ISO, Blu-ray folder): the player's HTTP interface gives no picture, Emby's media
+                            // info of the version playing does (as for the badges).
+                            if (picture == null) picture = EmbyPicture(session);
                             if (picture == null && OppoClient.Events.TryGetValue("UVO", out var uvo)) picture = VideoOutLabel(uvo, Fr);
                             if (picture != null) result.OutputVideo = picture;
                         }
@@ -476,6 +479,30 @@ namespace Emby.Oppo
 
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, (DateTime At, RemoteBadge Badge)> BadgeCache =
             new System.Collections.Concurrent.ConcurrentDictionary<long, (DateTime, RemoteBadge)>();
+
+        /// <summary>Height and frame rate of the version playing on the OPPO, from Emby's media info; null if unknown.</summary>
+        private string EmbyPicture(SessionInfo session)
+        {
+            var now = session?.NowPlayingItem;
+            if (now == null) return null;
+            long id = 0;
+            var m = System.Text.RegularExpressions.Regex.Match(session.PlayState?.MediaSourceId ?? "", @"(\d+)$");
+            if (!m.Success || !long.TryParse(m.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out id))
+                long.TryParse(now.Id, NumberStyles.Integer, CultureInfo.InvariantCulture, out id);
+            if (id <= 0) return null;
+            try
+            {
+                var video = _itemRepository.GetMediaStreams(new MediaStreamQuery { ItemId = id }, CancellationToken.None)
+                                           .FirstOrDefault(s => s.Type == MediaStreamType.Video && !s.IsExternal);
+                if (video == null || (video.Height ?? 0) <= 0) return null;
+                return OppoClient.PictureLabel(video.Height.Value, video.RealFrameRate ?? video.AverageFrameRate ?? 0, video.IsInterlaced, Fr);
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug("OPPO: media info of {0}: {1}", id, ex.Message);
+                return null;
+            }
+        }
 
         // Badge values (4K, 1080p, DV, HDR10…) are language-neutral, so the cache is shared by all languages.
         public object Get(RemoteBadges request)
