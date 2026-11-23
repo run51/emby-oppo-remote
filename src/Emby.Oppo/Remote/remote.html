@@ -750,6 +750,7 @@
   .tr-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .tr-frame .note { padding: 16px; text-align: center; }
   .tr-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tr-lang { font-family: var(--mono); font-size: 10.5px; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; margin-right: 8px; color: var(--accent); }
   .tr-list .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
 
   /* 0.24: home page of the mock-up */
@@ -2141,8 +2142,19 @@
     var m = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/.exec(url || '');
     return m ? m[1] : null;
   }
+  /** Language of a trailer from its YouTube title: VF (French), VOSTFR (subtitled), else VO. */
+  function trailerLang(name) {
+    var n = (name || '').toLowerCase();
+    if (/vostf|vost\b|sous[- ]titr|subtitled|\bst\s*fr\b/.test(n)) return 'VOSTFR';
+    if (/\bvf\b|\bvff\b|\bvfq\b|fran[cç]ais|french|bande[- ]annonce|teaser vf|\bfr\b/.test(n)) return 'VF';
+    return 'VO';
+  }
+  /** Emby's online trailers, French first (VF, then VOSTFR, then the others, each group in Emby's order). */
   function trailersOf(item) {
-    return (item.RemoteTrailers || []).filter(function (x) { return x && x.Url; });
+    var rank = { VF: 0, VOSTFR: 1, VO: 2 };
+    return (item.RemoteTrailers || []).filter(function (x) { return x && x.Url; })
+      .map(function (x, i) { return { Url: x.Url, Name: x.Name, lang: trailerLang(x.Name), i: i }; })
+      .sort(function (a, b) { return rank[a.lang] - rank[b.lang] || a.i - b.i; });
   }
   function openTrailer(item) {
     var list = trailersOf(item);
@@ -2158,14 +2170,16 @@
         allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, title: t('trailer') }));
       else frame.appendChild(el('a', { 'class': 'btn secondary', href: x.Url, target: '_blank', rel: 'noopener', text: t('trailer_open') }));
       Array.prototype.forEach.call(others.children, function (b, j) { b.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+      sub.textContent = t('trailer') + ' · ' + x.lang;
     }
     var closeBtn = el('button', { 'class': 'icon-btn tr-close', type: 'button', 'aria-label': t('close') }, []);
     closeBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>';
     closeBtn.addEventListener('click', close);
-    box.appendChild(el('div', { 'class': 'tr-head' }, [closeBtn, el('div', { 'class': 'tr-title' }, [el('small', { text: t('trailer') }), el('b', { text: item.Name })])]));
+    var sub = el('small', { text: t('trailer') });
+    box.appendChild(el('div', { 'class': 'tr-head' }, [closeBtn, el('div', { 'class': 'tr-title' }, [sub, el('b', { text: item.Name })])]));
     box.appendChild(frame);
     list.forEach(function (x, i) {
-      var b = el('button', { 'class': 'chip', type: 'button', text: x.Name || t('trailer_n', i + 1) });
+      var b = el('button', { 'class': 'chip tr-chip', type: 'button' }, [el('span', { 'class': 'tr-lang', text: x.lang }), x.Name || t('trailer_n', i + 1)]);
       b.addEventListener('click', function () { show(i); });
       others.appendChild(b);
     });
