@@ -177,6 +177,24 @@ namespace Emby.Oppo
         public int Steps { get; set; }
     }
 
+    [Route("/Oppo/Remote/Source", "GET", Summary = "The OPPO's input (#QIS): 0 its own player, 1 HDMI in, 2 TV (ARC), 3 optical, 4 coaxial, 5 USB DAC, 6 HDMI bypass")]
+    public sealed class RemoteSource : IReturn<SourceState> { }
+
+    [Route("/Oppo/Remote/Source", "POST", Summary = "Switches the OPPO's input (#SIS); what plays is stopped first")]
+    public sealed class RemoteSourceSet : IReturn<SourceState>
+    {
+        public int Id { get; set; }
+    }
+
+    public sealed class SourceState
+    {
+        public bool Ok { get; set; }
+        public bool Standby { get; set; }
+        public int? Id { get; set; }
+        public string Name { get; set; }
+        public string Message { get; set; }
+    }
+
     [Route("/Oppo/Remote/Trailers", "GET", Summary = "French trailers of a title from TheMovieDb (the API key of the settings page)")]
     public sealed class RemoteTrailers : IReturn<TrailerEntry[]>
     {
@@ -543,6 +561,60 @@ namespace Emby.Oppo
         {
             var item = Resolve(request.Id, request.MediaSourceId);
             return item == null ? Array.Empty<ChapterEntry>() : ChapterSource.List(item, Fr).ToArray();
+        }
+
+        // ---------------------------------------------------------------- Input (measured on a UDP-205, 2026-11-23:
+        // "#QIS" answers "OK 0 BD-PLAYER"; "#SIS n" answers "OK n NAME" and switches at once; in standby only #QPW answers)
+
+        private static readonly System.Text.RegularExpressions.Regex SourceAnswer =
+            new System.Text.RegularExpressions.Regex(@"OK\s+(\d)\s+([A-Z0-9-]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        private async Task<SourceState> ReadSource(CancellationToken ct)
+        {
+            string power = await Oppo.Command("QPW", ct).ConfigureAwait(false);
+            if (power.IndexOf("OFF", StringComparison.OrdinalIgnoreCase) >= 0) return new SourceState { Ok = true, Standby = true };
+            var m = SourceAnswer.Match(await Oppo.Command("QIS", ct).ConfigureAwait(false));
+            return m.Success ? new SourceState { Ok = true, Id = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture), Name = m.Groups[2].Value }
+                             : new SourceState { Message = L10n.T(Fr, "The OPPO did not say its input", "L'OPPO n'a pas indiqué son entrée") };
+        }
+
+        public async Task<object> Get(RemoteSource request)
+        {
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+            {
+                try { return await ReadSource(cts.Token).ConfigureAwait(false); }
+                catch (Exception ex) when (!(ex is OperationCanceledException)) { return new SourceState { Message = L10n.T(Fr, "The OPPO is not responding", "L'OPPO ne répond pas") }; }
+            }
+        }
+
+        public async Task<object> Post(RemoteSourceSet request)
+        {
+            if (request.Id < 0 || request.Id > 6) return new SourceState { Message = L10n.T(Fr, "Unknown input", "Entrée inconnue") };
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+            {
+                try
+                {
+                    var now = await ReadSource(cts.Token).ConfigureAwait(false);
+                    if (now.Standby) return new SourceState { Standby = true, Message = L10n.T(Fr, "The OPPO is in standby: turn it on first.", "L'OPPO est en veille : allume-le d'abord.") };
+                    if (now.Id == request.Id) return now;
+                    if (now.Id == 0)
+                    {
+                        // Leaving its own player: what plays is stopped like the STOP key (never the DLNA renderer's Stop:
+                        // a disc image served over DLNA stops normally with IP control).
+                        string state = await Oppo.Command("QPL", cts.Token).ConfigureAwait(false);
+                        if (System.Text.RegularExpressions.Regex.IsMatch(state, "PLAY|PAUSE|FFWD|FREV|SFWD|SREV|STEP|LOADING|DISC MENU", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                        {
+                            await Oppo.Command("STP", cts.Token).ConfigureAwait(false);
+                            await Task.Delay(2000, cts.Token).ConfigureAwait(false);
+                        }
+                    }
+                    var m = SourceAnswer.Match(await Oppo.Command("SIS", cts.Token, request.Id.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false));
+                    _logger.Info("OPPO: web remote, input {0}: {1}", request.Id, m.Success ? m.Groups[2].Value : "refused");
+                    return m.Success ? new SourceState { Ok = true, Id = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture), Name = m.Groups[2].Value }
+                                     : new SourceState { Message = L10n.T(Fr, "The OPPO refused the input", "L'OPPO a refusé l'entrée") };
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException)) { return new SourceState { Message = L10n.T(Fr, "The OPPO is not responding", "L'OPPO ne répond pas") }; }
+            }
         }
 
         public async Task<object> Get(RemoteTrailers request) =>

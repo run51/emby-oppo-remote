@@ -754,6 +754,34 @@
   .search-box input { border-radius: 999px; min-height: 42px; padding: 0 16px; }
   .search-box .icon-btn { width: 42px; height: 42px; }
   .card-box h2, details.card-box summary { color: var(--muted); }
+  /* 0.24: landscape "now playing" */
+  .wide-now { display: flex; flex-direction: column; gap: 14px; max-width: 980px; }
+  .wide-now .pv-head .p-title { font-size: 30px; }
+  .wide-now .pv-head .p-logo { max-height: 70px; }
+  .wide-now .pv-card { padding: 14px; }
+  .wide-now .pv-art { aspect-ratio: 16 / 9; max-height: 52vh; }
+  .wide-now .chap-hero .ch-cap b { font-size: 22px; }
+  .wide-now #chap-box { padding: 12px 14px 14px; }
+  .wide-now .chap-row { grid-auto-columns: 170px; gap: 12px; }
+  body.wide-now-on #player .now, body.wide-now-on #player .status-row ~ .pv-head { display: none; }
+  /* 0.24: Room screen */
+  .src-view { display: flex; flex-direction: column; gap: 14px; }
+  .src-view .greet { margin-bottom: 2px; }
+  .src-state { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .src-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 8px; }
+  .src-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.2; }
+  .src-tile .src-ic { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: rgba(255, 255, 255, .08); border: 1px solid var(--line); color: var(--text); }
+  .src-tile .src-ic svg { width: 22px; height: 22px; }
+  .src-tile[aria-pressed="true"] { color: var(--text); font-weight: 600; }
+  .src-tile[aria-pressed="true"] .src-ic { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 70%, transparent); color: var(--accent); }
+  .src-tile:disabled { opacity: .45; }
+  .src-note { font-size: 12.5px; line-height: 1.45; }
+  .src-confirm { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 16px; border: 1px solid color-mix(in srgb, #ff8a80 50%, transparent); }
+  .src-confirm p { margin: 0; font-size: 13.5px; }
+  .src-out { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 13.5px; }
+  .src-out dt { color: var(--muted); }
+  .src-out dd { margin: 0; font-family: var(--mono); font-size: 12.5px; }
+  .room-link { margin-top: 2px; justify-content: center; font-size: 13.5px; min-height: 40px; text-decoration: none; }
   /* 0.24: trailers */
   .hero { position: relative; }
   .trailer-btn { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 2; display: inline-flex; align-items: center; gap: 10px;
@@ -855,6 +883,8 @@
   <a href="#/libs" data-tab="libs" id="tab-lib"><svg><use href="#i-film"/></svg><span data-i18n="library_tab">Library</span></a>
   <span id="side-libs" class="side-only" style="flex-direction: column; gap: 4px"></span>
   <a href="#/search" data-tab="search"><svg><use href="#i-search"/></svg><span data-i18n="search">Search</span></a>
+  <a href="#/player" data-tab="player" class="side-only"><svg><use href="#i-play"/></svg><span data-i18n="now_playing">Now playing</span></a>
+  <a href="#/source" data-tab="source" class="side-only"><svg><use href="#i-seance"/></svg><span data-i18n="room_title">Room</span></a>
   <a href="#/player" data-tab="player" class="tab-remote"><svg><use href="#i-remote"/></svg><span data-i18n="remote">Remote</span></a>
 </nav>
 
@@ -944,6 +974,7 @@
       <button class="pill" id="seance-on" type="button" data-i18n="showtime"><svg><use href="#i-seance"/></svg>Showtime</button>
       <button class="pill" id="seance-off" type="button" data-i18n="all_off"><svg><use href="#i-power"/></svg>All off</button>
     </div>
+    <a class="pill room-link" href="#/source"><svg><use href="#i-remote"/></svg><span data-i18n="src_open">OPPO input and outputs</span></a>
   </section>
   <div class="scrim" id="scrim" hidden></div>
   <section class="card-box track-box" id="audio-box">
@@ -1064,7 +1095,7 @@
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
       during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
       signed_in_as: 'Signed in as {0}',
-      trailer: 'Trailer', trailer_n: 'Trailer {0}', trailer_open: 'Open the trailer', trailer_on_tv: 'Play the trailer on the TV (OPPO)', trailer_local_only: 'This film’s trailer is a file: play it on the TV.', close: 'Close', disc_short: 'Menu', popup_short: 'Pop-up', greet_morning: 'Good morning', greet_afternoon: 'Good afternoon', greet_evening: 'Good evening', from_start_short: 'From the start', no_menus_short: 'No menus', chapter_of: 'Chapter {0} of {1}', room: 'Home cinema', room_kind: 'OPPO · TV · amp', oppo_home_short: 'OPPO home', player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
+      trailer: 'Trailer', trailer_n: 'Trailer {0}', trailer_open: 'Open the trailer', trailer_on_tv: 'Play the trailer on the TV (OPPO)', trailer_local_only: 'This film’s trailer is a file: play it on the TV.', close: 'Close', now_playing: 'Now playing', room_title: 'Room', src_title: 'OPPO input', src_now: 'Now: {0}', src_standby: 'The OPPO is in standby: turn it on to change its input.', src_note: 'On another input than its own player, the OPPO no longer plays your films: starting a film switches it back.', src_out_title: 'What comes out now', src_out_video: 'Picture', src_out_audio: 'Sound', src_out_none: 'Nothing is playing.', src_confirm: 'The film playing will be stopped.', src_confirm_yes: 'Switch', cancel: 'Cancel', src_open: 'OPPO input and outputs', src_player: 'Its own player', src_hdmi: 'HDMI in', src_arc: 'TV (ARC)', src_optical: 'Optical', src_coax: 'Coaxial', src_usb: 'USB DAC', src_bypass: 'HDMI bypass', disc_short: 'Menu', popup_short: 'Pop-up', greet_morning: 'Good morning', greet_afternoon: 'Good afternoon', greet_evening: 'Good evening', from_start_short: 'From the start', no_menus_short: 'No menus', chapter_of: 'Chapter {0} of {1}', room: 'Home cinema', room_kind: 'OPPO · TV · amp', oppo_home_short: 'OPPO home', player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
       states: {
         'PLAY': 'Playing', 'PAUSE': 'Paused', 'STOP': 'Stopped', 'DISC MENU': 'Disc menu',
         'HOME MENU': 'OPPO home menu', 'MEDIA CENTER': 'Media center', 'SCREEN SAVER': 'Screen saver',
@@ -1122,7 +1153,7 @@
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
       during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
       signed_in_as: 'Connecté : {0}',
-      trailer: 'Bande-annonce', trailer_n: 'Bande-annonce {0}', trailer_open: 'Ouvrir la bande-annonce', trailer_on_tv: 'Lire la bande-annonce sur la télé (OPPO)', trailer_local_only: 'La bande-annonce de ce film est un fichier : lis-la sur la télé.', close: 'Fermer', disc_short: 'Menu', popup_short: 'Pop-up', greet_morning: 'Bonjour', greet_afternoon: 'Bonjour', greet_evening: 'Bonsoir', from_start_short: 'Du début', no_menus_short: 'Sans menus', chapter_of: 'Chapitre {0} sur {1}', room: 'Salle', room_kind: 'OPPO · télé · ampli', oppo_home_short: 'Accueil OPPO', player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
+      trailer: 'Bande-annonce', trailer_n: 'Bande-annonce {0}', trailer_open: 'Ouvrir la bande-annonce', trailer_on_tv: 'Lire la bande-annonce sur la télé (OPPO)', trailer_local_only: 'La bande-annonce de ce film est un fichier : lis-la sur la télé.', close: 'Fermer', now_playing: 'Lecture en cours', room_title: 'Salle', src_title: 'Entrée de l’OPPO', src_now: 'En ce moment : {0}', src_standby: 'L’OPPO est en veille : allume-le pour changer d’entrée.', src_note: 'Sur une autre entrée que son lecteur, l’OPPO ne lit plus tes films : lancer un film le remet sur son lecteur.', src_out_title: 'Ce qui sort en ce moment', src_out_video: 'Image', src_out_audio: 'Son', src_out_none: 'Rien en lecture.', src_confirm: 'Le film en cours sera arrêté.', src_confirm_yes: 'Changer', cancel: 'Annuler', src_open: 'Entrée et sorties de l’OPPO', src_player: 'Lecteur interne', src_hdmi: 'HDMI', src_arc: 'ARC télé', src_optical: 'Optique', src_coax: 'Coaxiale', src_usb: 'USB DAC', src_bypass: 'HDMI direct', disc_short: 'Menu', popup_short: 'Pop-up', greet_morning: 'Bonjour', greet_afternoon: 'Bonjour', greet_evening: 'Bonsoir', from_start_short: 'Du début', no_menus_short: 'Sans menus', chapter_of: 'Chapitre {0} sur {1}', room: 'Salle', room_kind: 'OPPO · télé · ampli', oppo_home_short: 'Accueil OPPO', player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
       states: {
         'PLAY': 'Lecture', 'PAUSE': 'Pause', 'STOP': 'Arrêt', 'DISC MENU': 'Menu du disque',
         'HOME MENU': 'Accueil de l’OPPO', 'MEDIA CENTER': 'Centre multimédia', 'SCREEN SAVER': 'Économiseur d’écran',
@@ -1656,6 +1687,7 @@
     if ((m = h.match(/^\/person\/([^/?#]+)/))) return { name: 'person', id: m[1], key: '/person/' + m[1] };
     if (h.indexOf('/search') === 0) return { name: 'search', key: '/search' };
     if (h.indexOf('/libs') === 0) return { name: 'libs', key: '/libs' };
+    if (h.indexOf('/source') === 0) return { name: 'source', key: '/source' };
     if (h.indexOf('/player') === 0) return { name: 'player', key: '/player' };
     return { name: 'home', key: '/' };
   }
@@ -1683,7 +1715,7 @@
     $('player').hidden = true;
     currentKey = r.key;
     currentRoute = r;
-    document.body.classList.toggle('on-home', r.name === 'home' || r.name === 'libs');   // their own large title
+    document.body.classList.toggle('on-home', r.name === 'home' || r.name === 'libs' || r.name === 'source');   // their own large title
     markTab(r);
     ambientFor(r);
     $('nav-back').hidden = r.name === 'home';
@@ -1691,7 +1723,8 @@
     $('nav-player').hidden = r.name === 'player';
     $('nav-power').hidden = r.name !== 'player';
 
-    if (r.name === 'player' && wide()) { location.replace('#/'); return; }
+    if (r.name === 'player' && wide()) { showWideNow(); updateMini(); schedule(30); return; }
+    hideWideNow();
     if (r.name === 'player') {
       $('player').hidden = false;
       setTitle(t('remote'));
@@ -1742,6 +1775,7 @@
       case 'item': return buildItem(entry, r.id);
       case 'search': return buildSearch(entry);
       case 'libs': return buildLibraries(entry);
+      case 'source': return buildSource(entry);
       default: return buildHome(entry);
     }
   }
@@ -2673,6 +2707,8 @@
       stateText = t('launching_state', stateText.toLowerCase());
     }
     last.title = title || null;
+    last.outVideo = playing ? s.OutputVideo || null : null; last.outAudio = playing ? s.OutputAudio || null : null;
+    if (sourceRedraw && currentRoute && currentRoute.name === 'source') setTimeout(sourceRedraw, 0);
     last.itemId = itemId; last.imageTag = tag; last.stateText = stateText;
 
     androidMedia(s.Reachable ? state : '', title, s.Chapter, s.Position, s.Duration, itemId, tag, s.Amp);
@@ -2811,6 +2847,36 @@
 
   function drawSleep() { /* sleep timer removed from the UI (0.12.2) */ }
 
+  // ---------- 0.24: landscape "now playing" (mock-up): the playback card, its formats and the chapters move to the middle
+  // of the page, in large; the docked panel on the right keeps the keys. Moved, not copied: everything stays up to date.
+  var wideNow = null, wideParts = null;
+  function showWideNow() {
+    if (!wideNow) {
+      wideNow = el('div', { 'class': 'view wide-now', id: 'wide-now' });
+      $('views').appendChild(wideNow);
+    }
+    cache.forEach(function (v) { v.node.hidden = true; });
+    setTitle(t('now_playing'));
+    if (!wideParts) {
+      wideParts = ['.pv-head', '.pv-card', '#p-badges', '#p-out', '#chap-box'].map(function (sel) {
+        var n = $('player').querySelector(sel), mark = document.createComment(sel);
+        n.parentNode.insertBefore(mark, n);
+        wideNow.appendChild(n);
+        return { node: n, mark: mark };
+      });
+    }
+    wideNow.hidden = false;
+    document.body.classList.add('wide-now-on');
+    window.scrollTo(0, 0);
+  }
+  function hideWideNow() {
+    document.body.classList.remove('wide-now-on');
+    if (wideNow) wideNow.hidden = true;
+    if (!wideParts) return;
+    wideParts.forEach(function (p) { p.mark.parentNode.insertBefore(p.node, p.mark); p.mark.remove(); });
+    wideParts = null;
+  }
+
   function updateMini() {
     var show = started && !!currentRoute && currentRoute.name !== 'player' &&
       (!!last.title || BUSY.indexOf(last.state) >= 0);
@@ -2938,7 +3004,7 @@
   $('fwd30').addEventListener('click', function () { jump(30); });
   $('seance-on').addEventListener('click', function () { seance(true); });
   $('seance-off').addEventListener('click', function () { seance(false); });
-  if (!HOME_UI) $('room-box').hidden = true;
+  if (!HOME_UI) { $('seance-on').hidden = true; $('seance-off').hidden = true; }
 
   /** Amplifier volume and mute (home edition, Home Assistant configured on the server). */
   var ampKeysOn = null;
@@ -3025,7 +3091,7 @@
   var wideQuery = window.matchMedia ? window.matchMedia('(min-width: 1100px) and (orientation: landscape)') : null;
   function wide() { return !!(wideQuery && wideQuery.matches); }
   if (wideQuery && wideQuery.addEventListener) wideQuery.addEventListener('change', function () {
-    if (wide() && currentRoute && currentRoute.name === 'player') location.replace('#/');
+    if (currentRoute && currentRoute.name === 'player') { if (wide()) showWideNow(); else { hideWideNow(); show(currentRoute); } }
     updateMini(); schedule(100);
   });
   function onPlayer() { return wide() || (!!currentRoute && currentRoute.name === 'player'); }
@@ -3106,6 +3172,94 @@
         grid.appendChild(el('a', { 'class': 'lib-tile', href: '#/lib/' + lib.Id }, [art, el('span', { 'class': 'lt-name', text: lib.Name })]));
       });
     }).catch(function () { grid.appendChild(el('div', { 'class': 'loading', text: t('cant_reach_emby') })); });
+    return node;
+  }
+
+  // ---------- 0.24: the Room screen (Showtime and the OPPO's input), as in OPPO Music
+
+  var sourceRedraw = null;   // the Room screen follows the OPPO's output while it is shown
+  var SOURCES = [[0, 'disc', 'src_player'], [1, 'hdmi', 'src_hdmi'], [2, 'tv', 'src_arc'], [3, 'optical', 'src_optical'],
+                 [4, 'coax', 'src_coax'], [5, 'usb', 'src_usb'], [6, 'bypass', 'src_bypass']];
+  var SRC_ICONS = {
+    disc: '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 13a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>',
+    hdmi: '<svg viewBox="0 0 24 24"><path d="M4 7h16v6l-3 4H7l-3-4zm2 2v3.4L8 15h8l2-2.6V9z"/></svg>',
+    tv: '<svg viewBox="0 0 24 24"><path d="M21 3H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5v2h8v-2h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 14H3V5h18z"/></svg>',
+    optical: '<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zm2 2v10h10V7zm3 3h4v4h-4z"/></svg>',
+    coax: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 16a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm0-10a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>',
+    usb: '<svg viewBox="0 0 24 24"><path d="M15 7v4h1v2h-3V5h2l-3-4-3 4h2v11.2A2 2 0 0 0 10 18a2 2 0 1 0 3-1.7V15h3a2 2 0 0 0 2-2v-2h1V7z"/></svg>',
+    bypass: '<svg viewBox="0 0 24 24"><path d="M4 7h11l-3-3 1.4-1.4L19 8l-5.6 5.4L12 12l3-3H4zm16 10H9l3 3-1.4 1.4L5 16l5.6-5.4L12 12l-3 3h11z"/></svg>'
+  };
+  function buildSource(entry) {
+    entry.title = t('room_title');
+    var stateLine = el('div', { 'class': 'src-state', text: t('loading') });
+    var grid = el('div', { 'class': 'src-grid' });
+    var note = el('p', { 'class': 'note src-note', text: t('src_note') });
+    var confirmBox = el('div', { 'class': 'src-confirm', hidden: true });
+    var out = el('dl', { 'class': 'src-out' });
+    var current = null, standby = false, busy = false;
+    var seanceBox = el('section', { 'class': 'room-box' }, [
+      el('div', { 'class': 'dev-head' }, [el('span', { 'class': 'dh-ic room', html: icon('seance') }), el('span', { 'class': 'dh-name', text: t('showtime') }), el('span', { 'class': 'dh-kind', text: t('room_kind') })])]);
+    var on = el('button', { 'class': 'pill', type: 'button', html: icon('seance') }, [t('showtime')]);
+    var off = el('button', { 'class': 'pill', type: 'button', html: icon('power') }, [t('all_off')]);
+    on.addEventListener('click', function () { seance(true); });
+    off.addEventListener('click', function () { seance(false); });
+    seanceBox.appendChild(el('div', { 'class': 'row' }, [on, off]));
+    if (!HOME_UI) seanceBox.hidden = true;
+    var srcBox = el('section', { 'class': 'room-box' }, [
+      el('div', { 'class': 'dev-head' }, [el('span', { 'class': 'dh-ic', html: icon('disc') }), el('span', { 'class': 'dh-name', text: t('src_title') }), el('span', { 'class': 'dh-kind', text: 'OPPO' })]),
+      stateLine, grid, confirmBox, note]);
+    var outBox = el('section', { 'class': 'room-box' }, [
+      el('div', { 'class': 'dev-head' }, [el('span', { 'class': 'dh-ic amp', html: icon('vol-up') }), el('span', { 'class': 'dh-name', text: t('src_out_title') })]), out]);
+    var node = el('div', { 'class': 'view src-view' }, [el('h1', { 'class': 'greet', text: t('room_title') }), seanceBox, srcBox, outBox]);
+    function draw() {
+      grid.textContent = '';
+      SOURCES.forEach(function (x) {
+        var b = el('button', { 'class': 'src-tile', type: 'button', 'aria-pressed': current === x[0] ? 'true' : 'false', disabled: standby || busy },
+          [el('span', { 'class': 'src-ic', html: SRC_ICONS[x[1]] }), el('span', { text: t(x[2]) })]);
+        b.addEventListener('click', function () { pick(x[0]); });
+        grid.appendChild(b);
+      });
+      stateLine.textContent = standby ? t('src_standby') : current === null ? '' : t('src_now', t(SOURCES[current][2]));
+      out.textContent = '';
+      [[t('src_out_video'), last.outVideo], [t('src_out_audio'), last.outAudio], [t('amplifier'), $('amp-value').textContent !== '—' && !$('amp-row').hidden ? $('amp-value').textContent : null]]
+        .forEach(function (r) { if (r[1]) { out.appendChild(el('dt', { text: r[0] })); out.appendChild(el('dd', { text: r[1] })); } });
+      if (!out.childNodes.length) out.appendChild(el('dd', { 'class': 'note', text: t('src_out_none') }));
+    }
+    function load() {
+      remote('/Source').then(function (r) {
+        standby = !!(r && r.Standby); current = r && r.Id != null ? r.Id : null;
+        if (r && !r.Ok && r.Message) stateLine.textContent = r.Message;
+        draw();
+        if (r && !r.Ok && r.Message) stateLine.textContent = r.Message;
+      }).catch(onError);
+    }
+    function send(id) {
+      busy = true; confirmBox.hidden = true; draw(); stateLine.textContent = t('loading');
+      remote('/Source', { Id: id }, 'POST').then(function (r) {
+        busy = false;
+        if (r && r.Ok) { current = r.Id; buzz(); } else toast((r && r.Message) || t('refused_by_oppo'));
+        draw(); schedule(500);
+      }).catch(function (e) { busy = false; draw(); onError(e); });
+    }
+    function pick(id) {
+      if (id === current || busy) return;
+      var playing = PLAYING.indexOf(last.state) >= 0 || last.state === 'DISC MENU' || last.state === 'LOADING';
+      if (current === 0 && playing) {
+        // In-page confirmation (window.confirm is not shown by every app view)
+        confirmBox.textContent = '';
+        var yes = el('button', { 'class': 'pill', type: 'button' }, [t('src_confirm_yes')]);
+        var no = el('button', { 'class': 'pill', type: 'button' }, [t('cancel')]);
+        yes.addEventListener('click', function () { send(id); });
+        no.addEventListener('click', function () { confirmBox.hidden = true; });
+        confirmBox.append(el('p', { text: t('src_confirm') }), el('div', { 'class': 'row' }, [yes, no]));
+        confirmBox.hidden = false;
+        return;
+      }
+      send(id);
+    }
+    draw(); load();
+    sourceRedraw = function () { if (!busy) draw(); };
+    entry.onShow = load;
     return node;
   }
 
