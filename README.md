@@ -113,6 +113,9 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
 - **Amplifier volume** (optional, Home Assistant)
   - Enter the Home Assistant address (e.g. `http://homeassistant:8123`), a long-lived access token (your profile → Security) and the amplifier's `media_player` entity (e.g. `media_player.denon`).
   - The remote then shows the volume with buttons for volume down, volume up and mute. In the **OPPO Home** app, the phone's volume keys control the amplifier while the app is open, and while a movie plays even with the screen locked.
+  - **Amplifier audio format sensor** (optional): the Home Assistant sensor giving what the amplifier decodes (e.g. `sensor.denon_audio_format`), shown on the playback screen. Empty: `sensor.<amplifier>_audio_format` if it exists, else the amplifier's sound mode.
+- **Resume Blu-rays without their menus** (on by default): resuming a Blu-ray (ISO or folder) starts its main movie directly at the resume point, as **Movie without menus** does, instead of the disc's menu.
+- **TheMovieDb API key** (optional): your own key (themoviedb.org → Settings → API; a v3 key or a v4 read access token). The film pages of the remote then also list each film's French trailers. Without it, the remote shows the trailers Emby already knows.
 
 Then, from any Emby app: **Play on… → OPPO**.
 
@@ -129,6 +132,10 @@ The plugin's settings page (*Dashboard → Plugins → OPPO*) shows the installe
 
 On a jailbroken player with the jb_overlay (SSH on port 22), the plugin can restart the OPPO, which is what unplugging it does, without touching the cable: useful when its DLNA renderer gets stuck or its IP control stops answering. Tick **Jailbroken player: allow restarting it over SSH** on the settings page, check the root password (`ROOT_PWD` of `/mnt/ubi_boot/jb_overlay/config.ini`, `oppo` by default) with **Test SSH**, and save. The remote then shows **Restart the OPPO** under "More buttons". The player's own `reboot` command does nothing; the plugin runs `sync; reboot -f`, the player comes back after about 25 s, and it is put back in standby if it was in standby.
 
+### Jailbreak: what the player decodes
+
+For a disc (ISO or Blu-ray folder), the player gives its picture (resolution, frame rate, bit depth, HDR of the source) nowhere but in its kernel log, for about 30 seconds after the start. With SSH set up as above, the plugin reads that log (read only) when a movie starts and shows it on the playback screen. Files (MKV, MP4) do not need it: the player's HTTP interface gives their resolution and frame rate.
+
 ### Jailbreak: turn the overlay's Telnet off
 
 The jb_overlay of the Russian jailbreak firmware (Moremodey01's, also used by other overlays such as the Dark Space Theme) reads its settings from `/mnt/ubi_boot/jb_overlay/config.ini`. With `USE_TELNET=1`, which is its documented default, its start-up script runs a Telnet server (`telnetd`) that listens on **port 23**, the port of the OPPO's IP control. The plugin then reaches that Telnet instead of the player: **Test the connection** reports "a Telnet server (the jailbreak's), not the OPPO's IP control" (from version 0.22.4; earlier versions show an "unexpected answer" made of odd characters such as `???? ??#??'??$`). Root access stays available over SSH (`USE_SSH=1`, port 22), so Telnet is not needed.
@@ -141,6 +148,13 @@ The jb_overlay of the Russian jailbreak firmware (Moremodey01's, also used by ot
 To check which program holds port 23 on the player: `netstat -tlnp | grep ':23 '` shows `bdpprog` (the OPPO's own program, correct) or `telnetd` (the overlay's Telnet).
 
 ## Web remote and Android app
+
+The remote is the same page in a browser and in both Android apps, served by the plugin (updating the plugin updates it everywhere):
+
+- **Home:** the film to resume in large, then each library's latest additions, your favourites and your collections. **Library**, **Search** and **Remote** tabs on a phone; a side bar in landscape on a tablet or a computer.
+- **Film page:** versions, audio and subtitle tracks, **Play on OPPO**, **From the start**, **No menus**, and the trailers (small label at the top right of the artwork).
+- **Playback screen:** the current chapter's picture with the progress bar (drag the handle to seek), the chapters, the D-pad and the disc keys, the amplifier's volume. Two lines say what goes out: **OPPO**, as the player reports it (resolution and frame rate, HDR or Dolby Vision, sound track; for discs the resolution needs a jailbroken player with SSH set up, see below), and **Amplifier** (what the amplifier decodes, OPPO Home app).
+- **Room screen:** the OPPO's input (its own player, HDMI in, ARC, optical, coaxial, USB DAC, HDMI bypass), and Showtime / All off in the OPPO Home app.
 
 - **Browser**
   - Open `http://<emby-server>:8096/emby/Oppo/Remote` and sign in with your Emby account.
@@ -186,6 +200,8 @@ On the title page of a Blu-ray or UHD disc (ISO or folder), **Movie without menu
 - This project is inspired by [Xnoppo](https://github.com/siberian-git/Xnoppo) by siberian-git, the original bridge that turned Emby into a library front end for the OPPO 203/205. Thanks also to jandrop for its [Docker image](https://hub.docker.com/r/jandrop/xnoppo).
 - Many thanks to **doylet8456**, who wrote the scripts I used to launch movies from my Synology NAS with Kodi. They were the starting point of this setup.
 - DLNA playback relies on [oppo-dv-mkv](https://github.com/fandangos/oppo-dv-mkv) by fandangos (Dolby Vision MKV and DLNA disc images on the OPPO). Its documentation and source code describe how the player reads a disc image or a Blu-ray folder over HTTP and WebDAV.
+- The remote's fonts are [Inter](https://rsms.me/inter/), Inter Tight and [IBM Plex Mono](https://github.com/IBM/plex), under the SIL Open Font License (texts in `src/Emby.Oppo/Remote/fonts`).
+- French trailers: this product uses the TMDB API but is not endorsed or certified by TMDB.
 - OPPO is a trademark of its owner. This is an unofficial project, not affiliated with or endorsed by OPPO.
 
 ## Licence

@@ -55,15 +55,17 @@ namespace Emby.Oppo.Oppo
         private static int _generation;
 
         /// <summary>
-        /// Reads the log now, after 3, 8 and 15 s, then every 5 s for 2 minutes, until the decoder's line is there: a disc
-        /// may log it only when its main title starts (2012, VC-1: after the first 15 s). One capture at a time, and from
-        /// the remote's polling at most every 20 s; a new film stops it.
+        /// At a film's start: reads the log now, after 3, 8 and 15 s, then every 5 s for 2 minutes, until the decoder's line
+        /// is there (a disc may log it only when its main title starts: 2012, VC-1, after the first 15 s). From the remote's
+        /// polling: one read, at most once a minute. One capture at a time; a new film stops it.
         /// </summary>
         public static void Capture(string host, ILogger logger, bool fromPolling = false)
         {
             var config = Plugin.Instance?.Configuration;
             if (config == null || !config.SshRestart || string.IsNullOrWhiteSpace(host)) return;
-            if (fromPolling && DateTime.UtcNow - _lastAttempt < TimeSpan.FromSeconds(20)) return;
+            // From the remote's polling (the app opened after the start, Emby restarted…): one read a minute at most, the
+            // lines may be long gone.
+            if (fromPolling && DateTime.UtcNow - _lastAttempt < TimeSpan.FromSeconds(60)) return;
             int generation = _generation;
             lock (Gate)
             {
@@ -76,8 +78,12 @@ namespace Emby.Oppo.Oppo
                 try
                 {
                     var started = DateTime.UtcNow;
-                    var waits = new List<int> { 0, 3, 5, 7 };
-                    while (waits.Count < 25) waits.Add(5);
+                    var waits = new List<int> { 0 };
+                    if (!fromPolling)
+                    {
+                        waits.AddRange(new[] { 3, 5, 7 });
+                        while (waits.Count < 25) waits.Add(5);
+                    }
                     foreach (int wait in waits)
                     {
                         if (wait > 0) await Task.Delay(TimeSpan.FromSeconds(wait)).ConfigureAwait(false);
