@@ -325,6 +325,7 @@ namespace Emby.Oppo
                 // Capped at 1 h: a wrong duration in Emby (e.g. 25 h) must not prevent recognising the movie.
                 long minimumMovieTicks = Math.Max(TimeSpan.FromMinutes(20).Ticks, Math.Min((part.RunTimeTicks ?? 0) / 2, TimeSpan.FromHours(1).Ticks));
                 bool movieStarted = false, tracksApplied = false;
+                SoundWatch.Reset();
                 long lastPos = 0, lastDur = 0;
                 int outside = 0, tick = 0;
                 string lastState = state;
@@ -379,6 +380,9 @@ namespace Emby.Oppo
                         _lastPositionTicks = PartOffset(index) + lastPos;
                     }
                     if (++tick % 2 == 0) await ReportProgress(item, status).ConfigureAwait(false);
+                    // The film's sound gone to the TV instead of the amplifier (vidinfo + Home Assistant): reported once.
+                    if (mainTitle && state == "PLAY" && status.Position > TimeSpan.FromSeconds(20))
+                        await SoundWatch.Check(oppo.Host, title, _json, _logger, partCt).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) when (!sessionCt.IsCancellationRequested)
@@ -990,6 +994,7 @@ namespace Emby.Oppo
             var item = _item;
             _item = null;
             cts.Cancel();
+            SoundWatch.Reset();
             if (reportStopped && item != null)
             {
                 await ReportStopped(item).ConfigureAwait(false);

@@ -249,6 +249,8 @@ namespace Emby.Oppo
         public bool NotConfigured { get; set; }
         /// <summary>The remote may offer "Restart the OPPO" (jailbroken player, restart over SSH allowed in the settings).</summary>
         public bool CanRestart { get; set; }
+        /// <summary>The film's sound goes to the TV (HDMI 1) instead of the amplifier (oppo-dv-mkv's vidinfo), or null.</summary>
+        public SoundWatch.Alert SoundAlert { get; set; }
     }
 
     public sealed class RemoteActionResult
@@ -414,10 +416,17 @@ namespace Emby.Oppo
 
                     // Back on the home menu (or stopped): the next film gets its own decoder values.
                     if (result.Reachable && (result.State == "HOME MENU" || result.State == "STOP" || result.State == "NO DISC" || result.State == "MEDIA CENTER"))
+                    {
                         DecoderInfo.Reset();
+                        SoundWatch.Reset();
+                    }
                     if (result.Reachable && PlayingStates.Contains(result.State))
                     {
                         var status = await oppo.GetStatus(ct).ConfigureAwait(false);
+                        // Also when the film was not started from Emby (a disc, the player's own menus): at most every 9 s.
+                        if (result.State == "PLAY" && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 20)
+                            await SoundWatch.Check(oppo.Host, result.Title, _json, _logger, ct).ConfigureAwait(false);
+                        result.SoundAlert = SoundWatch.Current;
                         result.Position = status.Position.TotalSeconds;
                         result.Duration = status.Duration.TotalSeconds;
                         result.Chapter = OppoSessionController.MainMovieChapter(status.Position.TotalSeconds) ?? await oppo.QueryChapter(ct).ConfigureAwait(false);

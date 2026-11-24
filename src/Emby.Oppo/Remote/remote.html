@@ -717,6 +717,14 @@
   .pv-card { gap: 8px; }
   .p-out { display: grid; gap: 2px; }
   .p-out[hidden] { display: none; }
+  /* 0.25: the film's sound gone to the TV instead of the amplifier (vidinfo) */
+  .p-alert { margin-top: 10px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 107, 107, .10); border: 1px solid rgba(255, 107, 107, .38); display: grid; gap: 10px; }
+  .p-alert[hidden] { display: none; }
+  .p-alert b { display: block; color: var(--danger); font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .p-alert .pa-body { font-size: 13px; line-height: 1.4; color: var(--text-2); }
+  .p-alert .pa-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .p-alert .pill { min-height: 38px; font-size: 13.5px; }
+  .p-alert .pill[hidden] { display: none; }
   .po-row { display: flex; gap: 10px; min-width: 0; }
   .po-row b { flex: 0 0 44px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; line-height: 16px; }
   .po-row span { min-width: 0; color: var(--text); }   /* wraps: the OPPO line can be long */
@@ -1000,6 +1008,13 @@
   </div>
   <div class="p-badges" id="p-badges"></div>
   <div class="p-out" id="p-out" hidden></div>
+  <div class="p-alert" id="p-alert" role="alert" hidden>
+    <div><b data-i18n="sound_lost_title">The sound goes to the TV</b><div class="pa-body" id="pa-body"></div></div>
+    <div class="pa-actions">
+      <button class="pill small" id="pa-restart" type="button"><svg><use href="#i-restart"/></svg><span data-i18n="restart_oppo">Restart the OPPO</span></button>
+      <button class="pill small" id="pa-hide" type="button" data-i18n="sound_lost_hide">Hide</button>
+    </div>
+  </div>
 
   <div class="transport pv-transport">
     <button class="t-btn" data-key="PRE" aria-label="Previous chapter" data-i18n-aria="prev_chapter"><svg><use href="#i-prev"/></svg></button>
@@ -1174,7 +1189,7 @@
       oppo_unreachable: 'OPPO unreachable', not_configured: 'OPPO not set up', not_configured_hint: 'Set its address in Emby: Dashboard → Plugins → OPPO', chapter_n: 'Chapter {0}', go_chapter: 'Go to chapter {0}', seek_refused: 'Seek refused',
       ends_at: 'ends at {0}', playing_on: 'Playing on {0}', track_n: 'Track {0}', no_subs_here: 'No subtitles on this title',
       no_tracks_here: 'No tracks on this title', refused_by_oppo: 'Refused by the OPPO', key_refused: 'Button refused',
-      during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
+      during_film: 'Available during movie playback', confirm_power_off: 'Turn off the OPPO?', restart_oppo: 'Restart the OPPO', sound_lost_title: 'The sound goes to the TV', sound_lost_body: 'The OPPO sends the film’s sound to HDMI 1 (the TV{0}) instead of the amplifier{1}. Restarting the OPPO usually brings it back.', sound_lost_amp: ', which receives: {0}', sound_lost_hide: 'Hide', confirm_restart: 'Restart the OPPO? Playback stops; it takes about 30 seconds, like unplugging it.', restart_failed: 'Restart failed', powering_on: 'Turning on the OPPO…',
       signed_in_as: 'Signed in as {0}',
       trailer: 'Trailer', trailer_n: 'Trailer {0}', trailer_open: 'Open the trailer', trailer_on_tv: 'Play the trailer on the TV (OPPO)', trailer_local_only: 'This film’s trailer is a file: play it on the TV.', close: 'Close', now_playing: 'Now playing', room_title: 'Room', src_title: 'OPPO input', src_now: 'Now: {0}', src_standby: 'The OPPO is in standby: turn it on to change its input.', src_note: 'On another input than its own player, the OPPO no longer plays your films: starting a film switches it back.', src_out_title: 'What comes out now', src_out_video: 'Picture', src_out_audio: 'Sound', src_out_none: 'Nothing is playing.', src_confirm: 'The film playing will be stopped.', src_confirm_yes: 'Switch', cancel: 'Cancel', src_open: 'OPPO input and outputs', src_player: 'Its own player', src_hdmi: 'HDMI in', src_arc: 'TV (ARC)', src_optical: 'Optical', src_coax: 'Coaxial', src_usb: 'USB DAC', src_bypass: 'HDMI bypass', disc_short: 'Menu', popup_short: 'Pop-up', greet_morning: 'Good morning', greet_afternoon: 'Good afternoon', greet_evening: 'Good evening', from_start_short: 'From the start', no_menus_short: 'No menus', chapter_of: 'Chapter {0} of {1}', room: 'Home cinema', room_kind: 'OPPO · TV · amp', oppo_home_short: 'OPPO home', player_kind: 'Player', amp_kind: 'Amplifier', volume_word: 'Volume', output_oppo: 'OPPO output ', home_tab: 'Home', library_tab: 'Library', navigation: 'Navigation', back10: 'Back 10 seconds', fwd30: 'Forward 30 seconds', info_aria: 'OPPO information on screen', info_short: 'Info', options_key: 'Options', time_left: '{0} left', resume_go: 'Resume', player_off: 'Off or out of reach', player_ready: 'Ready', open_remote_short: 'Remote',
       states: {
@@ -1232,7 +1247,7 @@
       oppo_unreachable: 'OPPO injoignable', not_configured: 'OPPO non configuré', not_configured_hint: 'Renseignez son adresse dans Emby : Tableau de bord → Plugins → OPPO', chapter_n: 'Chapitre {0}', go_chapter: 'Aller au chapitre {0}', seek_refused: 'Saut refusé',
       ends_at: 'fin à {0}', playing_on: 'Lecture sur {0}', track_n: 'Piste {0}', no_subs_here: 'Aucun sous-titre sur ce titre',
       no_tracks_here: 'Aucune piste sur ce titre', refused_by_oppo: 'Refusé par l’OPPO', key_refused: 'Touche refusée',
-      during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
+      during_film: 'Disponible pendant la lecture du film', confirm_power_off: 'Éteindre l’OPPO ?', restart_oppo: 'Redémarrer l’OPPO', sound_lost_title: 'Le son part vers la TV', sound_lost_body: 'L’OPPO envoie le son du film sur HDMI 1 (la TV{0}) au lieu de l’ampli{1}. Un redémarrage de l’OPPO le ramène d’habitude.', sound_lost_amp: ', qui reçoit : {0}', sound_lost_hide: 'Masquer', confirm_restart: 'Redémarrer l’OPPO ? La lecture s’arrête ; cela prend environ 30 secondes, comme un débranchement.', restart_failed: 'Échec du redémarrage', powering_on: 'Allumage de l’OPPO…',
       signed_in_as: 'Connecté : {0}',
       trailer: 'Bande-annonce', trailer_n: 'Bande-annonce {0}', trailer_open: 'Ouvrir la bande-annonce', trailer_on_tv: 'Lire la bande-annonce sur la télé (OPPO)', trailer_local_only: 'La bande-annonce de ce film est un fichier : lis-la sur la télé.', close: 'Fermer', now_playing: 'Lecture en cours', room_title: 'Salle', src_title: 'Entrée de l’OPPO', src_now: 'En ce moment : {0}', src_standby: 'L’OPPO est en veille : allume-le pour changer d’entrée.', src_note: 'Sur une autre entrée que son lecteur, l’OPPO ne lit plus tes films : lancer un film le remet sur son lecteur.', src_out_title: 'Ce qui sort en ce moment', src_out_video: 'Image', src_out_audio: 'Son', src_out_none: 'Rien en lecture.', src_confirm: 'Le film en cours sera arrêté.', src_confirm_yes: 'Changer', cancel: 'Annuler', src_open: 'Entrée et sorties de l’OPPO', src_player: 'Lecteur interne', src_hdmi: 'HDMI', src_arc: 'ARC télé', src_optical: 'Optique', src_coax: 'Coaxiale', src_usb: 'USB DAC', src_bypass: 'HDMI direct', disc_short: 'Menu', popup_short: 'Pop-up', greet_morning: 'Bonjour', greet_afternoon: 'Bonjour', greet_evening: 'Bonsoir', from_start_short: 'Du début', no_menus_short: 'Sans menus', chapter_of: 'Chapitre {0} sur {1}', room: 'Salle', room_kind: 'OPPO · télé · ampli', oppo_home_short: 'Accueil OPPO', player_kind: 'Lecteur', amp_kind: 'Ampli', volume_word: 'Volume', output_oppo: 'Sortie OPPO ', home_tab: 'Accueil', library_tab: 'Bibliothèque', navigation: 'Navigation', back10: 'Reculer de 10 secondes', fwd30: 'Avancer de 30 secondes', info_aria: 'Informations de l’OPPO à l’écran', info_short: 'Infos', options_key: 'Options', time_left: 'reste {0}', resume_go: 'Reprendre', player_off: 'Éteint ou injoignable', player_ready: 'Prêt', open_remote_short: 'Télécommande',
       states: {
@@ -2859,6 +2874,15 @@
       var pv = out.querySelector('.po-vid');
       if (pv) fitLabels(pv);
     }
+    // The film's sound gone to the TV instead of the amplifier (the plugin watches it with vidinfo): until hidden.
+    var al = playing && s.SoundAlert && s.SoundAlert.At !== hiddenSoundAlert ? s.SoundAlert : null;
+    $('p-alert').hidden = !al;
+    if (al) {
+      var what = [al.Codec, al.Channels ? al.Channels + ' ch' : ''].filter(Boolean).join(' ');
+      $('pa-body').textContent = t('sound_lost_body', what ? ', ' + what : '', al.AmpFormat ? t('sound_lost_amp', al.AmpFormat) : '');
+      $('pa-restart').hidden = !s.CanRestart;
+      last.soundAlert = al.At;
+    }
     $('dot2').classList.toggle('on', !!s.Reachable);
     $('dot2').classList.toggle('off', !s.Reachable);
     $('nav-power').classList.toggle('off', !s.Reachable);
@@ -3206,6 +3230,9 @@
 
   $('playpause').addEventListener('click', function () { sendKey(last.state === 'PLAY' ? 'PAU' : 'PLA'); });
   $('nav-power').addEventListener('click', function () { $('power').click(); });
+  var hiddenSoundAlert = null;
+  $('pa-hide').addEventListener('click', function () { hiddenSoundAlert = last.soundAlert || null; $('p-alert').hidden = true; });
+  $('pa-restart').addEventListener('click', function () { $('restart').click(); });
   // Jailbroken player: restart over SSH (as unplugging it), offered when the settings allow it (State.CanRestart).
   $('restart').addEventListener('click', function () {
     if (!confirm(t('confirm_restart'))) return;

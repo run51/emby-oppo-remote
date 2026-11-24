@@ -45,6 +45,7 @@ namespace Emby.Oppo
         {
             _mediaEncoder = mediaEncoder;
             _paths = paths;
+            Oppo.SoundWatch.LogDirectory = paths.LogDirectoryPath;   // the player's log is saved there when the sound is lost
             Current = this;
             L10n.ServerConfig = serverConfig;
             _userManager = userManager;
