@@ -125,6 +125,7 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
   - The remote then shows the volume with buttons for volume down, volume up and mute. In the **OPPO Home** app, the phone's volume keys control the amplifier while the app is open, and while a movie plays even with the screen locked.
   - **Amplifier audio format sensor** (optional): the Home Assistant sensor giving what the amplifier decodes (e.g. `sensor.denon_audio_format`), shown on the playback screen. Empty: `sensor.<amplifier>_audio_format` if it exists, else the amplifier's sound mode.
 - **Resume Blu-rays without their menus** (on by default): resuming a Blu-ray (ISO or folder) starts its main movie directly at the resume point, as **Movie without menus** does, instead of the disc's menu.
+- **TV** (optional, beta): LG webOS TVs. The plugin pairs with the TV itself (no Home Assistant needed) and switches it to the OPPO's input when a film starts, turning it on first with Wake-on-LAN if needed ("Turn on via Wi-Fi" or "Mobile TV On" enabled on the TV). The TV must be on to pair it; it asks once to allow the connection.
 - **TheMovieDb API key** (optional): your own key (themoviedb.org → Settings → API; a v3 key or a v4 read access token). The film pages of the remote then also list each film's French trailers. Without it, the remote shows the trailers Emby already knows.
 
 Then, from any Emby app: **Play on… → OPPO**.
@@ -140,11 +141,15 @@ The plugin's settings page (*Dashboard → Plugins → OPPO*) shows the installe
 
 ### Jailbreak: restart the player from the remote
 
-On a jailbroken player with the jb_overlay (SSH on port 22), the plugin can restart the OPPO, which is what unplugging it does, without touching the cable: useful when its DLNA renderer gets stuck or its IP control stops answering. Tick **Jailbroken player: allow restarting it over SSH** on the settings page, check the root password (`ROOT_PWD` of `/mnt/ubi_boot/jb_overlay/config.ini`, `oppo` by default) with **Test SSH**, and save. The remote then shows **Restart the OPPO** under "More buttons". The player's own `reboot` command does nothing; the plugin runs `sync; reboot -f`, the player comes back after about 25 s, and it is put back in standby if it was in standby.
+On a jailbroken player with the jb_overlay (SSH on port 22), the plugin can restart the OPPO, which is what unplugging it does, without touching the cable: useful when its DLNA renderer gets stuck or its IP control stops answering. It is not quite the same as unplugging it: on a UDP-205 with split outputs, the sound of the next film sometimes went to the TV (HDMI 1) instead of the receiver after such a restart; unplugging the player for 15 seconds fixed it. Tick **Jailbroken player: allow restarting it over SSH** on the settings page, check the root password (`ROOT_PWD` of `/mnt/ubi_boot/jb_overlay/config.ini`, `oppo` by default) with **Test SSH**, and save. The remote then shows **Restart the OPPO** under "More buttons". The player's own `reboot` command does nothing; the plugin runs `sync; reboot -f`, the player comes back after about 25 s, and it is put back in standby if it was in standby.
 
 ### Jailbreak: what the player decodes
 
 For a disc (ISO or Blu-ray folder), the player gives its picture (resolution, frame rate, bit depth, HDR of the source) nowhere but in its kernel log, for about 30 seconds after the start. With SSH set up as above, the plugin reads that log (read only) when a movie starts and shows it on the playback screen. Files (MKV, MP4) do not need it: the player's HTTP interface gives their resolution and frame rate.
+
+### Jailbreak: vidinfo (beta)
+
+`vidinfo` is a small program for the oppo-dv-mkv mod, proposed to its author and not in the mod's releases yet. It keeps the player's kernel log and answers over HTTP (port 8436) what the player decodes and sends out. When it answers, the plugin uses it instead of SSH: the OPPO line shows the picture as coloured labels from the first seconds of a film, and the remote warns when the film's sound goes to the TV instead of the amplifier (amplifier set up in Home Assistant). Without it, nothing changes.
 
 ### Jailbreak: turn the overlay's Telnet off
 
@@ -222,4 +227,4 @@ MIT. See [LICENSE](LICENSE).
 
 1. Bump `<Version>` in the csproj files and add a `## vX.Y.Z` section to `CHANGELOG.md`.
 2. If the Android app changed: `bash android/build.sh && cp android/build/oppo.apk android/build/oppo-home.apk src/Emby.Oppo/Remote/` (signed with the private key) and commit both APKs.
-3. `git tag vX.Y.Z && git push origin vX.Y.Z`. GitHub Actions builds the plugins and publishes the release.
+3. `git tag vX.Y.Z && git push origin vX.Y.Z`. GitHub Actions builds the plugins and publishes the release. A tag with a suffix (`v0.25.0-beta5`) is published as a pre-release, which the plugin's **Update** does not offer.

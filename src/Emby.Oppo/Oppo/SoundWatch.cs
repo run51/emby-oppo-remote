@@ -18,8 +18,9 @@ namespace Emby.Oppo.Oppo
     /// receiver got nothing ("PCM / Analog") while the player sent the film's sound to HDMI 1, not muted, in 2 channels
     /// (the TV's limit); while the sound is fine, HDMI 1's sound is muted. Checked every 10 s or so while a film plays;
     /// seen twice in a row with the amplifier on, it is reported once: a warning in Emby's log, the player's kernel log
-    /// saved next to it (to find the cause), the web remote's warning with "Restart the OPPO", and a "sound_lost" event to
-    /// the home automation webhook. Cleared when HDMI 1 is muted again or the film ends.
+    /// saved next to it (to find the cause), the web remote's warning (unplug the player), and a "sound_lost" event to
+    /// the home automation webhook. Cleared when HDMI 1 is muted again or the film ends. What brought the sound back on
+    /// 2026-11-24 was unplugging the player; a restart over SSH (reboot -f) had caused it, so the warning says unplug.
     /// </summary>
     public static class SoundWatch
     {

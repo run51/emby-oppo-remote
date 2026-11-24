@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.25.0-beta5
+
+**Beta** (pre-release: the settings page's **Update** keeps offering v0.24.1; install this one by hand).
+
+- **LG webOS TV, without Home Assistant** (*Optional → TV*, beta): the plugin talks to an LG webOS TV itself. Enter its
+  address and click **Pair** (the TV must be on; it asks once to allow the connection), choose the OPPO's input in the
+  list, try it with **Switch now**, then tick **Switch the TV to this input when a film starts**. If the TV is off, the
+  plugin also tries to turn it on (Wake-on-LAN: "Turn on via Wi-Fi" or "Mobile TV On" must be enabled on the TV).
+  Tested on an LG OLED E8.
+- **Port 436 reopened again** whenever the OPPO refuses an HTTP call: after the player restarts, it keeps that port
+  closed until it is announced again, and the remote lost the tracks and the OPPO line meanwhile.
+- **OPPO line:** frame rates as they are usually named (24, 30, 60 rather than 23.976, 29.97, 59.94) and the sound
+  without the track's language.
+- **For players with `vidinfo`** (a small addition to the oppo-dv-mkv mod, proposed to its author; not in the mod's
+  own releases yet): the OPPO line shows what the player really decodes and sends out from the first seconds of a
+  film, discs included and without SSH, as coloured labels on one line (4K · 24 fps · 10-bit · Dolby Vision, or
+  "HDR10 → Dolby Vision" when the player converts), with the sound under it. And a **warning when the film's sound goes
+  to the TV instead of the amplifier** (seen on a UDP-205 with the picture on HDMI 1 and the sound on HDMI 2, after a
+  restart over SSH; needs the amplifier in Home Assistant): the remote shows it, the player's kernel log at that
+  moment is saved in Emby's log folder (`oppo-sound-lost-*.txt`), and the webhook gets a `sound_lost` event. Unplugging
+  the player for 15 seconds is what brings the sound back.
+- **Without vidinfo nothing changes:** the OPPO line is as in 0.24 (picture from the player's HTTP interface for files,
+  from its kernel log over SSH for discs on a jailbroken player, Dolby Vision / HDR after 90 s; the sound track from
+  the OPPO's audio menu).
+- Emby.Oppo 0.25.0-beta5, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.24.1
 
 - **Simpler setup page.** It now asks first **how the OPPO plays your films**: *Over DLNA* (recommended, with the

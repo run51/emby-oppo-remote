@@ -49,4 +49,6 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           bodyFile: notes.md
+          # a tag with a suffix (v0.25.0-beta5) is a pre-release: not "latest", so the plugin's Update does not offer it
+          prerelease: ${{ contains(github.ref_name, '-') }}
           artifacts: "dist/Emby.Oppo.dll,dist/Emby.IsoBluray.dll,dist/OPPO.apk,dist/OPPO-Home.apk"
