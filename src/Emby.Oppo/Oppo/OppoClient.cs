@@ -101,11 +101,8 @@ namespace Emby.Oppo.Oppo
         internal static string PictureLabel(int height, double fps, bool interlaced, bool fr)
         {
             string res = height + (interlaced ? "i" : "p");
-            if (fps > 0)
-            {
-                string n = fps.ToString(Math.Abs(fps - Math.Round(fps)) < 0.001 ? "0" : "0.###", CultureInfo.InvariantCulture);
-                res += " " + (fr ? n.Replace('.', ',') + " i/s" : n + " fps");
-            }
+            // As the rates are named (the user's choice, 2026-11-24): 23.976 → 24, 29.97 → 30, 59.94 → 60.
+            if (fps > 0) res += " " + Math.Round(fps).ToString("0", CultureInfo.InvariantCulture) + L10n.T(fr, " fps", " i/s");
             return res;
         }
 

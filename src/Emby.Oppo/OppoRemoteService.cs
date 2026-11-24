@@ -451,6 +451,7 @@ namespace Emby.Oppo
                         string menuAudio = audioMenu?.FirstOrDefault(t => t.selected)?.name;
                         menuAudio = menuAudio == null ? null : System.Text.RegularExpressions.Regex.Replace(menuAudio, @"^\s*\d+/\d+\s*", "").Trim();
                         if (string.IsNullOrEmpty(menuAudio)) menuAudio = null;     // a file's tracks have no name ("2/5")
+                        menuAudio = AudioFormatOnly(menuAudio);                     // the signal, not the language (user's choice)
                         if (request.Tracks && !(status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90))
                         {
                             string early = decoded == null ? null : decoded.SourceHdr == "Dolby Vision" ? "Dolby Vision"
@@ -471,7 +472,7 @@ namespace Emby.Oppo
                                 if ((decoded?.SourceHdr == "HDR10" || decoded?.SourceHdr == "SDR") && output == "Dolby Vision") output = decoded.SourceHdr + " → " + output;
                                 result.OutputVideo = string.Join(" · ", new[] { picture, output }.Where(x => !string.IsNullOrEmpty(x)));
                             }
-                            result.OutputAudio = menuAudio ?? TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
+                            result.OutputAudio = menuAudio ?? TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr, false);
                             result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
                         }
                         if (request.Tracks)
@@ -882,7 +883,20 @@ namespace Emby.Oppo
         /// "DD 3/3 French" → "Dolby Digital · French · track 3/3" (French: "Dolby Digital · Français · piste 3/3");
         /// "Subtitle off" → "None" ("Aucun").
         /// </summary>
-        private static string TrackLabel(string v, bool audio, bool fr)
+        /// <summary>
+        /// "Français Dolby Digital 5.1" → "Dolby Digital 5.1": the OPPO line shows the sound format, not the track's
+        /// language (the user's choice, 2026-11-24). A name without a known format word is kept as it is.
+        /// </summary>
+        internal static string AudioFormatOnly(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return name;
+            var m = System.Text.RegularExpressions.Regex.Match(name,
+                @"\b(Dolby|DTS|TrueHD|True-HD|Atmos|LPCM|PCM|AC-?3|E-?AC-?3|DD\+?|DDP|AAC|MPEG|MP2|MP3|FLAC|DSD|Opus|Vorbis|WMA|ALAC)\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return m.Success && m.Index > 0 ? name.Substring(m.Index).Trim() : name.Trim();
+        }
+
+        private static string TrackLabel(string v, bool audio, bool fr, bool withLanguage = true)
         {
             if (string.IsNullOrWhiteSpace(v)) return null;
             if (v.IndexOf("off", StringComparison.OrdinalIgnoreCase) >= 0 && !audio) return L10n.T(fr, "None", "Aucun");
@@ -892,7 +906,7 @@ namespace Emby.Oppo
             var parts = new List<string>();
             if (audio && kind.Length > 0)
                 parts.Add(string.Join(" ", kind.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(t => Codecs.TryGetValue(t, out var c) ? c : t)));
-            if (lang.Length > 0) parts.Add(fr && FrenchLanguages.TryGetValue(lang, out var l) ? l : lang);
+            if (lang.Length > 0 && withLanguage) parts.Add(fr && FrenchLanguages.TryGetValue(lang, out var l) ? l : lang);
             parts.Add(L10n.T(fr, "track ", "piste ") + track);
             return string.Join(" · ", parts);
         }
