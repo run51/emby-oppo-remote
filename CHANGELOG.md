@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.25.0-beta6
+
+**Beta** (pre-release, as beta5).
+
+- **Coloured labels for every player:** the OPPO line's picture is shown as coloured labels (4K · 24 fps · Dolby Vision)
+  without vidinfo too, read from what the player tells (the picture from the start of a file, the HDR after 90 s): they
+  fill in as it tells more.
+- Emby.Oppo 0.25.0-beta6, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.25.0-beta5
 
 **Beta** (pre-release: the settings page's **Update** keeps offering v0.24.1; install this one by hand).

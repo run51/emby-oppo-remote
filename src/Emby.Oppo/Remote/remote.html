@@ -1319,7 +1319,7 @@
   // 0.25: the OPPO's picture as labels: 4K / 1080p / 576i, i/s, bits, the HDR (a conversion in one label: "HDR10 → DV")
   function picLabels(p) {
     function sg(cls, text) { return el('span', { class: 'sg ' + cls, text: text }); }
-    var n = [sg(p.Class || '', p.Res || '')];
+    var n = p.Res ? [sg(p.Class || '', p.Res)] : [];   // without vidinfo the size may come later than the HDR
     if (p.Fps) n.push(sg('', p.Fps + (LANG === 'fr' ? ' i/s' : ' fps')));
     if (p.Bits >= 10) n.push(sg('bits', p.Bits + (LANG === 'fr' ? ' bits' : '-bit')));
     if (p.From) {

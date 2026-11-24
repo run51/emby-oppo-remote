@@ -139,6 +139,37 @@ namespace Emby.Oppo.Oppo
         }
 
         /// <summary>
+        /// The same parts read back from the OPPO line's text when vidinfo is not there (players without it, 0.24's line:
+        /// "2160p 24 i/s · 10 bits · HDR10 → Dolby Vision", "4K 24 fps", "Dolby Vision"…), so that the remote shows the
+        /// same coloured labels, filled in as the player tells more (the HDR after 90 s). Null when it names nothing.
+        /// </summary>
+        public static PictureParts PartsFromText(string video)
+        {
+            if (string.IsNullOrWhiteSpace(video)) return null;
+            var parts = new PictureParts();
+            var m = System.Text.RegularExpressions.Regex.Match(video, @"(?<![\d.])(\d{3,4})([pi])\b|\b(4K|UHD)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                int h = m.Groups[1].Success ? int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) : 2160;
+                parts.Res = h >= 2000 ? "4K" : h.ToString(CultureInfo.InvariantCulture) + (m.Groups[2].Success ? m.Groups[2].Value.ToLowerInvariant() : "p");
+                parts.Class = h >= 2000 ? "uhd" : h >= 1000 ? "fhd" : "sd";
+            }
+            m = System.Text.RegularExpressions.Regex.Match(video, @"(\d+(?:[.,]\d+)?)\s*(?:fps|i/s)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (m.Success && double.TryParse(m.Groups[1].Value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double fps))
+                parts.Fps = (int)Math.Round(fps);
+            m = System.Text.RegularExpressions.Regex.Match(video, @"(\d+)\s*(?:-bit|bits)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (m.Success) parts.Bits = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+            m = System.Text.RegularExpressions.Regex.Match(video, @"\b(HDR10|SDR)\s*→\s*Dolby Vision");
+            if (m.Success) { parts.Hdr = "Dolby Vision"; parts.From = m.Groups[1].Value; }
+            else if (video.Contains("Dolby Vision")) parts.Hdr = "Dolby Vision";
+            else if (video.Contains("HDR10+")) parts.Hdr = "HDR10+";
+            else if (video.Contains("HDR10")) parts.Hdr = "HDR10";
+            else if (video.Contains("HLG")) parts.Hdr = "HLG";
+            else if (System.Text.RegularExpressions.Regex.IsMatch(video, @"\bSDR\b")) parts.Hdr = "SDR";
+            return parts.Res == null && parts.Hdr == null ? null : parts;
+        }
+
+        /// <summary>
         /// The OPPO line's picture: "2160p 23,976 i/s · 10 bits · HDR10 → Dolby Vision" (French), from what the player
         /// decodes and sends out. Null when it gives no picture size.
         /// </summary>

@@ -490,6 +490,8 @@ namespace Emby.Oppo
                             result.OutputAudio = menuAudio ?? TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr, false);
                             result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
                         }
+                        // Without vidinfo: the same coloured labels, read back from the line (0.25.0-beta6)
+                        if (vidPicture == null && result.OutputVideo != null) result.OutputPicture = VidInfo.PartsFromText(result.OutputVideo);
                         if (request.Tracks)
                         {
                             result.Audio = (audioMenu ?? new List<OppoClient.TrackEntry>())
