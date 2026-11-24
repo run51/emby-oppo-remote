@@ -79,6 +79,33 @@ namespace Emby.Oppo
         public string Password { get; set; }
     }
 
+    [Route("/Oppo/TvPair", "POST", Summary = "Pairs an LG webOS TV (the TV asks to allow the connection) and lists its inputs")]
+    public sealed class TvPair : IReturn<TvResult>
+    {
+        public string Address { get; set; }
+    }
+
+    [Route("/Oppo/TvInputs", "GET", Summary = "Lists the inputs of the paired LG webOS TV")]
+    public sealed class TvInputs : IReturn<TvResult>
+    {
+        public string Address { get; set; }
+    }
+
+    [Route("/Oppo/TvSwitch", "POST", Summary = "Switches the paired LG webOS TV to an input")]
+    public sealed class TvSwitch : IReturn<TvResult>
+    {
+        public string Address { get; set; }
+        public string InputId { get; set; }
+    }
+
+    public sealed class TvResult
+    {
+        public bool Success { get; set; }
+        public bool Paired { get; set; }
+        public string Message { get; set; }
+        public TvInput[] Inputs { get; set; } = Array.Empty<TvInput>();
+    }
+
     public sealed class TestMappingResult
     {
         public bool Success { get; set; }
@@ -215,6 +242,104 @@ namespace Emby.Oppo
             }
             _logger.Info("OPPO: connection test {0}: {1}{2}", target, result, string.IsNullOrEmpty(answer) ? "" : " (" + answer + ")");
             return new TestMappingResult { Success = result == OppoClient.ProbeResult.Ok, Message = message };
+        }
+
+        /// <summary>The TV's address of the request, else the saved one.</summary>
+        private static string TvHost(string address) =>
+            (string.IsNullOrWhiteSpace(address) ? Plugin.Instance.Configuration.TvAddress : address).Trim();
+
+        private string TvError(Exception ex)
+        {
+            if (ex is UnauthorizedAccessException)
+                return L10n.T(Fr, "✘ The TV refused the connection. Press Pair again and choose Allow on the TV.",
+                    "✘ La télé a refusé la connexion. Appuyez de nouveau sur Associer et choisissez Autoriser sur la télé.");
+            if (ex is TimeoutException && ex.Message.Contains("allowed"))
+                return L10n.T(Fr, "✘ The connection was not allowed on the TV in time. Press Pair again.",
+                    "✘ La connexion n'a pas été autorisée à temps sur la télé. Appuyez de nouveau sur Associer.");
+            return L10n.T(Fr, "✘ The TV does not answer. Check that it is on and its address (", "✘ La télé ne répond pas. Vérifiez qu'elle est allumée et son adresse (")
+                + ex.Message + ").";
+        }
+
+        /// <summary>
+        /// "Pair" of the settings page: the TV shows its prompt (the user has a minute to accept it with the TV remote);
+        /// the address, the key and the MAC address are saved at once, so that the key is not lost if the page is not saved.
+        /// </summary>
+        public async Task<object> Post(TvPair request)
+        {
+            var config = Plugin.Instance.Configuration;
+            string host = TvHost(request.Address);
+            if (host.Length == 0) return new TvResult { Message = L10n.T(Fr, "Enter the TV's IP address first.", "Indiquez d'abord l'adresse IP de la télé.") };
+            try
+            {
+                using (var tv = new TvLg(host, _json, _logger))
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(80)))
+                {
+                    string key = await tv.Connect(host == config.TvAddress ? config.TvClientKey : null, TimeSpan.FromSeconds(60), cts.Token).ConfigureAwait(false);
+                    string mac = await tv.MacAddress(cts.Token).ConfigureAwait(false);
+                    var inputs = await tv.Inputs(cts.Token).ConfigureAwait(false);
+                    config.TvAddress = host;
+                    config.TvClientKey = key ?? "";
+                    if (mac != null) config.TvMacAddress = mac;
+                    Plugin.Instance.SaveConfiguration();
+                    _logger.Info("OPPO: LG TV paired ({0}), {1} input(s)", host, inputs.Count);
+                    return new TvResult
+                    {
+                        Success = true, Paired = true, Inputs = inputs.ToArray(),
+                        Message = L10n.T(Fr, "✔ TV paired. Choose the OPPO's input below.", "✔ Télé associée. Choisissez ci-dessous l'entrée de l'OPPO.")
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Info("OPPO: LG TV pairing {0}: {1}", host, ex.Message);
+                return new TvResult { Message = TvError(ex) };
+            }
+        }
+
+        public async Task<object> Get(TvInputs request)
+        {
+            var config = Plugin.Instance.Configuration;
+            string host = TvHost(request.Address);
+            if (host.Length == 0 || host != config.TvAddress || string.IsNullOrEmpty(config.TvClientKey))
+                return new TvResult { Message = L10n.T(Fr, "Not paired yet.", "Pas encore associée.") };
+            try
+            {
+                using (var tv = new TvLg(host, _json, _logger))
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+                {
+                    await tv.Connect(config.TvClientKey, TimeSpan.FromSeconds(8), cts.Token).ConfigureAwait(false);
+                    var inputs = await tv.Inputs(cts.Token).ConfigureAwait(false);
+                    return new TvResult { Success = true, Paired = true, Inputs = inputs.ToArray() };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new TvResult { Paired = true, Message = TvError(ex) };
+            }
+        }
+
+        public async Task<object> Post(TvSwitch request)
+        {
+            var config = Plugin.Instance.Configuration;
+            string host = TvHost(request.Address);
+            if (host.Length == 0 || host != config.TvAddress || string.IsNullOrEmpty(config.TvClientKey))
+                return new TvResult { Message = L10n.T(Fr, "Pair the TV first.", "Associez d'abord la télé.") };
+            if (string.IsNullOrWhiteSpace(request.InputId))
+                return new TvResult { Paired = true, Message = L10n.T(Fr, "Choose an input first.", "Choisissez d'abord une entrée.") };
+            try
+            {
+                using (var tv = new TvLg(host, _json, _logger))
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+                {
+                    await tv.Connect(config.TvClientKey, TimeSpan.FromSeconds(8), cts.Token).ConfigureAwait(false);
+                    await tv.SwitchInput(request.InputId.Trim(), cts.Token).ConfigureAwait(false);
+                    return new TvResult { Success = true, Paired = true, Message = L10n.T(Fr, "✔ The TV switched to ", "✔ La télé est passée sur ") + request.InputId.Trim().Replace('_', ' ') + "." };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new TvResult { Paired = true, Message = TvError(ex) };
+            }
         }
 
         public async Task<object> Post(TestSsh request)

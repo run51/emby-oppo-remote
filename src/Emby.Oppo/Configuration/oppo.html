@@ -7,6 +7,7 @@
             .oppoConfigForm details.oppoFold > summary { cursor: pointer; padding: .8em 1em; list-style-position: inside; }
             .oppoConfigForm details.oppoFold > summary small { display: block; opacity: .65; margin-left: 1.3em; }
             .oppoConfigForm details.oppoFold > .oppoFoldBody { padding: 0 1em 1em; }
+            .oppoConfigForm .oppoBeta { font-size: .7em; text-transform: uppercase; letter-spacing: .05em; padding: .1em .45em; border-radius: .3em; background: rgba(82, 181, 75, .25); vertical-align: middle; }
             .oppoConfigForm .oppoModes { display: grid; gap: .8em; margin-bottom: 1em; }
             .oppoConfigForm .oppoMode { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; padding: .9em 1em; border: 1px solid rgba(255, 255, 255, .14); border-radius: .3em; cursor: pointer; }
             .oppoConfigForm .oppoMode.selected { border-color: #52b54b; background: rgba(82, 181, 75, .08); }
@@ -129,6 +130,31 @@
                     <div class="inputContainer">
                         <input is="emby-input" type="password" id="txtTmdbApiKey" label="TheMovieDb — API key (optional):" data-i18n-label="tmdbKey" />
                         <div class="fieldDescription" data-i18n="tmdbKeyHelp">Your own key (themoviedb.org → Settings → API): the remote then also shows the French trailers of each film.</div>
+                    </div>
+                </div>
+            </details>
+            <details class="oppoFold tvFold">
+                <summary><span data-i18n="tvTitle">TV</span> <span class="oppoBeta">beta</span><small data-i18n="tvSub">Switch the TV to the OPPO's input when a film starts</small></summary>
+                <div class="oppoFoldBody">
+                    <div class="fieldDescription" style="margin-bottom:1em;" data-i18n="tvHelp">LG TVs (webOS) for now. The TV must be on to pair it: it then asks once to allow the connection.</div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="txtTvAddress" label="LG TV — IP address:" data-i18n-label="tvAddress" />
+                    </div>
+                    <button is="emby-button" type="button" class="raised btnTvPair"><span data-i18n="tvPair">Pair</span></button>
+                    <div class="tvStatus fieldDescription" style="margin:1em 0;"></div>
+                    <div class="tvInputBox" hidden>
+                        <div class="selectContainer" style="margin-bottom:1em;">
+                            <label class="inputLabel" for="selTvInput" data-i18n="tvInput">OPPO's input on the TV:</label>
+                            <select is="emby-select" id="selTvInput" style="width:100%;"></select>
+                        </div>
+                        <button is="emby-button" type="button" class="raised btnTvTest"><span data-i18n="tvTest">Switch now (test)</span></button>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkTvSwitchOnPlay" />
+                                <span data-i18n="tvSwitchOnPlay">Switch the TV to this input when a film starts</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription" data-i18n="tvSwitchHelp">If the TV is off, the plugin also tries to turn it on (Wake-on-LAN: on the TV, "Turn on via Wi-Fi" or "Mobile TV On" must be enabled).</div>
+                        </div>
                     </div>
                 </div>
             </details>

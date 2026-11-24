@@ -85,6 +85,17 @@ namespace Emby.Oppo
         public string AmplifierFormatEntity { get; set; } = "";
 
         /// <summary>
+        /// Optional (beta): LG webOS TV switched to the OPPO's input when a film starts. Address, client key given by the
+        /// TV at pairing (settings page, "Pair"), MAC address read at pairing (Wake-on-LAN), the chosen input.
+        /// </summary>
+        public string TvAddress { get; set; } = "";
+        public string TvClientKey { get; set; } = "";
+        public string TvMacAddress { get; set; } = "";
+        public string TvInputId { get; set; } = "";
+        public string TvInputLabel { get; set; } = "";
+        public bool TvSwitchOnPlay { get; set; } = false;
+
+        /// <summary>
         /// Plays ISO files over DLNA instead of a network share. Requires the oppo-dv-mkv mod on the player
         /// ("DLNA Disc Images" on); the network share is used if the player does not start within 30 s.
         /// </summary>

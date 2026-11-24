@@ -174,6 +174,7 @@ namespace Emby.Oppo
             // (and resending the request) while the share is mounted and the disc loads.
             await ReportStart(item).ConfigureAwait(false);
             _ = TvPower.TurnOn(_logger);   // TV turned on as soon as requested (if a remote is configured)
+            _ = TvLg.SwitchOnPlay(_json, _logger);   // LG TV switched to the OPPO's input (if set up)
             _ = Task.Run(() => RunPlayback(item, request, cts.Token));
         }
 

@@ -69,6 +69,18 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             homeAutomationSub: 'Webhook, Unfolded Circle remote, amplifier volume through Home Assistant',
             trailers: 'Trailers',
             trailersSub: 'TheMovieDb key for French trailers',
+            tvTitle: 'TV',
+            tvSub: 'Switch the TV to the OPPO\'s input when a film starts',
+            tvHelp: 'LG TVs (webOS) for now. The TV must be on to pair it: it then asks once to allow the connection.',
+            tvAddress: 'LG TV — IP address:',
+            tvPair: 'Pair',
+            tvPairing: 'Connecting… If the TV asks to allow the connection, choose Allow with the TV remote (you have one minute).',
+            tvInput: 'OPPO\'s input on the TV:',
+            tvTest: 'Switch now (test)',
+            tvSwitchOnPlay: 'Switch the TV to this input when a film starts',
+            tvSwitchHelp: 'If the TV is off, the plugin also tries to turn it on (Wake-on-LAN: on the TV, "Turn on via Wi-Fi" or "Mobile TV On" must be enabled).',
+            tvConnected: 'connected',
+            tvLoading: 'Reading the TV\'s inputs…',
             advanced: 'Advanced',
             advancedSub: 'oppo-multiplexer, start timeout, film server port, jailbroken player (SSH)',
             choose: '— choose —',
@@ -152,6 +164,18 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             homeAutomationSub: 'Webhook, télécommande Unfolded Circle, volume de l\'ampli par Home Assistant',
             trailers: 'Bandes-annonces',
             trailersSub: 'Clé TheMovieDb pour les bandes-annonces françaises',
+            tvTitle: 'Télévision',
+            tvSub: 'Passer la télé sur l\'entrée de l\'OPPO au lancement d\'un film',
+            tvHelp: 'Télés LG (webOS) pour l\'instant. La télé doit être allumée pour l\'associer : elle demande alors une seule fois d\'autoriser la connexion.',
+            tvAddress: 'Télé LG — adresse IP :',
+            tvPair: 'Associer',
+            tvPairing: 'Connexion… Si la télé demande d\'autoriser la connexion, choisissez Autoriser avec la télécommande de la télé (vous avez une minute).',
+            tvInput: 'Entrée de l\'OPPO sur la télé :',
+            tvTest: 'Basculer maintenant (test)',
+            tvSwitchOnPlay: 'Passer la télé sur cette entrée au lancement d\'un film',
+            tvSwitchHelp: 'Si la télé est éteinte, le plugin essaie aussi de l\'allumer (Wake-on-LAN : sur la télé, « Allumer via le Wi-Fi » ou « Mobile TV On » doit être activé).',
+            tvConnected: 'branché',
+            tvLoading: 'Lecture des entrées de la télé…',
             advanced: 'Avancé',
             advancedSub: 'oppo-multiplexer, délai de démarrage, port du serveur de films, OPPO déverrouillé (SSH)',
             choose: '— choisir —',
@@ -349,6 +373,81 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             });
         });
 
+        // TV (beta): pairing, the TV's inputs, test switch.
+        function showTvInputs(result, keep) {
+            var box = view.querySelector('.tvInputBox');
+            var select = view.querySelector('#selTvInput');
+            var inputs = (result && result.Inputs) || [];
+            if (!inputs.length && !keep) { box.hidden = !(result && result.Paired) || !state.tvInputId; }
+            if (!inputs.length) return;
+            var current = select.value || state.tvInputId || '';
+            select.innerHTML = '';
+            inputs.forEach(function (i) {
+                var o = document.createElement('option');
+                o.value = i.Id;
+                var name = i.Id.replace(/_/g, ' ');
+                o.textContent = name + (i.Label && i.Label !== i.Id && i.Label !== name ? ' – ' + i.Label : '') + (i.Connected ? ' (' + t('tvConnected') + ')' : '');
+                o.setAttribute('data-label', i.Label || i.Id);
+                select.appendChild(o);
+            });
+            if (current && inputs.some(function (i) { return i.Id === current; })) select.value = current;
+            else {
+                var guess = inputs.filter(function (i) { return /oppo|blu/i.test(i.Label || ''); })[0] || inputs.filter(function (i) { return i.Connected; })[0];
+                if (guess) select.value = guess.Id;
+            }
+            box.hidden = false;
+        }
+        function savedTvInput() {
+            // Before the TV answers, the saved input is shown alone.
+            if (!state.tvInputId) return;
+            showTvInputs({ Paired: true, Inputs: [{ Id: state.tvInputId, Label: state.tvInputLabel || state.tvInputId }] }, true);
+        }
+        view.querySelector('.btnTvPair').addEventListener('click', function () {
+            var status = view.querySelector('.tvStatus');
+            status.textContent = t('tvPairing');
+            var button = this;
+            button.disabled = true;
+            ApiClient.ajax({
+                type: 'POST',
+                url: ApiClient.getUrl('Oppo/TvPair'),
+                data: JSON.stringify({ Address: view.querySelector('#txtTvAddress').value.trim() }),
+                contentType: 'application/json',
+                dataType: 'json'
+            }).then(function (result) {
+                button.disabled = false;
+                status.textContent = result.Message || '';
+                if (result.Success) { state.tvPaired = true; showTvInputs(result); }
+            }, function () {
+                button.disabled = false;
+                status.textContent = t('testError');
+            });
+        });
+        view.querySelector('.btnTvTest').addEventListener('click', function () {
+            var status = view.querySelector('.tvStatus');
+            status.textContent = t('testing');
+            ApiClient.ajax({
+                type: 'POST',
+                url: ApiClient.getUrl('Oppo/TvSwitch'),
+                data: JSON.stringify({ Address: view.querySelector('#txtTvAddress').value.trim(), InputId: view.querySelector('#selTvInput').value }),
+                contentType: 'application/json',
+                dataType: 'json'
+            }).then(function (result) {
+                status.textContent = result.Message || '';
+            }, function () {
+                status.textContent = t('testError');
+            });
+        });
+        view.querySelector('.oppoConfigForm details.tvFold').addEventListener('toggle', function () {
+            if (!this.open || state.tvLoaded || !state.tvPaired) return;
+            state.tvLoaded = true;
+            var status = view.querySelector('.tvStatus');
+            status.textContent = t('tvLoading');
+            ApiClient.getJSON(ApiClient.getUrl('Oppo/TvInputs')).then(function (result) {
+                status.textContent = result.Message || '';
+                showTvInputs(result, true);
+            }, function () { status.textContent = ''; });
+        });
+
         view.querySelector('.btnTestSsh').addEventListener('click', function () {
             var status = view.querySelector('.testSshStatus');
             status.textContent = t('testing');
@@ -444,6 +543,16 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 config.TmdbApiKey = view.querySelector('#txtTmdbApiKey').value.trim();
                 config.AmplifierEntity = view.querySelector('#txtAmpEntity').value.trim();
                 config.AmplifierFormatEntity = view.querySelector('#txtAmpFormatEntity').value.trim();
+                var tvAddress = view.querySelector('#txtTvAddress').value.trim();
+                if (tvAddress !== (config.TvAddress || '')) { config.TvClientKey = ''; config.TvMacAddress = ''; }
+                config.TvAddress = tvAddress;
+                var tvSelect = view.querySelector('#selTvInput');
+                if (tvSelect.value) {
+                    config.TvInputId = tvSelect.value;
+                    var tvOption = tvSelect.options[tvSelect.selectedIndex];
+                    config.TvInputLabel = tvOption ? tvOption.getAttribute('data-label') || tvSelect.value : tvSelect.value;
+                }
+                config.TvSwitchOnPlay = view.querySelector('#chkTvSwitchOnPlay').checked;
                 config.Mappings = readAll();
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
                     loading.hide();
@@ -517,6 +626,15 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtTmdbApiKey').value = config.TmdbApiKey || '';
                 view.querySelector('#txtAmpEntity').value = config.AmplifierEntity || '';
                 view.querySelector('#txtAmpFormatEntity').value = config.AmplifierFormatEntity || '';
+                view.querySelector('#txtTvAddress').value = config.TvAddress || '';
+                view.querySelector('#chkTvSwitchOnPlay').checked = !!config.TvSwitchOnPlay;
+                state.tvPaired = !!(config.TvAddress && config.TvClientKey);
+                state.tvInputId = config.TvInputId || '';
+                state.tvInputLabel = config.TvInputLabel || '';
+                state.tvLoaded = false;
+                view.querySelector('.tvStatus').textContent = '';
+                view.querySelector('.tvInputBox').hidden = true;
+                if (state.tvPaired) savedTvInput();
                 state.mappings = config.Mappings || [];
                 var folders = res[1];
                 state.libraries = (folders && folders.Items) ? folders.Items : (folders || []);
