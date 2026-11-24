@@ -88,6 +88,8 @@ Developed and tested with Emby Server 4.10 on Linux (Docker on a Synology NAS). 
 
 Open this page in a **web browser** (`http://<server>:8096`): plugin settings pages may not open in the Emby apps. Until the OPPO address is set, the remote shows "OPPO not set up".
 
+<img src="docs/screenshots/settings.jpg" width="600" alt="Settings page: the player's address, then how the OPPO plays your films (over DLNA, recommended, with a Test DLNA button; or from a network share), optional sections folded">
+
 - **OPPO address**
   - Give the player a fixed IP address.
   - On the OPPO: **Setup → Network Setup → IP Control: On**, and **Setup → Device Setup → Standby Mode: Network Standby**, so that Emby can turn it on.
