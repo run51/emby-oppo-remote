@@ -431,7 +431,11 @@ namespace Emby.Oppo
                         // Bit depth and the source's HDR from the decoder too; the output's HDR from #QHS after 90 s.
                         string picture = null;
                         var decoded = DecoderInfo.Current;
-                        if (request.Tracks)
+                        // oppo-dv-mkv's vidinfo (jailbroken player): what the player decodes and sends out, from the
+                        // driver's own status, from the start of the film; the source's HDR and its conversion included.
+                        string vidPicture = request.Tracks ? VidInfo.Picture(await VidInfo.Get(oppo.Host, _json, _logger, ct).ConfigureAwait(false), Fr) : null;
+                        if (vidPicture != null) result.OutputVideo = vidPicture;
+                        else if (request.Tracks)
                         {
                             picture = await oppo.GetVideoFormat(Fr, ct).ConfigureAwait(false);
                             if (decoded == null) DecoderInfo.Capture(oppo.Host, _logger, true);
@@ -452,18 +456,21 @@ namespace Emby.Oppo
                             string early = decoded == null ? null : decoded.SourceHdr == "Dolby Vision" ? "Dolby Vision"
                                 : decoded.ToDolbyVision ? (decoded.SourceHdr != null ? decoded.SourceHdr + " → Dolby Vision" : "Dolby Vision") : null;
                             string video = string.Join(" · ", new[] { picture, early }.Where(x => !string.IsNullOrEmpty(x)));
-                            if (video.Length > 0) result.OutputVideo = video;
+                            if (video.Length > 0 && vidPicture == null) result.OutputVideo = video;
                             if (menuAudio != null) result.OutputAudio = menuAudio;
                         }
                         if (request.Tracks && status.Duration.TotalSeconds > 300 && status.Position.TotalSeconds > 90)
                         {
-                            string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
                             bool fr = Fr;
-                            string output = HdrLabel(hdr);
-                            // "HDR10 → Dolby Vision" when the player converts the source (its "Dolby Vision" HDR setting).
-                            // An HDR10 or SDR source sent out in Dolby Vision: the player converts it.
-                            if ((decoded?.SourceHdr == "HDR10" || decoded?.SourceHdr == "SDR") && output == "Dolby Vision") output = decoded.SourceHdr + " → " + output;
-                            result.OutputVideo = string.Join(" · ", new[] { picture, output }.Where(x => !string.IsNullOrEmpty(x)));
+                            if (vidPicture == null)
+                            {
+                                string hdr = Value(await oppo.Command("QHS", ct).ConfigureAwait(false), "QHS");
+                                string output = HdrLabel(hdr);
+                                // "HDR10 → Dolby Vision" when the player converts the source (its "Dolby Vision" HDR setting).
+                                // An HDR10 or SDR source sent out in Dolby Vision: the player converts it.
+                                if ((decoded?.SourceHdr == "HDR10" || decoded?.SourceHdr == "SDR") && output == "Dolby Vision") output = decoded.SourceHdr + " → " + output;
+                                result.OutputVideo = string.Join(" · ", new[] { picture, output }.Where(x => !string.IsNullOrEmpty(x)));
+                            }
                             result.OutputAudio = menuAudio ?? TrackLabel(Value(await oppo.Command("QAT", ct).ConfigureAwait(false), "QAT"), true, fr);
                             result.OutputSubtitle = TrackLabel(Value(await oppo.Command("QST", ct).ConfigureAwait(false), "QST"), false, fr);
                         }

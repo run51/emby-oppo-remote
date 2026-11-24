@@ -92,6 +92,7 @@ namespace Emby.Oppo.Oppo
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 _logger.Debug("OPPO getmovieplayinfo: {0}", ex.Message);
+                LoginIfRefused(ex);
                 return null;
             }
         }
@@ -409,18 +410,36 @@ namespace Emby.Oppo.Oppo
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 _logger.Debug("OPPO unreachable: {0}", ex.Message);
-                // Port 436 refused: after a restart or a power cut the player keeps its HTTP interface closed until
-                // a control app announces itself, even when it is on and playing. Without it the web remote lost the
-                // position, the chapters and the output line after an SSH restart (2026-11-23).
-                if (ex is WebException web && web.Status == WebExceptionStatus.ConnectFailure && DateTime.UtcNow - _lastNotice > TimeSpan.FromSeconds(5))
-                {
-                    if (_lastNotice == DateTime.MinValue || DateTime.UtcNow - _lastNotice > TimeSpan.FromMinutes(5))
-                        _logger.Info("OPPO: HTTP interface (port {0}) closed, sending the control-app login notice (UDP {1})", 436, 7624);
-                    _lastNotice = DateTime.UtcNow;
-                    NotifyLogin();
-                }
+                LoginIfRefused(ex);
             }
             return status;
+        }
+
+        /// <summary>
+        /// Port 436 refused: after a restart or a power cut the player keeps its HTTP interface closed until a control
+        /// app announces itself, even when it is on and playing. Without it the web remote lost the position, the
+        /// chapters, the track lists and the output line after an SSH restart (2026-11-23; again for an hour on
+        /// 2026-11-24, as .NET 8 does not report a refusal as ConnectFailure). Every 5 s at most.
+        /// </summary>
+        private void LoginIfRefused(Exception ex)
+        {
+            if (!Refused(ex) || DateTime.UtcNow - _lastNotice < TimeSpan.FromSeconds(5)) return;
+            if (_lastNotice == DateTime.MinValue || DateTime.UtcNow - _lastNotice > TimeSpan.FromMinutes(5))
+                _logger.Info("OPPO: HTTP interface (port {0}) closed, sending the control-app login notice (UDP {1})", 436, 7624);
+            _lastNotice = DateTime.UtcNow;
+            NotifyLogin();
+        }
+
+        /// <summary>The connection was refused (nothing listens on the port).</summary>
+        internal static bool Refused(Exception ex)
+        {
+            for (var e = ex; e != null; e = e.InnerException)
+            {
+                if (e is System.Net.Sockets.SocketException se && se.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused) return true;
+                if (e is WebException we && we.Status == WebExceptionStatus.ConnectFailure) return true;
+                if ((e.Message ?? "").IndexOf("Connection refused", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
         }
 
         private static DateTime _lastNotice = DateTime.MinValue;
@@ -452,6 +471,7 @@ namespace Emby.Oppo.Oppo
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 _logger.Debug("OPPO: track menu unavailable ({0})", ex.Message);
+                LoginIfRefused(ex);
                 return new List<TrackEntry>();
             }
         }

@@ -63,6 +63,7 @@ namespace Emby.Oppo.Oppo
         {
             var config = Plugin.Instance?.Configuration;
             if (config == null || !config.SshRestart || string.IsNullOrWhiteSpace(host)) return;
+            if (VidInfo.Available(host)) return;   // oppo-dv-mkv's vidinfo gives the same, without SSH
             // From the remote's polling (the app opened after the start, Emby restarted…): one read a minute at most, the
             // lines may be long gone.
             if (fromPolling && DateTime.UtcNow - _lastAttempt < TimeSpan.FromSeconds(60)) return;
