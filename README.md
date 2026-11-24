@@ -18,18 +18,20 @@ The interface is available in **English and French**. The language follows the d
 
 ## Screenshots
 
-The web remote, which is also what the Android apps show:
+The web remote, which is also what both Android apps show (0.24, in English; titles and summaries come from the Emby library):
 
 <p>
-  <img src="docs/screenshots/phone-home.jpg" width="200" alt="Home: libraries, resume, sagas">
-  <img src="docs/screenshots/phone-library.jpg" width="200" alt="Library grid with 4K / Dolby Vision / HDR badges and filters">
-  <img src="docs/screenshots/phone-title.jpg" width="200" alt="Title page: disc format, Play on OPPO, Movie without menus, audio and subtitle choice">
-  <img src="docs/screenshots/phone-player.jpg" width="200" alt="Playback: live OPPO output, transport keys, amplifier volume, chapter thumbnails, D-pad">
+  <img src="docs/screenshots/phone-home.jpg" width="200" alt="Home: the film to resume, the OPPO card with Showtime, recent and favourite films, the mini player">
+  <img src="docs/screenshots/phone-library.jpg" width="200" alt="Library grid with 4K / Dolby Vision / HDR10 badges, sorting and filters">
+  <img src="docs/screenshots/phone-title.jpg" width="200" alt="Film page: trailer label, disc and audio formats, Resume and From the start, audio and subtitle tracks">
+  <img src="docs/screenshots/phone-player.jpg" width="200" alt="Playback: the chapter's picture with the progress bar, what the OPPO and the amplifier output, transport keys, chapters, D-pad, Denon volume">
 </p>
 
-On a tablet in landscape, the remote stays on the right while you browse:
+On a tablet or a computer in landscape, the library is on the left and the remote stays on the right:
 
-<img src="docs/screenshots/tablet-title-remote.jpg" width="820" alt="Tablet layout: title page with the remote on the right">
+<img src="docs/screenshots/tablet-title-remote.jpg" width="820" alt="Tablet layout: film page with the remote on the right">
+
+<img src="docs/screenshots/tablet-player.jpg" width="820" alt="Tablet layout: now playing, with the OPPO and amplifier output lines and the chapters">
 
 ## Installing the plugins
 
