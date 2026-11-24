@@ -55,6 +55,22 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             ampFormatEntity: 'Home Assistant — amplifier audio format sensor (optional, e.g. sensor.denon_audio_format):',
             ampFormatHelp: 'What the amplifier decodes (Dolby TrueHD, DTS-HD MA…), shown while a film plays. Empty: sensor.<amplifier>_audio_format if it exists, else the amplifier\'s sound mode.',
             save: 'Save',
+            playMode: 'How the OPPO plays your films',
+            modeDlna: 'Over DLNA',
+            recommended: 'recommended',
+            modeDlnaHelp: 'For a player with the oppo-dv-mkv mod ("DLNA Disc Images" on). The plugin sends the film to the OPPO itself: ISO files, Blu-ray and DVD folders play as a disc (menus, Dolby Vision), MKV and MP4 files as files. No share to set up.',
+            modeShare: 'From a network share (NFS or SMB)',
+            modeShareHelp: 'For a player without the mod: the OPPO mounts your film folders itself. NFS is recommended; with Windows, the OPPO only speaks SMB 1.',
+            testDlna: 'Test DLNA',
+            fallbackTitle: 'Fallback if a film does not start',
+            fallbackSub: 'Optional: shares the OPPO can mount',
+            fallbackHelp: 'These shares are only used when the OPPO does not start a film over DLNA. A failed "Test" here does not prevent playback over DLNA (for example on Windows without SMB 1).',
+            optional: 'Optional',
+            homeAutomationSub: 'Webhook, Unfolded Circle remote, amplifier volume through Home Assistant',
+            trailers: 'Trailers',
+            trailersSub: 'TheMovieDb key for French trailers',
+            advanced: 'Advanced',
+            advancedSub: 'oppo-multiplexer, start timeout, film server port, jailbroken player (SSH)',
             choose: '— choose —',
             manualEntry: 'Manual entry…',
             shareSeen: 'Share seen by the OPPO:',
@@ -122,6 +138,22 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             ampFormatEntity: 'Home Assistant — capteur du format audio de l\'ampli (facultatif, ex. sensor.denon_audio_format) :',
             ampFormatHelp: 'Ce que l\'ampli décode (Dolby TrueHD, DTS-HD MA…), affiché pendant la lecture d\'un film. Vide : sensor.<ampli>_audio_format s\'il existe, sinon le mode sonore de l\'ampli.',
             save: 'Enregistrer',
+            playMode: 'Comment l\'OPPO lit vos films',
+            modeDlna: 'Par DLNA',
+            recommended: 'recommandé',
+            modeDlnaHelp: 'Pour un lecteur avec le mod oppo-dv-mkv (« DLNA Disc Images » activé). Le plugin envoie lui-même le film à l\'OPPO : ISO, dossiers Blu-ray et DVD lus comme un disque (menus, Dolby Vision), fichiers MKV et MP4. Aucun partage à configurer.',
+            modeShare: 'Depuis un partage réseau (NFS ou SMB)',
+            modeShareHelp: 'Pour un lecteur sans le mod : l\'OPPO monte vos dossiers de films lui-même. NFS est conseillé ; avec Windows, l\'OPPO ne parle que SMB 1.',
+            testDlna: 'Tester le DLNA',
+            fallbackTitle: 'Secours si un film ne démarre pas',
+            fallbackSub: 'Facultatif : partages que l\'OPPO peut monter',
+            fallbackHelp: 'Ces partages ne servent que si l\'OPPO ne démarre pas un film par DLNA. Un « Test » en échec ici n\'empêche pas la lecture par DLNA (par exemple sous Windows sans SMB 1).',
+            optional: 'Facultatif',
+            homeAutomationSub: 'Webhook, télécommande Unfolded Circle, volume de l\'ampli par Home Assistant',
+            trailers: 'Bandes-annonces',
+            trailersSub: 'Clé TheMovieDb pour les bandes-annonces françaises',
+            advanced: 'Avancé',
+            advancedSub: 'oppo-multiplexer, délai de démarrage, port du serveur de films, OPPO déverrouillé (SSH)',
             choose: '— choisir —',
             manualEntry: 'Saisie manuelle…',
             shareSeen: 'Partage vu par l\'OPPO :',
@@ -268,6 +300,42 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             notice.hidden = !windows;
         }
 
+        // How the OPPO plays the films: over DLNA (the shares are then only a fallback, folded away) or from a share.
+        // Nothing chosen on a first setup: both boxes stay hidden until one is picked.
+        function applyMode() {
+            var dlna = view.querySelector('#radioDlna').checked, share = view.querySelector('#radioShare').checked;
+            view.querySelector('.modeDlna').classList.toggle('selected', dlna);
+            view.querySelector('.modeShare').classList.toggle('selected', share);
+            view.querySelector('.dlnaModeBox').hidden = !dlna;
+            view.querySelector('.shareModeBox').hidden = !share;
+            var shares = view.querySelector('.oppoShares');
+            shares.hidden = !dlna && !share;
+            view.querySelector(dlna ? '.dlnaSharesSlot' : '.shareSharesSlot').appendChild(shares);
+        }
+        view.querySelector('#radioDlna').addEventListener('change', applyMode);
+        view.querySelector('#radioShare').addEventListener('change', applyMode);
+
+        view.querySelector('.btnTestDlna').addEventListener('click', function () {
+            var status = view.querySelector('.testDlnaStatus');
+            status.textContent = t('testing');
+            ApiClient.ajax({
+                type: 'POST',
+                url: ApiClient.getUrl('Oppo/TestDlna'),
+                data: JSON.stringify({
+                    Address: view.querySelector('#txtOppoAddress').value.trim(),
+                    Port: parseInt(view.querySelector('#txtDiscServerPort').value, 10) || 0,
+                    Ssh: view.querySelector('#chkSshRestart').checked,
+                    Password: view.querySelector('#txtSshPassword').value
+                }),
+                contentType: 'application/json',
+                dataType: 'json'
+            }).then(function (result) {
+                status.textContent = result.Message;
+            }, function () {
+                status.textContent = t('testError');
+            });
+        });
+
         view.querySelector('.btnTestOppo').addEventListener('click', function () {
             var status = view.querySelector('.testOppoStatus');
             status.textContent = t('testing');
@@ -362,7 +430,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 config.IpControlAddress = view.querySelector('#txtIpControlAddress').value.trim();
                 config.DeviceName = view.querySelector('#txtDeviceName').value.trim() || 'OPPO';
                 config.StartTimeoutSeconds = parseInt(view.querySelector('#txtStartTimeout').value, 10) || 60;
-                config.DlnaDiscImages = view.querySelector('#chkDlnaDiscImages').checked;
+                config.DlnaDiscImages = view.querySelector('#radioDlna').checked;
                 config.ResumeWithoutMenus = view.querySelector('#chkResumeWithoutMenus').checked;
                 config.SshRestart = view.querySelector('#chkSshRestart').checked;
                 config.SshPassword = view.querySelector('#txtSshPassword').value;
@@ -432,7 +500,10 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtIpControlAddress').value = config.IpControlAddress || '';
                 view.querySelector('#txtDeviceName').value = config.DeviceName || 'OPPO';
                 view.querySelector('#txtStartTimeout').value = config.StartTimeoutSeconds || 60;
-                view.querySelector('#chkDlnaDiscImages').checked = !!config.DlnaDiscImages;
+                var firstSetup = !config.OppoAddress && !(config.Mappings || []).length && !config.DlnaDiscImages;
+                view.querySelector('#radioDlna').checked = !!config.DlnaDiscImages;
+                view.querySelector('#radioShare').checked = !config.DlnaDiscImages && !firstSetup;
+                applyMode();
                 view.querySelector('#chkResumeWithoutMenus').checked = config.ResumeWithoutMenus !== false;
                 view.querySelector('#chkSshRestart').checked = !!config.SshRestart;
                 view.querySelector('#txtSshPassword').value = config.SshPassword == null ? 'oppo' : config.SshPassword;

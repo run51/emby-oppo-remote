@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.24.1
+
+- **Simpler setup page.** It now asks first **how the OPPO plays your films**: *Over DLNA* (recommended, with the
+  oppo-dv-mkv mod: nothing else to set) or *From a network share* (NFS or SMB). In DLNA mode the shares are folded
+  away as an optional fallback, with a note that a failed share "Test" does not prevent playback over DLNA (for example
+  on Windows without SMB 1). Rarely used settings (oppo-multiplexer, start timeout, film server port, SSH) are under
+  **Advanced**; home automation and the TheMovieDb key are folded too. Existing settings are kept.
+- **Test DLNA** button: checks that the OPPO's DLNA renderer answers and that the plugin's film server serves a test
+  file; on a jailbroken player with SSH set up, also that the oppo-dv-mkv mod runs and that the OPPO itself reaches the
+  film server (the usual problem: port 8099 closed by Docker's bridge network or Windows' firewall).
+- **What the OPPO decodes** (jailbroken players): Dolby Vision dual-layer discs whose layers are logged separately
+  (1917) now show their 2160p base layer, and an HDR10 source sent out in Dolby Vision always shows "HDR10 → Dolby Vision".
+- Emby.Oppo 0.24.1, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.24.0
 
 **A redesigned remote.** The web remote, which is also what both Android apps show, has a new interface: the film's

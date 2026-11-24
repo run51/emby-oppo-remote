@@ -1,48 +1,85 @@
 <div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-horizontal="false" data-forcescrollbar="true" data-centerfocus="true" data-bindheader="true" data-controller="__plugin/oppojs" data-title="OPPO">
     <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page">
-        <!-- English by default; oppo.js applies the data-i18n* texts (English or French) when the page loads. -->
+        <!-- English by default; oppo.js applies the data-i18n* texts (English or French) when the page loads.
+             0.24.1: the player first, then how the OPPO plays the films (DLNA or a share), everything rare folded away. -->
+        <style>
+            .oppoConfigForm details.oppoFold { border: 1px solid rgba(255, 255, 255, .12); border-radius: .3em; margin: 1em 0; }
+            .oppoConfigForm details.oppoFold > summary { cursor: pointer; padding: .8em 1em; list-style-position: inside; }
+            .oppoConfigForm details.oppoFold > summary small { display: block; opacity: .65; margin-left: 1.3em; }
+            .oppoConfigForm details.oppoFold > .oppoFoldBody { padding: 0 1em 1em; }
+            .oppoConfigForm .oppoModes { display: grid; gap: .8em; margin-bottom: 1em; }
+            .oppoConfigForm .oppoMode { display: grid; grid-template-columns: 1.6em 1fr; gap: .6em; padding: .9em 1em; border: 1px solid rgba(255, 255, 255, .14); border-radius: .3em; cursor: pointer; }
+            .oppoConfigForm .oppoMode.selected { border-color: #52b54b; background: rgba(82, 181, 75, .08); }
+            .oppoConfigForm .oppoMode input { margin: .25em 0 0; accent-color: #52b54b; width: 1.1em; height: 1.1em; }
+            .oppoConfigForm .oppoMode b { font-weight: 600; }
+            .oppoConfigForm .oppoMode .oppoRecommended { font-size: .75em; text-transform: uppercase; letter-spacing: .05em; color: #52b54b; border: 1px solid #52b54b; border-radius: .2em; padding: 0 .4em; margin-left: .5em; }
+            .oppoConfigForm .oppoMode p { margin: .3em 0 0; opacity: .7; font-size: .92em; }
+            .oppoConfigForm .oppoHint { border-left: 3px solid #52b54b; background: rgba(82, 181, 75, .08); padding: .6em .9em; margin: .8em 0; }
+            .oppoConfigForm .testDlnaStatus { white-space: pre-line; }
+        </style>
         <form class="oppoConfigForm auto-center padded-top">
-
-            <h2 class="sectionTitle" data-i18n="updates">Version and updates</h2>
-            <div class="fieldDescription oppoUpdate" style="margin-bottom:1.5em;">
-                <div class="txtUpdate"></div>
-                <div style="margin-top:.8em;">
-                    <button is="emby-button" type="button" class="raised btnInstallUpdate" hidden><span data-i18n="installUpdate">Update</span></button>
-                    <button is="emby-button" type="button" class="raised btnRestartEmby" hidden><span data-i18n="restartEmby">Restart Emby</span></button>
-                    <a class="lnkRelease button-link" href="#" target="_blank" rel="noopener" hidden data-i18n="releaseNotes">What's new</a>
-                </div>
-            </div>
 
             <h2 class="sectionTitle" data-i18n="player">Player</h2>
             <div class="inputContainer">
                 <input is="emby-input" type="text" id="txtOppoAddress" label="OPPO player IP address:" data-i18n-label="oppoAddress" required />
                 <div class="fieldDescription" data-i18n="oppoAddressHelp">UDP-203 / UDP-205 or a compatible clone, on the same network as this server. Enable network standby on the player so that it can be turned on remotely.</div>
             </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="text" id="txtIpControlAddress" label="IP control through (optional):" data-i18n-label="ipControlAddress" />
-                <div class="fieldDescription" data-i18n="ipControlAddressHelp">The player accepts a single IP control connection (port 23). If another device controls it too (an Unfolded Circle remote, for example), run an oppo-multiplexer and enter its address, e.g. 192.168.1.20:23. Empty: the player itself.</div>
-            </div>
             <button is="emby-button" type="button" class="raised btnTestOppo"><span data-i18n="testOppo">Test the connection</span></button>
             <div class="testOppoStatus fieldDescription" style="margin:1em 0;"></div>
             <div class="inputContainer">
                 <input is="emby-input" type="text" id="txtDeviceName" label="Name in the &quot;Play on&quot; menu:" data-i18n-label="deviceName" />
             </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="number" id="txtStartTimeout" label="Start timeout (seconds):" data-i18n-label="startTimeout" min="10" max="300" />
-            </div>
-            <div class="checkboxContainer checkboxContainer-withDescription">
-                <label>
-                    <input is="emby-checkbox" type="checkbox" id="chkSshRestart" />
-                    <span data-i18n="sshRestart">Jailbroken player: allow restarting it over SSH</span>
+
+            <h2 class="sectionTitle" data-i18n="playMode">How the OPPO plays your films</h2>
+            <div class="oppoModes" role="radiogroup">
+                <label class="oppoMode modeDlna">
+                    <input type="radio" name="oppoPlayMode" id="radioDlna" />
+                    <span><b data-i18n="modeDlna">Over DLNA</b><span class="oppoRecommended" data-i18n="recommended">recommended</span>
+                        <p data-i18n="modeDlnaHelp">For a player with the oppo-dv-mkv mod ("DLNA Disc Images" on). The plugin sends the film to the OPPO itself: ISO files, Blu-ray and DVD folders play as a disc (menus, Dolby Vision), MKV and MP4 files as files. No share to set up.</p></span>
                 </label>
-                <div class="fieldDescription checkboxFieldDescription" data-i18n="sshRestartHelp">Adds a "Restart the OPPO" button to the remote: the same as unplugging the player, without touching the cable (stuck DLNA, IP control not answering…). Needs the jailbreak's jb_overlay with SSH.</div>
+                <label class="oppoMode modeShare">
+                    <input type="radio" name="oppoPlayMode" id="radioShare" />
+                    <span><b data-i18n="modeShare">From a network share (NFS or SMB)</b>
+                        <p data-i18n="modeShareHelp">For a player without the mod: the OPPO mounts your film folders itself. NFS is recommended; with Windows, the OPPO only speaks SMB 1.</p></span>
+                </label>
             </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="password" id="txtSshPassword" label="Root password (SSH):" data-i18n-label="sshPassword" autocomplete="off" />
-                <div class="fieldDescription" data-i18n="sshPasswordHelp">The jb_overlay's ROOT_PWD, "oppo" by default.</div>
+
+            <div class="dlnaModeBox">
+                <button is="emby-button" type="button" class="raised btnTestDlna"><span data-i18n="testDlna">Test DLNA</span></button>
+                <div class="testDlnaStatus fieldDescription" style="margin:1em 0;"></div>
+                <details class="oppoFold dlnaFallback">
+                    <summary><span data-i18n="fallbackTitle">Fallback if a film does not start</span><small data-i18n="fallbackSub">Optional: shares the OPPO can mount</small></summary>
+                    <div class="oppoFoldBody">
+                        <div class="oppoHint" data-i18n="fallbackHelp">These shares are only used when the OPPO does not start a film over DLNA. A failed "Test" here does not prevent playback over DLNA (for example on Windows without SMB 1).</div>
+                        <div class="dlnaSharesSlot"></div>
+                    </div>
+                </details>
             </div>
-            <button is="emby-button" type="button" class="raised btnTestSsh"><span data-i18n="testSsh">Test SSH</span></button>
-            <div class="testSshStatus fieldDescription" style="margin:1em 0;"></div>
+
+            <div class="shareModeBox">
+                <div class="shareSharesSlot"></div>
+            </div>
+
+            <!-- The share mappings: moved by oppo.js into the DLNA fallback or the share mode. -->
+            <div class="oppoShares">
+                <div class="fieldDescription" style="margin-bottom:1em;" data-i18n="accessHelp">
+                    Each folder of your Emby libraries must match a share that the OPPO can mount.
+                    "Search" turns the OPPO on and lists the shares it sees; a match is suggested
+                    automatically. Check it with "Test".
+                </div>
+                <div class="windowsNotice fieldDescription" hidden style="margin-bottom:1em;padding:.8em 1em;border-left:3px solid #e0a000;" data-i18n="windowsNotice"></div>
+                <button is="emby-button" type="button" class="raised btnDiscover"><span data-i18n="discover">Search the OPPO's shares</span></button>
+                <div class="discoverStatus fieldDescription" style="margin:1em 0;"></div>
+                <div class="oppoMappings"></div>
+            </div>
+
+            <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:1.5em;">
+                <label>
+                    <input is="emby-checkbox" type="checkbox" id="chkResumeWithoutMenus" />
+                    <span data-i18n="resumeWithoutMenus">Resume Blu-rays without their menus</span>
+                </label>
+                <div class="fieldDescription checkboxFieldDescription" data-i18n="resumeWithoutMenusHelp">When a Blu-ray is resumed, its main movie starts directly at the resume point instead of the disc's menu.</div>
+            </div>
 
             <h2 class="sectionTitle" data-i18n="remote">Remote control</h2>
             <div class="fieldDescription" style="margin-bottom:2em;">
@@ -51,68 +88,88 @@
                 — <span data-i18n="address">address:</span> <code class="txtOppoRemoteUrl"></code>
             </div>
 
-            <h2 class="sectionTitle" data-i18n="access">Access to movies</h2>
-            <div class="fieldDescription" style="margin-bottom:1em;" data-i18n="accessHelp">
-                Each folder of your Emby libraries must match a share that the OPPO can mount.
-                "Search" turns the OPPO on and lists the shares it sees; a match is suggested
-                automatically. Check it with "Test".
-            </div>
-            <div class="windowsNotice fieldDescription" hidden style="margin-bottom:1em;padding:.8em 1em;border-left:3px solid #e0a000;" data-i18n="windowsNotice"></div>
-            <button is="emby-button" type="button" class="raised btnDiscover"><span data-i18n="discover">Search the OPPO's shares</span></button>
-            <div class="discoverStatus fieldDescription" style="margin:1em 0;"></div>
-            <div class="oppoMappings"></div>
-            <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top:1.5em;">
-                <label>
-                    <input is="emby-checkbox" type="checkbox" id="chkDlnaDiscImages" />
-                    <span data-i18n="dlnaDiscImages">Play over DLNA: ISO files, Blu-ray folders, MKV (oppo-dv-mkv mod)</span>
-                </label>
-                <div class="fieldDescription checkboxFieldDescription" data-i18n="dlnaDiscImagesHelp">Requires the oppo-dv-mkv mod on the player with "DLNA Disc Images" on. The plugin serves the movie itself to the player: an ISO or a Blu-ray folder plays as a disc (menus and Dolby Vision included), an MKV, MP4 or M2TS file as a file. No share is mounted; the share above is only used if the movie does not start.</div>
-            </div>
-            <div class="checkboxContainer checkboxContainer-withDescription">
-                <label>
-                    <input is="emby-checkbox" type="checkbox" id="chkResumeWithoutMenus" />
-                    <span data-i18n="resumeWithoutMenus">Resume Blu-rays without their menus</span>
-                </label>
-                <div class="fieldDescription checkboxFieldDescription" data-i18n="resumeWithoutMenusHelp">When a Blu-ray is resumed, its main movie starts directly at the resume point instead of the disc's menu.</div>
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="number" id="txtDiscServerPort" label="Disc image server port:" data-i18n-label="discServerPort" min="1025" max="65535" />
-                <div class="fieldDescription" data-i18n="discServerPortHelp">A free port on this server, reachable by the player. Restart Emby after changing it.</div>
-            </div>
+            <h2 class="sectionTitle" data-i18n="optional">Optional</h2>
+            <details class="oppoFold">
+                <summary><span data-i18n="homeAutomation">Home automation</span><small data-i18n="homeAutomationSub">Webhook, Unfolded Circle remote, amplifier volume through Home Assistant</small></summary>
+                <div class="oppoFoldBody">
+                    <div class="inputContainer">
+                        <input is="emby-input" type="url" id="txtWebhookUrl" label="Webhook URL (optional):" data-i18n-label="webhookUrl" />
+                        <div class="fieldDescription" data-i18n-html="webhookHelp">Called with POST at the start (<code>{"event":"detected","title":…}</code>) and at the end (<code>"stopped"</code>) of each movie, and by the remote control's Showtime / All off buttons (<code>"seance_on"</code> / <code>"seance_off"</code>). Home Assistant example: <code>http://homeassistant:8123/api/webhook/my_id</code></div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="txtRemoteAddress" label="Unfolded Circle remote — address (optional):" data-i18n-label="ucAddress" />
+                        <div class="fieldDescription" data-i18n="ucAddressHelp">If set, the Remote 2/3 turns the TV on over the network when a movie starts and with the Showtime button.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="txtRemoteApiKey" label="Remote — API key:" data-i18n-label="ucApiKey" />
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="txtRemoteTvEntity" label="Remote — TV entity (e.g. lgwebos_driver.main.media_player.192.168.1.20):" data-i18n-label="ucTvEntity" />
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="url" id="txtHaUrl" label="Home Assistant — address (optional, e.g. http://homeassistant:8123):" data-i18n-label="haUrl" />
+                        <div class="fieldDescription" data-i18n="haUrlHelp">Used for the amplifier volume and mute buttons of the remote.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="txtHaToken" label="Home Assistant — long-lived access token:" data-i18n-label="haToken" />
+                        <div class="fieldDescription" data-i18n="haTokenHelp">Create it in Home Assistant: your profile → Security → Long-lived access tokens.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="txtAmpEntity" label="Home Assistant — amplifier entity (e.g. media_player.denon):" data-i18n-label="ampEntity" />
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="txtAmpFormatEntity" label="Home Assistant — amplifier audio format sensor (optional, e.g. sensor.denon_audio_format):" data-i18n-label="ampFormatEntity" />
+                        <div class="fieldDescription" data-i18n="ampFormatHelp">What the amplifier decodes (Dolby TrueHD, DTS-HD MA…), shown while a film plays. Empty: sensor.&lt;amplifier&gt;_audio_format if it exists, else the amplifier's sound mode.</div>
+                    </div>
+                </div>
+            </details>
+            <details class="oppoFold">
+                <summary><span data-i18n="trailers">Trailers</span><small data-i18n="trailersSub">TheMovieDb key for French trailers</small></summary>
+                <div class="oppoFoldBody">
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="txtTmdbApiKey" label="TheMovieDb — API key (optional):" data-i18n-label="tmdbKey" />
+                        <div class="fieldDescription" data-i18n="tmdbKeyHelp">Your own key (themoviedb.org → Settings → API): the remote then also shows the French trailers of each film.</div>
+                    </div>
+                </div>
+            </details>
+            <details class="oppoFold">
+                <summary><span data-i18n="advanced">Advanced</span><small data-i18n="advancedSub">oppo-multiplexer, start timeout, film server port, jailbroken player (SSH)</small></summary>
+                <div class="oppoFoldBody">
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="txtIpControlAddress" label="IP control through (optional):" data-i18n-label="ipControlAddress" />
+                        <div class="fieldDescription" data-i18n="ipControlAddressHelp">The player accepts a single IP control connection (port 23). If another device controls it too (an Unfolded Circle remote, for example), run an oppo-multiplexer and enter its address, e.g. 192.168.1.20:23. Empty: the player itself.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="txtStartTimeout" label="Start timeout (seconds):" data-i18n-label="startTimeout" min="10" max="300" />
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="txtDiscServerPort" label="Disc image server port:" data-i18n-label="discServerPort" min="1025" max="65535" />
+                        <div class="fieldDescription" data-i18n="discServerPortHelp">A free port on this server, reachable by the player. Restart Emby after changing it.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="chkSshRestart" />
+                            <span data-i18n="sshRestart">Jailbroken player: allow restarting it over SSH</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription" data-i18n="sshRestartHelp">Adds a "Restart the OPPO" button to the remote: the same as unplugging the player, without touching the cable (stuck DLNA, IP control not answering…). Needs the jailbreak's jb_overlay with SSH.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="txtSshPassword" label="Root password (SSH):" data-i18n-label="sshPassword" autocomplete="off" />
+                        <div class="fieldDescription" data-i18n="sshPasswordHelp">The jb_overlay's ROOT_PWD, "oppo" by default.</div>
+                    </div>
+                    <button is="emby-button" type="button" class="raised btnTestSsh"><span data-i18n="testSsh">Test SSH</span></button>
+                    <div class="testSshStatus fieldDescription" style="margin:1em 0;"></div>
+                </div>
+            </details>
 
-            <h2 class="sectionTitle" style="margin-top:2em;" data-i18n="homeAutomation">Home automation</h2>
-            <div class="inputContainer">
-                <input is="emby-input" type="url" id="txtWebhookUrl" label="Webhook URL (optional):" data-i18n-label="webhookUrl" />
-                <div class="fieldDescription" data-i18n-html="webhookHelp">Called with POST at the start (<code>{"event":"detected","title":…}</code>) and at the end (<code>"stopped"</code>) of each movie, and by the remote control's Showtime / All off buttons (<code>"seance_on"</code> / <code>"seance_off"</code>). Home Assistant example: <code>http://homeassistant:8123/api/webhook/my_id</code></div>
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="text" id="txtRemoteAddress" label="Unfolded Circle remote — address (optional):" data-i18n-label="ucAddress" />
-                <div class="fieldDescription" data-i18n="ucAddressHelp">If set, the Remote 2/3 turns the TV on over the network when a movie starts and with the Showtime button.</div>
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="password" id="txtRemoteApiKey" label="Remote — API key:" data-i18n-label="ucApiKey" />
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="text" id="txtRemoteTvEntity" label="Remote — TV entity (e.g. lgwebos_driver.main.media_player.192.168.1.20):" data-i18n-label="ucTvEntity" />
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="url" id="txtHaUrl" label="Home Assistant — address (optional, e.g. http://homeassistant:8123):" data-i18n-label="haUrl" />
-                <div class="fieldDescription" data-i18n="haUrlHelp">Used for the amplifier volume and mute buttons of the remote.</div>
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="password" id="txtHaToken" label="Home Assistant — long-lived access token:" data-i18n-label="haToken" />
-                <div class="fieldDescription" data-i18n="haTokenHelp">Create it in Home Assistant: your profile → Security → Long-lived access tokens.</div>
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="password" id="txtTmdbApiKey" label="TheMovieDb — API key (optional):" data-i18n-label="tmdbKey" />
-                <div class="fieldDescription" data-i18n="tmdbKeyHelp">Your own key (themoviedb.org → Settings → API): the remote then also shows the French trailers of each film.</div>
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="text" id="txtAmpEntity" label="Home Assistant — amplifier entity (e.g. media_player.denon):" data-i18n-label="ampEntity" />
-            </div>
-            <div class="inputContainer">
-                <input is="emby-input" type="text" id="txtAmpFormatEntity" label="Home Assistant — amplifier audio format sensor (optional, e.g. sensor.denon_audio_format):" data-i18n-label="ampFormatEntity" />
-                <div class="fieldDescription" data-i18n="ampFormatHelp">What the amplifier decodes (Dolby TrueHD, DTS-HD MA…), shown while a film plays. Empty: sensor.&lt;amplifier&gt;_audio_format if it exists, else the amplifier's sound mode.</div>
+            <h2 class="sectionTitle" style="margin-top:2em;" data-i18n="updates">Version and updates</h2>
+            <div class="fieldDescription oppoUpdate" style="margin-bottom:1.5em;">
+                <div class="txtUpdate"></div>
+                <div style="margin-top:.8em;">
+                    <button is="emby-button" type="button" class="raised btnInstallUpdate" hidden><span data-i18n="installUpdate">Update</span></button>
+                    <button is="emby-button" type="button" class="raised btnRestartEmby" hidden><span data-i18n="restartEmby">Restart Emby</span></button>
+                    <a class="lnkRelease button-link" href="#" target="_blank" rel="noopener" hidden data-i18n="releaseNotes">What's new</a>
+                </div>
             </div>
 
             <div style="margin-top:2em;">

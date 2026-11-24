@@ -118,6 +118,9 @@ namespace Emby.Oppo
             }
         }
 
+        /// <summary>IP address of the Emby server as the OPPO sees it (the film server's URLs).</summary>
+        internal string ServerAddress => LocalAddress();
+
         /// <summary>IP address of the Emby server, sent to the OPPO when signing in.</summary>
         private string LocalAddress()
         {

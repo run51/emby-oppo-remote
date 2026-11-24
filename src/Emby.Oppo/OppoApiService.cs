@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Net;
+using System.Text;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,6 +52,18 @@ namespace Emby.Oppo
     public sealed class TestSsh : IReturn<TestMappingResult>
     {
         public string Address { get; set; }
+        /// <summary>Root password; empty: the saved one.</summary>
+        public string Password { get; set; }
+    }
+
+    [Route("/Oppo/TestDlna", "POST", Summary = "Checks DLNA playback: the OPPO's renderer, the plugin's film server and, over SSH, that the player reaches it")]
+    public sealed class TestDlna : IReturn<TestMappingResult>
+    {
+        public string Address { get; set; }
+        /// <summary>Film server port; 0: the saved one.</summary>
+        public int Port { get; set; }
+        /// <summary>Also check from the player over SSH (jailbroken player).</summary>
+        public bool Ssh { get; set; }
         /// <summary>Root password; empty: the saved one.</summary>
         public string Password { get; set; }
     }
@@ -223,6 +238,102 @@ namespace Emby.Oppo
                 message += L10n.T(Fr, " ⚠ The jb_overlay's Telnet is on (USE_TELNET=1): it takes port 23 from the OPPO's IP control. Set it to 0 (see the README).",
                     " ⚠ Le Telnet du jb_overlay est activé (USE_TELNET=1) : il prend le port 23 au contrôle IP de l'OPPO. Passez-le à 0 (voir le README).");
             return new TestMappingResult { Success = true, Message = message };
+        }
+
+        /// <summary>
+        /// "Test DLNA" of the settings page (0.24.1): the OPPO's DLNA renderer answers (port 49152); the plugin's film
+        /// server serves a small test file; on a jailbroken player, the OPPO itself fetches that file over SSH (the usual
+        /// failure: port 8099 closed by Docker's bridge network or Windows' firewall) and the oppo-dv-mkv mod runs.
+        /// </summary>
+        public async Task<object> Post(TestDlna request)
+        {
+            var config = Plugin.Instance.Configuration;
+            string player = (string.IsNullOrWhiteSpace(request.Address) ? config.OppoAddress : request.Address ?? "").Trim();
+            if (player.Length == 0)
+                return new TestMappingResult { Message = L10n.T(Fr, "Enter the OPPO's IP address first.", "Indiquez d'abord l'adresse IP de l'OPPO.") };
+            int port = request.Port > 1024 && request.Port < 65536 ? request.Port : config.DiscServerPort;
+            var lines = new List<string>();
+            bool ok = true;
+
+            // 1. The renderer.
+            try
+            {
+                var r = (HttpWebRequest)WebRequest.Create("http://" + player + ":49152/dmr_oppo.xml");
+                r.Timeout = 5000; r.ReadWriteTimeout = 5000;
+                using (var response = (HttpWebResponse)await r.GetResponseAsync().ConfigureAwait(false))
+                using (var reader = new StreamReader(response.GetResponseStream()))
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(await reader.ReadToEndAsync().ConfigureAwait(false), "<friendlyName>([^<]+)</friendlyName>");
+                    lines.Add(L10n.T(Fr, "✔ The OPPO's DLNA renderer answers", "✔ Le lecteur DLNA de l'OPPO répond") + (m.Success ? " (" + m.Groups[1].Value + ")." : "."));
+                }
+            }
+            catch (Exception)
+            {
+                ok = false;
+                lines.Add(L10n.T(Fr, "✘ The OPPO's DLNA renderer does not answer (port 49152): turn the player on, then test again.",
+                    "✘ Le lecteur DLNA de l'OPPO ne répond pas (port 49152) : allumez l'OPPO, puis testez à nouveau."));
+            }
+
+            // 2. The film server, with a small test file.
+            string server = OppoEntryPoint.Current?.ServerAddress ?? "";
+            string url = null;
+            if (server.Length == 0)
+            {
+                ok = false;
+                lines.Add(L10n.T(Fr, "✘ This server's network address is unknown (Emby's network settings).", "✘ L'adresse réseau de ce serveur est inconnue (réglages réseau d'Emby)."));
+            }
+            else
+            {
+                const string marker = "OPPO-DLNA-TEST";
+                try
+                {
+                    url = DiscServer.RegisterTree(new Dictionary<string, DiscServer.VirtualFile>
+                    {
+                        ["test.txt"] = new DiscServer.VirtualFile { Data = Encoding.ASCII.GetBytes(marker), Size = marker.Length },
+                    }, server, port, TimeSpan.FromMinutes(2), _logger) + "test.txt";
+                    var r = (HttpWebRequest)WebRequest.Create(url);
+                    r.Timeout = 5000; r.ReadWriteTimeout = 5000;
+                    using (var response = (HttpWebResponse)await r.GetResponseAsync().ConfigureAwait(false))
+                    using (var reader = new StreamReader(response.GetResponseStream()))
+                        if ((await reader.ReadToEndAsync().ConfigureAwait(false)).Contains(marker))
+                            lines.Add(L10n.T(Fr, "✔ The plugin's film server answers on ", "✔ Le serveur de films du plugin répond sur ") + server + ":" + port.ToString(CultureInfo.InvariantCulture) + ".");
+                        else throw new InvalidDataException("unexpected answer");
+                }
+                catch (Exception ex)
+                {
+                    ok = false; url = null;
+                    lines.Add(L10n.T(Fr, "✘ The plugin's film server does not answer on port " + port.ToString(CultureInfo.InvariantCulture) + " (" + ex.Message + "): choose another free port under Advanced and restart Emby.",
+                        "✘ Le serveur de films du plugin ne répond pas sur le port " + port.ToString(CultureInfo.InvariantCulture) + " (" + ex.Message + ") : choisissez un autre port libre sous Avancé et redémarrez Emby."));
+                }
+            }
+
+            // 3. From the player itself, over SSH (jailbroken players).
+            if (request.Ssh && url != null)
+            {
+                string password = string.IsNullOrEmpty(request.Password) ? config.SshPassword : request.Password;
+                var (result, output) = await OppoSsh.Run(player, password,
+                    "ps | grep -c '[d]lnaiso'; wget -T 6 -q -O - '" + url + "' 2>&1 | head -c 200", TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+                if (result != OppoSsh.Outcome.Ok)
+                    lines.Add("? " + L10n.T(Fr, "Not checked from the player: ", "Non vérifié depuis l'OPPO : ") + PlayerRestart.Explain(result, output, Fr));
+                else
+                {
+                    var outLines = output.Split(new[] { '\n' }, 2);
+                    bool mod = int.TryParse(outLines[0].Trim(), out int n) && n > 0;
+                    lines.Add(mod ? L10n.T(Fr, "✔ The oppo-dv-mkv mod is running on the player.", "✔ Le mod oppo-dv-mkv tourne sur l'OPPO.")
+                                  : L10n.T(Fr, "✘ The oppo-dv-mkv mod is not running on the player (Setup → Extras → DLNA Disc Images).",
+                                               "✘ Le mod oppo-dv-mkv ne tourne pas sur l'OPPO (Setup → Extras → DLNA Disc Images)."));
+                    bool reached = outLines.Length > 1 && outLines[1].Contains("OPPO-DLNA-TEST");
+                    lines.Add(reached ? L10n.T(Fr, "✔ The OPPO reaches the film server.", "✔ L'OPPO joint le serveur de films.")
+                        : L10n.T(Fr, "✘ The OPPO cannot reach " + server + ":" + port.ToString(CultureInfo.InvariantCulture) + ": with Docker, use host networking or publish this port; on Windows, allow it in the firewall.",
+                                     "✘ L'OPPO ne joint pas " + server + ":" + port.ToString(CultureInfo.InvariantCulture) + " : avec Docker, utilisez le réseau hôte ou publiez ce port ; sous Windows, autorisez-le dans le pare-feu."));
+                    ok &= mod && reached;
+                }
+            }
+            else if (url != null)
+                lines.Add("? " + L10n.T(Fr, "Whether the OPPO itself reaches this port is only checked on a jailbroken player (SSH, under Advanced); otherwise, start a film.",
+                    "Que l'OPPO joigne bien ce port n'est vérifié que sur un OPPO déverrouillé (SSH, sous Avancé) ; sinon, lancez un film."));
+            _logger.Info("OPPO: DLNA test {0}: {1}", player, ok ? "OK" : "problem");
+            return new TestMappingResult { Success = ok, Message = string.Join("\n", lines) };
         }
 
         public async Task<object> Post(TestMapping request)

@@ -93,7 +93,10 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
   - On the OPPO: **Setup → Network Setup → IP Control: On**, and **Setup → Device Setup → Standby Mode: Network Standby**, so that Emby can turn it on.
   - Click **Test the connection**: it tells whether the player answers (on or in standby) and, if not, why (connection refused: IP control off or another device already connected, the player accepting only one; no answer: wrong address, player off without network standby, or the Emby container cannot reach your network…).
   - **Jailbroken players with the jb_overlay:** the overlay's Telnet must be **off**, otherwise it takes port 23 at boot and the OPPO's IP control cannot use it, even with IP Control "On" in the menus (the remote then shows "OPPO unreachable" and movies take minutes to start). See [Jailbreak: turn the overlay's Telnet off](#jailbreak-turn-the-overlays-telnet-off).
-- **Path mappings**: for each library folder, tell the plugin how the OPPO can reach it.
+- **How the OPPO plays your films**: choose one of the two.
+  - **Over DLNA** (recommended): needs the oppo-dv-mkv mod on the player (below). Nothing else to set: click **Test DLNA**. The share mappings are then an optional fallback, folded away.
+  - **From a network share**: the OPPO mounts your film folders over NFS or SMB (path mappings below).
+- **Path mappings** (share mode, or as a fallback in DLNA mode): for each library folder, tell the plugin how the OPPO can reach it.
 
   | Path as seen by Emby | Protocol | Server | Share |
   |---|---|---|---|
@@ -107,6 +110,7 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
   - The plugin then serves the movie itself and sends it to the player's DLNA renderer, with no share mounted. ISO files (Blu-ray, UHD, DVD), Blu-ray folders and DVD folders (`VIDEO_TS`) play as a disc (menus, Dolby Vision, lossless audio); MKV, MP4 and M2TS files play as files.
   - The plugin listens on its own port (**8099** by default, "Disc image server port"): it must be free on the Emby server and reachable by the player. With Docker, use host networking or publish this port.
   - Blu-ray folders are listed over WebDAV and the player builds the disc from that list: most discs start in 1 to 3 s, a UHD folder with many files can take 10 to 20 s.
+  - **Test DLNA** checks the player's renderer and the plugin's film server; on a jailbroken player with SSH set up, also that the mod runs and that the player reaches the film server.
   - If the movie does not start, the share above is used.
 - **Webhook** (optional)
   - Called with `POST {"event":"detected"|"stopped"|"seance_on"|"seance_off","title":…}`.
