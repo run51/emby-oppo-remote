@@ -17,7 +17,7 @@ namespace Emby.Oppo.Oppo
     /// from the first seconds of a film, for discs and files alike, without SSH. A player without it answers nothing:
     /// asked again only every few minutes then.
     /// </summary>
-    internal static class VidInfo
+    public static class VidInfo
     {
         public const int Port = 8436;
 
@@ -105,6 +105,37 @@ namespace Emby.Oppo.Oppo
                 logger.Debug("OPPO vidinfo ({0}): {1}", host, ex.Message);
                 return null;
             }
+        }
+
+        /// <summary>The picture in parts: "4K" / "1080p" / "576i", class uhd / fhd / sd, 24 (i/s), 10 (bits), HDR, converted from.</summary>
+        public sealed class PictureParts
+        {
+            public string Res { get; set; }
+            public string Class { get; set; }
+            public int Fps { get; set; }
+            public int Bits { get; set; }
+            /// <summary>"Dolby Vision", "HDR10", "SDR" or null.</summary>
+            public string Hdr { get; set; }
+            /// <summary>The source the player turns into Dolby Vision ("HDR10", "SDR"), or null.</summary>
+            public string From { get; set; }
+        }
+
+        public static PictureParts Parts(Info info)
+        {
+            var s = info?.source;
+            if (info == null || !info.playing || s == null || s.height <= 0) return null;
+            string outHdr = info.output?.hdr;
+            bool outDv = outHdr != null && outHdr.StartsWith("Dolby Vision", StringComparison.Ordinal);
+            bool converted = s.hdr != "Dolby Vision" && (s.to_dolby_vision || (outDv && s.hdr != null));
+            return new PictureParts
+            {
+                Res = s.height >= 2000 ? "4K" : s.height.ToString(CultureInfo.InvariantCulture) + (s.height < 700 ? "i" : "p"),
+                Class = s.height >= 2000 ? "uhd" : s.height >= 1000 ? "fhd" : "sd",
+                Fps = s.fps > 0 ? (int)Math.Round(s.fps.Value) : 0,
+                Bits = s.bits ?? 0,
+                Hdr = converted ? "Dolby Vision" : s.hdr,
+                From = converted ? (s.hdr ?? "SDR") : null,
+            };
         }
 
         /// <summary>

@@ -232,6 +232,8 @@ namespace Emby.Oppo
         public RemoteTrack[] Subtitles { get; set; }
         /// <summary>What the OPPO actually outputs: picture (HDR + resolution), decoded audio, subtitles.</summary>
         public string OutputVideo { get; set; }
+        /// <summary>The same picture, in parts, for the web remote's coloured labels (oppo-dv-mkv's vidinfo only), or null.</summary>
+        public VidInfo.PictureParts OutputPicture { get; set; }
         public string OutputAudio { get; set; }
         public string OutputSubtitle { get; set; }
         /// <summary>Scheduled power-off time (UTC, ISO 8601), or null.</summary>
@@ -434,7 +436,11 @@ namespace Emby.Oppo
                         // oppo-dv-mkv's vidinfo (jailbroken player): what the player decodes and sends out, from the
                         // driver's own status, from the start of the film; the source's HDR and its conversion included.
                         string vidPicture = request.Tracks ? VidInfo.Picture(await VidInfo.Get(oppo.Host, _json, _logger, ct).ConfigureAwait(false), Fr) : null;
-                        if (vidPicture != null) result.OutputVideo = vidPicture;
+                        if (vidPicture != null)
+                        {
+                            result.OutputVideo = vidPicture;
+                            result.OutputPicture = VidInfo.Parts(await VidInfo.Get(oppo.Host, _json, _logger, ct).ConfigureAwait(false));
+                        }
                         else if (request.Tracks)
                         {
                             picture = await oppo.GetVideoFormat(Fr, ct).ConfigureAwait(false);

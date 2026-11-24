@@ -720,6 +720,22 @@
   .po-row { display: flex; gap: 10px; min-width: 0; }
   .po-row b { flex: 0 0 44px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; line-height: 16px; }
   .po-row span { min-width: 0; color: var(--text); }   /* wraps: the OPPO line can be long */
+  /* 0.25: what the OPPO decodes in coloured labels on one line (oppo-dv-mkv's vidinfo), its sound under it. 4K in the
+     app's gold, 1080p blue, DVD / 720p grey, Dolby Vision violet, HDR10 coral, SDR plain. Never wrapped: tightened
+     (then the bit depth left out) when a phone is too narrow. */
+  :root { --sig-uhd: #e2b15b; --sig-fhd: #7cc4ff; --sig-sd: #a1a1aa; --sig-dv: #c9a7ff; --sig-hdr: #ff9a6b; }
+  .po-row > .po-stack { flex: 1 1 auto; display: grid; gap: 3px; min-width: 0; }
+  .po-vid { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
+  .po-vid .sg { flex: none; display: inline-flex; align-items: center; height: 19px; padding: 0 5px; border-radius: 5px; border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .04); color: var(--text-2); font-family: var(--mono); font-size: 10.5px; line-height: 1; white-space: nowrap; }
+  .po-vid.tight { gap: 3px; } .po-vid.tight .sg { padding: 0 4px; font-size: 10px; }
+  .po-vid.tighter .sg.bits { display: none; }
+  .po-vid .sg.uhd { color: var(--sig-uhd); border-color: color-mix(in srgb, var(--sig-uhd) 60%, transparent); background: color-mix(in srgb, var(--sig-uhd) 10%, transparent); }
+  .po-vid .sg.fhd { color: var(--sig-fhd); border-color: color-mix(in srgb, var(--sig-fhd) 60%, transparent); background: color-mix(in srgb, var(--sig-fhd) 10%, transparent); }
+  .po-vid .sg.sd { color: var(--sig-sd); border-color: color-mix(in srgb, var(--sig-sd) 50%, transparent); }
+  .po-vid .sg.dv { color: var(--sig-dv); border-color: color-mix(in srgb, var(--sig-dv) 60%, transparent); background: color-mix(in srgb, var(--sig-dv) 10%, transparent); }
+  .po-vid .sg.hdr { color: var(--sig-hdr); border-color: color-mix(in srgb, var(--sig-hdr) 60%, transparent); background: color-mix(in srgb, var(--sig-hdr) 9%, transparent); }
+  .po-vid .sg .h { color: var(--sig-hdr); } .po-vid .sg .s { color: var(--muted); } .po-vid .sg .a { color: var(--muted); padding: 0 3px; } .po-vid .sg .d { color: var(--sig-dv); }
   .pv-transport .t-btn { width: 48px; height: 48px; }
   .pv-transport .t-btn.main { width: 64px; height: 64px; }
   .track-tiles .ttile { min-height: 50px; }
@@ -1286,6 +1302,29 @@
 
   // ------------------------------------------------------------ Helpers
 
+  // 0.25: the OPPO's picture as labels: 4K / 1080p / 576i, i/s, bits, the HDR (a conversion in one label: "HDR10 → DV")
+  function picLabels(p) {
+    function sg(cls, text) { return el('span', { class: 'sg ' + cls, text: text }); }
+    var n = [sg(p.Class || '', p.Res || '')];
+    if (p.Fps) n.push(sg('', p.Fps + (LANG === 'fr' ? ' i/s' : ' fps')));
+    if (p.Bits >= 10) n.push(sg('bits', p.Bits + (LANG === 'fr' ? ' bits' : '-bit')));
+    if (p.From) {
+      var c = el('span', { class: 'sg dv' });
+      c.appendChild(el('span', { class: p.From === 'HDR10' ? 'h' : 's', text: p.From }));
+      c.appendChild(el('span', { class: 'a', text: '→' }));
+      c.appendChild(el('span', { class: 'd', text: 'DV' }));
+      n.push(c);
+    } else if (p.Hdr) n.push(sg(p.Hdr === 'Dolby Vision' ? 'dv' : p.Hdr === 'SDR' ? '' : 'hdr', p.Hdr));
+    return n;
+  }
+  // one line always: tighter labels, then without the bit depth, when the phone is too narrow
+  function fitLabels(v) {
+    if (!v.clientWidth) return;                  // not on screen: measured at the next poll
+    v.classList.remove('tight', 'tighter');
+    if (v.scrollWidth > v.clientWidth + 1) v.classList.add('tight');
+    if (v.scrollWidth > v.clientWidth + 1) v.classList.add('tighter');
+  }
+  window.addEventListener('resize', function () { var v = document.querySelector('.po-vid'); if (v) fitLabels(v); });
   function el(tag, attrs, children) {
     var n = document.createElement(tag);
     if (attrs) Object.keys(attrs).forEach(function (k) {
@@ -2779,8 +2818,10 @@
     }
     last.title = title || null;
     // The OPPO's outputs come with the polls that ask for the tracks: kept in between, cleared when nothing plays.
-    if (!playing) last.outVideo = last.outAudio = null;
-    else if (s.OutputVideo !== undefined || s.OutputAudio !== undefined) { last.outVideo = s.OutputVideo || null; last.outAudio = s.OutputAudio || null; }
+    if (!playing) last.outVideo = last.outAudio = last.outPic = null;
+    else if (s.OutputVideo !== undefined || s.OutputAudio !== undefined) {
+      last.outVideo = s.OutputVideo || null; last.outAudio = s.OutputAudio || null; last.outPic = s.OutputPicture || null;
+    }
     last.ampFormat = playing && s.Amp && s.Amp.On ? (s.Amp.Format || s.Amp.SoundMode || null) : null;
     if (sourceRedraw && currentRoute && currentRoute.name === 'source') setTimeout(sourceRedraw, 0);
     last.itemId = itemId; last.imageTag = tag; last.stateText = stateText;
@@ -2796,7 +2837,17 @@
       var out = $('p-out');
       out.textContent = '';
       var vol = !$('amp-row').hidden && $('amp-value').textContent !== '—' ? $('amp-value').textContent : '';
-      [['OPPO', [last.outVideo, last.outAudio && last.outAudio.replace(/\s*·\s*(piste|track) \d+\/\d+/, '')].filter(Boolean).join(' · ')],
+      var sound = last.outAudio && last.outAudio.replace(/\s*·\s*(piste|track) \d+\/\d+/, '');
+      if (last.outPic) {   // 0.25: the picture in coloured labels on one line, the sound under it
+        var prow = el('div', { class: 'po-row' }), stack = el('span', { class: 'po-stack' }), vid = el('span', { class: 'po-vid' });
+        prow.appendChild(el('b', { text: 'OPPO' }));
+        picLabels(last.outPic).forEach(function (n) { vid.appendChild(n); });
+        stack.appendChild(vid);
+        if (sound) stack.appendChild(el('span', { text: sound }));
+        prow.appendChild(stack);
+        out.appendChild(prow);
+      }
+      [['OPPO', last.outPic ? '' : [last.outVideo, sound].filter(Boolean).join(' · ')],
        [t('amp_kind'), HOME_UI && last.ampFormat ? [last.ampFormat, vol].filter(Boolean).join(' · ') : '']].forEach(function (x) {
         if (!x[1]) return;
         var row = el('div', { class: 'po-row' });
@@ -2805,6 +2856,8 @@
         out.appendChild(row);
       });
       out.hidden = !out.childNodes.length;
+      var pv = out.querySelector('.po-vid');
+      if (pv) fitLabels(pv);
     }
     $('dot2').classList.toggle('on', !!s.Reachable);
     $('dot2').classList.toggle('off', !s.Reachable);
