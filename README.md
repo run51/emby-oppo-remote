@@ -58,23 +58,27 @@ First check how Emby is installed: if **Emby Server** is listed in **Package Cen
    - **Schedule:** "Run on the following date", today, "Do not repeat".
    - **Task Settings:** paste this script into **User-defined script**, then **OK** (confirm the warning about root):
      ```sh
-     F=$(ls /volume*/*/Emby.Oppo.dll /volume*/homes/*/Emby.Oppo.dll 2>/dev/null | head -n 1)
+     F=$(ls -t /volume*/*/Emby.Oppo.dll /volume*/homes/*/Emby.Oppo.dll 2>/dev/null | head -n 1)
      [ -n "$F" ] || exit 1
      D=$(dirname "$F")
      P=/var/packages/EmbyServer/var/plugins
      [ -d "$P" ] || P=$(ls -d /volume*/@appdata/EmbyServer/plugins 2>/dev/null | head -n 1)
      if [ -z "$P" ] || [ ! -d "$P" ]; then echo "Emby plugins folder not found" > "$D/oppo-install.txt"; exit 1; fi
      {
-       echo "DLL folder: $D"
+       echo "Emby.Oppo.dll files found (newest first):"
+       ls -lt /volume*/*/Emby.Oppo.dll /volume*/homes/*/Emby.Oppo.dll 2>/dev/null
+       echo "DLL folder used: $D"
        echo "Emby plugins folder: $P"
        cp "$D/Emby.Oppo.dll" "$D/Emby.IsoBluray.dll" "$P/" &&
        chown "$(stat -c %u:%g "$P")" "$P/Emby.Oppo.dll" "$P/Emby.IsoBluray.dll" &&
        chmod 644 "$P/Emby.Oppo.dll" "$P/Emby.IsoBluray.dll" &&
+       V=$(grep -a -o -m 1 -E '[0-9]\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?\+[0-9a-f]{40}' "$P/Emby.Oppo.dll" | head -n 1) &&
+       echo "Installed Emby.Oppo version: ${V%%+*}" &&
        /usr/syno/bin/synopkg restart EmbyServer &&
        echo "OK: plugins installed, Emby restarted"
      } > "$D/oppo-install.txt" 2>&1
      ```
-3. Select the task and click **Run**. Emby restarts within a minute. The file `oppo-install.txt`, next to the DLLs, tells what happened. You can then delete the task: later updates are done from the plugin's page (the files belong to Emby's own user, so the plugin can replace them).
+3. Select the task and click **Run**. Emby restarts within a minute. The file `oppo-install.txt`, next to the DLLs, tells what happened and which version was installed. If several copies of `Emby.Oppo.dll` are listed, the newest one was used: delete the old ones. You can then delete the task: later stable updates are done from the plugin's page (the files belong to Emby's own user, so the plugin can replace them). Betas are not offered there: to install one, upload its two DLL files to your home folder, replacing the old ones (the name must stay exactly `Emby.Oppo.dll`, not `Emby.Oppo (1).dll`), and run the task again.
 
 **Emby in Container Manager (Docker):**
 
