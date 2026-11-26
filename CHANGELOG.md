@@ -2,7 +2,7 @@
 
 ## v0.26.0-beta1
 
-**Beta** (not published yet).
+**Beta** (pre-release: the settings page's **Update** keeps offering v0.24.1; install this one by hand). Tested with two players in "Play on…": playback, pause, seek, audio and subtitle tracks, resume point.
 
 - **Several OPPO players** (*Player → Other OPPO players*): add more players, each with a name, an IP address and,
   if needed, an oppo-multiplexer address. Each one appears in Emby's **Play on…** menu under its own name, with
