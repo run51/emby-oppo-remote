@@ -6,6 +6,11 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
     // Page texts: English by default, French when the Emby UI / browser language is French.
     var messages = {
         en: {
+            extraPlayers: 'Other OPPO players',
+            extraPlayersSub: 'Optional: more players in the "Play on" menu',
+            extraPlayersHelp: 'Each player is offered in Emby\'s "Play on" menu under its own name and plays the films the same way as the main player (DLNA or the shares below). The TV, the amplifier, the webhook and the web remote stay with the main player.',
+            addPlayer: 'Add a player', removePlayer: 'Remove', playerName: 'Name in the "Play on" menu:', playerAddress: 'IP address:',
+            playerIpControl: 'IP control through (optional, e.g. 192.168.1.20:23):', playerNumber: 'Player {0}',
             player: 'Player',
             oppoAddress: 'OPPO player IP address:',
             oppoAddressHelp: 'UDP-203 / UDP-205 or a compatible clone, on the same network as this server. Enable network standby on the player so that it can be turned on remotely.',
@@ -101,6 +106,11 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
             testError: '✘ Error during the test.'
         },
         fr: {
+            extraPlayers: 'Autres lecteurs OPPO',
+            extraPlayersSub: 'Facultatif : d\'autres lecteurs dans le menu « Lire sur »',
+            extraPlayersHelp: 'Chaque lecteur est proposé dans le menu « Lire sur » d\'Emby sous son propre nom et lit les films de la même façon que le lecteur principal (DLNA ou les partages ci-dessous). La TV, l\'ampli, le webhook et la télécommande web restent liés au lecteur principal.',
+            addPlayer: 'Ajouter un lecteur', removePlayer: 'Retirer', playerName: 'Nom dans le menu « Lire sur » :', playerAddress: 'Adresse IP :',
+            playerIpControl: 'Contrôle IP via (facultatif, ex. 192.168.1.20:23) :', playerNumber: 'Lecteur {0}',
             player: 'Lecteur',
             oppoAddress: 'Adresse IP du lecteur OPPO :',
             oppoAddressHelp: 'UDP-203 / UDP-205 ou clone compatible, sur le même réseau que ce serveur. Activez sur le lecteur la mise en veille réseau pour qu\'il puisse être allumé à distance.',
@@ -281,6 +291,51 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
         var state = { libraries: [], mappings: [], shares: [] };
 
         translatePage(view);
+
+        // Other players (name, address, optional IP control): one block each, with Test and Remove.
+        function playerRowHtml(p, n) {
+            p = p || {};
+            return '<div class="oppoExtraPlayer paperList" style="padding:1em;margin-bottom:1em;">' +
+                '<h3 class="playerTitle" style="margin:0 0 .5em 0;">' + esc(t('playerNumber').replace('{0}', n)) + '</h3>' +
+                '<div class="inputContainer"><input is="emby-input" type="text" class="plName" label="' + esc(t('playerName')) + '" value="' + esc(p.Name) + '" /></div>' +
+                '<div class="inputContainer"><input is="emby-input" type="text" class="plAddress" label="' + esc(t('playerAddress')) + '" value="' + esc(p.Address) + '" /></div>' +
+                '<div class="inputContainer"><input is="emby-input" type="text" class="plIpControl" label="' + esc(t('playerIpControl')) + '" value="' + esc(p.IpControlAddress) + '" /></div>' +
+                '<button is="emby-button" type="button" class="raised btnTestPlayer"><span>' + esc(t('testOppo')) + '</span></button>' +
+                '<button is="emby-button" type="button" class="raised btnRemovePlayer" style="margin-left:.5em;"><span>' + esc(t('removePlayer')) + '</span></button>' +
+                '<div class="testPlayerStatus fieldDescription" style="margin:1em 0 0;"></div>' +
+                '</div>';
+        }
+        function readPlayers() {
+            return Array.prototype.map.call(view.querySelectorAll('.oppoExtraPlayer'), function (el) {
+                return { Name: el.querySelector('.plName').value.trim(), Address: el.querySelector('.plAddress').value.trim(), IpControlAddress: el.querySelector('.plIpControl').value.trim() };
+            }).filter(function (p) { return p.Address; });
+        }
+        function renderPlayers(players) {
+            view.querySelector('.oppoExtraPlayers').innerHTML = players.map(function (p, i) { return playerRowHtml(p, i + 2); }).join('');
+            if (players.length) view.querySelector('.extraPlayersFold').open = true;
+        }
+        view.querySelector('.btnAddPlayer').addEventListener('click', function () {
+            var players = Array.prototype.map.call(view.querySelectorAll('.oppoExtraPlayer'), function (el) {
+                return { Name: el.querySelector('.plName').value, Address: el.querySelector('.plAddress').value, IpControlAddress: el.querySelector('.plIpControl').value };
+            });
+            players.push({});
+            renderPlayers(players);
+        });
+        view.querySelector('.oppoExtraPlayers').addEventListener('click', function (e) {
+            var row = e.target.closest('.oppoExtraPlayer');
+            if (!row) return;
+            if (e.target.closest('.btnRemovePlayer')) {
+                row.parentNode.removeChild(row);
+                Array.prototype.forEach.call(view.querySelectorAll('.oppoExtraPlayer .playerTitle'), function (h, i) { h.textContent = t('playerNumber').replace('{0}', i + 2); });
+            } else if (e.target.closest('.btnTestPlayer')) {
+                var status = row.querySelector('.testPlayerStatus');
+                status.textContent = t('testing');
+                ApiClient.getJSON(ApiClient.getUrl('Oppo/TestConnection', {
+                    Address: row.querySelector('.plAddress').value.trim(),
+                    IpControl: row.querySelector('.plIpControl').value.trim()
+                })).then(function (result) { status.textContent = result.Message; }, function () { status.textContent = t('testError'); });
+            }
+        });
 
         function readRow(el) {
             var choice = el.querySelector('.mapChoice').value;
@@ -554,6 +609,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 }
                 config.TvSwitchOnPlay = view.querySelector('#chkTvSwitchOnPlay').checked;
                 config.Mappings = readAll();
+                config.ExtraPlayers = readPlayers();
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
                     loading.hide();
                     Dashboard.processPluginConfigurationUpdateResult(result);
@@ -608,6 +664,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-select', 'emby-scroller'],
                 view.querySelector('#txtOppoAddress').value = config.OppoAddress || '';
                 view.querySelector('#txtIpControlAddress').value = config.IpControlAddress || '';
                 view.querySelector('#txtDeviceName').value = config.DeviceName || 'OPPO';
+                renderPlayers(config.ExtraPlayers || []);
                 view.querySelector('#txtStartTimeout').value = config.StartTimeoutSeconds || 60;
                 var firstSetup = !config.OppoAddress && !(config.Mappings || []).length && !config.DlnaDiscImages;
                 view.querySelector('#radioDlna').checked = !!config.DlnaDiscImages;

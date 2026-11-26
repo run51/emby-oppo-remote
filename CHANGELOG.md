@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.26.0-beta1
+
+**Beta** (not published yet).
+
+- **Several OPPO players** (*Player → Other OPPO players*): add more players, each with a name, an IP address and,
+  if needed, an oppo-multiplexer address. Each one appears in Emby's **Play on…** menu under its own name, with
+  playback, pause, seek, audio and subtitle tracks, chapters and multi-disc titles, and records the resume point and
+  watched state for the user who started the film. The players share the film access (DLNA or the shares); the TV,
+  the amplifier, the webhook, the sound warning and the web remote stay with the main player. Asked for by a user with
+  two players.
+- Each player has its own IP control link: two players no longer wait for each other on port 23.
+- Emby.Oppo 0.26.0-beta1, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.25.0-beta6
 
 **Beta** (pre-release, as beta5).

@@ -36,13 +36,18 @@ namespace Emby.Oppo.Oppo
         public string Host => _host;
         private readonly ILogger _logger;
         private readonly IJsonSerializer _json;
-        // Shared by all instances: only one connection at a time on port 23
-        // (playback tracking, the web remote and Emby commands each create their own client).
-        private static readonly SemaphoreSlim _ipLock = new SemaphoreSlim(1, 1);
+        // One connection at a time per IP control endpoint (port 23 or an oppo-multiplexer): playback tracking, the web
+        // remote and Emby commands each create their own client. One lock per endpoint, so that two players do not wait
+        // for each other.
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _ipLocks =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
+        // This player's IP control address ("host[:port]", empty = the player itself); null = the main player's setting.
+        private readonly string _ipControl;
 
-        public OppoClient(string host, IJsonSerializer json, ILogger logger)
+        public OppoClient(string host, IJsonSerializer json, ILogger logger, string ipControlAddress = null)
         {
             _host = host;
+            _ipControl = ipControlAddress;
             _json = json;
             _logger = logger;
         }
@@ -528,7 +533,7 @@ namespace Emby.Oppo.Oppo
         /// Where the IP control protocol goes: the player itself (port 23), or the address set in the
         /// configuration, e.g. an oppo-multiplexer shared with other controllers.
         /// </summary>
-        private (string Host, int Port) IpControlEndpoint() => IpControlEndpoint(Plugin.Instance?.Configuration?.IpControlAddress, _host);
+        private (string Host, int Port) IpControlEndpoint() => IpControlEndpoint(_ipControl ?? Plugin.Instance?.Configuration?.IpControlAddress, _host);
 
         /// <summary>"host" or "host:port" of the IP control link (an oppo-multiplexer), or the player itself on port 23.</summary>
         internal static (string Host, int Port) IpControlEndpoint(string ipControlAddress, string playerHost)
@@ -609,12 +614,13 @@ namespace Emby.Oppo.Oppo
         public async Task<string> Command(string code, CancellationToken ct, string argument = null)
         {
             _telnet = false;
-            await _ipLock.WaitAsync(ct).ConfigureAwait(false);
+            var (ipHost, ipPort) = IpControlEndpoint();
+            var ipLock = _ipLocks.GetOrAdd(ipHost + ":" + ipPort.ToString(CultureInfo.InvariantCulture), _ => new SemaphoreSlim(1, 1));
+            await ipLock.WaitAsync(ct).ConfigureAwait(false);
             try
             {
                 using (var tcp = new TcpClient())
                 {
-                    var (ipHost, ipPort) = IpControlEndpoint();
                     var connect = tcp.ConnectAsync(ipHost, ipPort);
                     if (await Task.WhenAny(connect, Task.Delay(5000, ct)).ConfigureAwait(false) != connect)
                         throw new TimeoutException("OPPO: IP control " + ipHost + ":" + ipPort + " unreachable");
@@ -659,7 +665,7 @@ namespace Emby.Oppo.Oppo
             }
             finally
             {
-                _ipLock.Release();
+                ipLock.Release();
             }
         }
 
@@ -667,20 +673,29 @@ namespace Emby.Oppo.Oppo
         /// Latest unsolicited messages from the OPPO (verbose mode): actual video output ("UVO", e.g.
         /// "_UHD24_"), aspect ratio ("UAR"), 3D ("U3D"). Key = code without "@".
         /// </summary>
-        public static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> Events =
-            new System.Collections.Concurrent.ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public static System.Collections.Concurrent.ConcurrentDictionary<string, string> Events =>
+            EventsFor(Plugin.Instance?.Configuration?.OppoAddress);
+
+        // Per player address.
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Collections.Concurrent.ConcurrentDictionary<string, string>> _events =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, System.Collections.Concurrent.ConcurrentDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Latest unsolicited messages of the player at <paramref name="host"/> (see <see cref="Events"/>).</summary>
+        public static System.Collections.Concurrent.ConcurrentDictionary<string, string> EventsFor(string host) =>
+            _events.GetOrAdd(host ?? "", _ => new System.Collections.Concurrent.ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase));
 
         private static readonly System.Text.RegularExpressions.Regex EventPattern =
             new System.Text.RegularExpressions.Regex(@"@(UVO|UAR|U3D)\s+([^@\r\n]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        private static void CaptureEvents(string text)
+        private void CaptureEvents(string text)
         {
+            var events = EventsFor(_host);
             foreach (System.Text.RegularExpressions.Match m in EventPattern.Matches(text))
             {
                 string code = m.Groups[1].Value.ToUpperInvariant(), value = m.Groups[2].Value.Trim();
                 // UVO carries two resolutions, the source's then the output's ("_480I60 1080P60", as read by openHAB's
                 // OPPO binding): both kept. The others keep their first word.
-                Events[code] = code == "UVO" ? value : value.Split(' ')[0];
+                events[code] = code == "UVO" ? value : value.Split(' ')[0];
             }
         }
 
@@ -697,7 +712,7 @@ namespace Emby.Oppo.Oppo
                 // each unanswered #QPL holds the link for 10 s. Polled every few seconds by the web remote, the link
                 // was never free and a #PON sent meanwhile was lost: "the OPPO does not start" (2026-11-23). So once
                 // #QPL goes unanswered, ask #QPW first until the player is on again.
-                if (_maybeOff)
+                if (MaybeOff)
                 {
                     string power = await Command("QPW", ct).ConfigureAwait(false);
                     if (power.IndexOf("OFF", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -713,8 +728,8 @@ namespace Emby.Oppo.Oppo
                 }
                 string answer = await Command("QPL", ct).ConfigureAwait(false);
                 const string prefix = "@QPL OK ";
-                _maybeOff = !answer.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
-                if (!_maybeOff)
+                MaybeOff = !answer.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+                if (!MaybeOff)
                 {
                     IpControlAnswers(null);
                     return answer.Substring(prefix.Length).Trim().ToUpperInvariant();
@@ -732,9 +747,17 @@ namespace Emby.Oppo.Oppo
             }
         }
 
-        private static string _ipFailure;
+        // Per player address: why IP control last failed (null = answering), and whether #QPL went unanswered.
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _ipFailures =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _maybeOff =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         // #QPL went unanswered (player off, starting or unreachable): the next state query asks #QPW first.
-        private static volatile bool _maybeOff = true;
+        private bool MaybeOff
+        {
+            get => !_maybeOff.TryGetValue(_host ?? "", out bool off) || off;
+            set => _maybeOff[_host ?? ""] = value;
+        }
 
         /// <summary>
         /// Writes to Emby's log, once per change, why IP control does not answer (it used to be in the debug log
@@ -742,8 +765,8 @@ namespace Emby.Oppo.Oppo
         /// </summary>
         private void IpControlAnswers(string failure)
         {
-            string previous = _ipFailure;
-            _ipFailure = failure;
+            _ipFailures.TryGetValue(_host ?? "", out string previous);
+            _ipFailures[_host ?? ""] = failure;
             if (failure == null)
             {
                 if (previous != null) _logger.Info("OPPO: IP control answering again ({0})", _host);

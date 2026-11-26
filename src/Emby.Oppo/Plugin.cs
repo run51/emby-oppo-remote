@@ -33,6 +33,19 @@ namespace Emby.Oppo
         public string Password { get; set; }
     }
 
+    /// <summary>An additional OPPO player, offered in Emby's "Play on…" menu next to the main one.</summary>
+    public sealed class PlayerSettings
+    {
+        /// <summary>Name shown in Emby's "Play on…" menu.</summary>
+        public string Name { get; set; } = "";
+
+        /// <summary>IP address of the player.</summary>
+        public string Address { get; set; } = "";
+
+        /// <summary>Optional "host[:port]" of an oppo-multiplexer for this player's IP control. Empty: the player itself.</summary>
+        public string IpControlAddress { get; set; } = "";
+    }
+
     public sealed class PluginConfiguration : BasePluginConfiguration
     {
         /// <summary>IP address of the OPPO (UDP-203/205) or of a compatible player.</summary>
@@ -47,6 +60,16 @@ namespace Emby.Oppo
 
         /// <summary>Name shown in Emby's "Play on…" menu.</summary>
         public string DeviceName { get; set; } = "OPPO";
+
+        /// <summary>
+        /// Other OPPO players (e.g. in another room), each one offered in "Play on…" under its own name. They share the
+        /// main player's film access (DLNA or shares); the TV, amplifier, webhook and web remote stay with the main player.
+        /// </summary>
+        public PlayerSettings[] ExtraPlayers { get; set; } = Array.Empty<PlayerSettings>();
+
+        /// <summary>The main player as a <see cref="PlayerSettings"/>.</summary>
+        internal PlayerSettings MainPlayer() =>
+            new PlayerSettings { Name = DeviceName, Address = OppoAddress, IpControlAddress = IpControlAddress };
 
         /// <summary>Emby path → network share mappings.</summary>
         public PathMapping[] Mappings { get; set; } = Array.Empty<PathMapping>();

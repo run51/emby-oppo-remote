@@ -31,6 +31,15 @@
                 <input is="emby-input" type="text" id="txtDeviceName" label="Name in the &quot;Play on&quot; menu:" data-i18n-label="deviceName" />
             </div>
 
+            <details class="oppoFold extraPlayersFold">
+                <summary><span data-i18n="extraPlayers">Other OPPO players</span><small data-i18n="extraPlayersSub">Optional: more players in the "Play on" menu</small></summary>
+                <div class="oppoFoldBody">
+                    <div class="fieldDescription" style="margin-bottom:1em;" data-i18n="extraPlayersHelp">Each player is offered in Emby's "Play on" menu under its own name and plays the films the same way as the main player (DLNA or the shares below). The TV, the amplifier, the webhook and the web remote stay with the main player.</div>
+                    <div class="oppoExtraPlayers"></div>
+                    <button is="emby-button" type="button" class="raised btnAddPlayer"><span data-i18n="addPlayer">Add a player</span></button>
+                </div>
+            </details>
+
             <h2 class="sectionTitle" data-i18n="playMode">How the OPPO plays your films</h2>
             <div class="oppoModes" role="radiogroup">
                 <label class="oppoMode modeDlna">

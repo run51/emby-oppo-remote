@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using MediaBrowser.Controller;
@@ -33,7 +34,9 @@ namespace Emby.Oppo
         internal static OppoEntryPoint Current { get; private set; }
 
         private readonly IUserManager _userManager;
-        private User _user;   // last user who started a movie: kept on the session (resume point, "watched")
+        // Per player session (device id): last user who started a movie there, kept on the session (resume point, "watched").
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, User> _users =
+            new System.Collections.Concurrent.ConcurrentDictionary<string, User>(StringComparer.Ordinal);
 
         private readonly MediaBrowser.Controller.MediaEncoding.IMediaEncoder _mediaEncoder;
         private readonly MediaBrowser.Common.Configuration.IApplicationPaths _paths;
@@ -76,7 +79,7 @@ namespace Emby.Oppo
         /// Attaches the user who starts a movie to the "OPPO" session: Emby only records the playback
         /// position and "watched" state for the session's user.
         /// </summary>
-        internal void AttachUser(string controllingUserId)
+        internal void AttachUser(string deviceId, string controllingUserId)
         {
             // Called through reflection: IUserManager.GetUserById also has ReadOnlySpan overloads, missing from netstandard2.0.
             User user = null;
@@ -85,37 +88,70 @@ namespace Emby.Oppo
             else if (long.TryParse(controllingUserId, out var internalId))
                 user = typeof(IUserManager).GetMethod("GetUserById", new[] { typeof(long) })?.Invoke(_userManager, new object[] { internalId }) as User;
             if (user == null) return;
-            if (_user == null || _user.InternalId != user.InternalId)
+            _users.TryGetValue(deviceId ?? "", out var previous);
+            if (previous == null || previous.InternalId != user.InternalId)
                 _logger.Info("OPPO: playing for user {0} (resume point and watched state recorded for them)", user.Name);
-            _user = user;
+            _users[deviceId ?? ""] = user;
             Register();
         }
 
         private void Register()
         {
+            var config = Plugin.Instance.Configuration;
+            if (string.IsNullOrWhiteSpace(config.OppoAddress)) return; // not configured yet
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            RegisterPlayer(config.MainPlayer(), "emby-oppo-" + config.OppoAddress.Trim(), null, ids);
+            int n = 1;
+            foreach (var player in config.ExtraPlayers ?? Array.Empty<PlayerSettings>())
+            {
+                n++;
+                if (player == null || string.IsNullOrWhiteSpace(player.Address)) continue;
+                // Device id from the address, so that Emby keeps the same device; the same address twice (a test,
+                // or two names for one player) gets the player's number.
+                string id = "emby-oppo-" + player.Address.Trim();
+                if (ids.Contains(id)) id += "-" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var settings = new PlayerSettings
+                {
+                    Name = string.IsNullOrWhiteSpace(player.Name) ? "OPPO " + n.ToString(System.Globalization.CultureInfo.InvariantCulture) : player.Name.Trim(),
+                    Address = player.Address.Trim(),
+                    IpControlAddress = (player.IpControlAddress ?? "").Trim()
+                };
+                RegisterPlayer(settings, id, settings, ids);
+            }
+        }
+
+        /// <summary>Shows one player in "Play on…" (an Emby session with our controller). <paramref name="extra"/> = null for the main player.</summary>
+        private void RegisterPlayer(PlayerSettings player, string deviceId, PlayerSettings extra, HashSet<string> ids)
+        {
             try
             {
-                var config = Plugin.Instance.Configuration;
-                if (string.IsNullOrWhiteSpace(config.OppoAddress)) return; // not configured yet
-                string deviceId = "emby-oppo-" + config.OppoAddress;
-                var session = _sessionManager.LogSessionActivity(AppName, typeof(Plugin).Assembly.GetName().Version.ToString(3), deviceId, config.DeviceName, config.OppoAddress, _user);
+                ids.Add(deviceId);
+                _users.TryGetValue(deviceId, out var user);
+                string address = player.Address.Trim();
+                var session = _sessionManager.LogSessionActivity(AppName, typeof(Plugin).Assembly.GetName().Version.ToString(3), deviceId,
+                    string.IsNullOrWhiteSpace(player.Name) ? "OPPO" : player.Name, address, user);
 
-                if (!session.SessionControllers.OfType<OppoSessionController>().Any())
+                var controller = session.SessionControllers.OfType<OppoSessionController>().FirstOrDefault();
+                if (controller == null)
                 {
                     session.AddController(new OppoSessionController(session, _sessionManager, _libraryManager, _itemRepository,
-                        _json, _logger, LocalAddress()));
+                        _json, _logger, LocalAddress(), extra));
                     _sessionManager.ReportCapabilities(session, new ClientCapabilities
                     {
                         PlayableMediaTypes = new[] { "Video" },
                         SupportedCommands = new[] { "SetAudioStreamIndex", "SetSubtitleStreamIndex" }.Concat(OppoSessionController.RemoteKeys.Keys).ToArray(),
                         SupportsMediaControl = true
                     });
-                    _logger.Info("OPPO: device \"{0}\" ({1}) available in \"Play on…\"", config.DeviceName, config.OppoAddress);
+                    _logger.Info("OPPO: device \"{0}\" ({1}) available in \"Play on…\"", player.Name, address);
+                }
+                else
+                {
+                    controller.UpdatePlayer(extra);
                 }
             }
             catch (Exception ex)
             {
-                _logger.ErrorException("OPPO: could not register the device", ex);
+                _logger.ErrorException("OPPO: could not register the device " + player.Address, ex);
             }
         }
 

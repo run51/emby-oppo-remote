@@ -57,8 +57,22 @@ namespace Emby.Oppo
         private static long _pendingMainMovie;
         private static DateTime _pendingMainMovieUntil;
 
-        /// <summary>Chapter marks (s) of the main movie playing as a file (no disc navigation), else null.</summary>
-        internal static double[] MainMovieChapters { get; private set; }
+        // Chapter marks (s) of the main movie playing as a file on this player (no disc navigation), else null.
+        private double[] _chapters;
+
+        /// <summary>Chapter marks (s) of the main movie playing as a file on the main player, else null.</summary>
+        internal static double[] MainMovieChapters => _main?._chapters;
+
+        // Controller of the main player (the one the web remote, TV, amplifier and webhook go with).
+        private static OppoSessionController _main;
+        private readonly bool _isMain;
+        private PlayerSettings _extra;   // an additional player's settings (updated by the entry point)
+
+        /// <summary>True for the main player's session.</summary>
+        internal bool IsMain => _isMain;
+
+        /// <summary>New settings of an additional player (name, address, IP control).</summary>
+        internal void UpdatePlayer(PlayerSettings player) { if (!_isMain && player != null) _extra = player; }
 
         /// <summary>The next play request for this item plays its main movie directly, without the disc menus.</summary>
         internal static void RequestMainMovie(long itemId)
@@ -71,8 +85,11 @@ namespace Emby.Oppo
         private long _startInner;             // start position within that disc
 
         public OppoSessionController(SessionInfo session, ISessionManager sessionManager, ILibraryManager libraryManager,
-            IItemRepository itemRepository, IJsonSerializer json, ILogger logger, string serverAddress)
+            IItemRepository itemRepository, IJsonSerializer json, ILogger logger, string serverAddress, PlayerSettings extraPlayer = null)
         {
+            _isMain = extraPlayer == null;
+            _extra = extraPlayer;
+            if (_isMain) _main = this;
             _session = session;
             _sessionManager = sessionManager;
             _libraryManager = libraryManager;
@@ -83,7 +100,11 @@ namespace Emby.Oppo
         }
 
         private static PluginConfiguration Config => Plugin.Instance.Configuration;
-        private OppoClient Oppo => new OppoClient(Config.OppoAddress, _json, _logger);
+        /// <summary>This session's player: the main one (live settings) or an additional one.</summary>
+        private PlayerSettings Player => _isMain ? Config.MainPlayer() : _extra;
+
+        // An additional player uses its own IP control address (empty = the player itself), the main one the setting.
+        private OppoClient Oppo => new OppoClient(Player.Address, _json, _logger, _isMain ? null : (Player.IpControlAddress ?? ""));
 
         public bool IsSessionActive => true;
         public bool SupportsMediaControl => true;
@@ -112,7 +133,7 @@ namespace Emby.Oppo
             if (request.ItemIds == null || request.ItemIds.Length == 0) return;
             var item = _libraryManager.GetItemById(request.ItemIds[0]);
             if (item == null) return;
-            bool mainMovie = DateTime.UtcNow < _pendingMainMovieUntil && _pendingMainMovie == item.InternalId;
+            bool mainMovie = _isMain && DateTime.UtcNow < _pendingMainMovieUntil && _pendingMainMovie == item.InternalId;
             if (!string.IsNullOrEmpty(request.MediaSourceId))
                 item = _libraryManager.GetItemById(item.InternalId.ToString(CultureInfo.InvariantCulture), request.MediaSourceId) ?? item;
 
@@ -129,8 +150,11 @@ namespace Emby.Oppo
                     requestedPart = position + 1;
                 }
             }
-            mainMovie = mainMovie || (DateTime.UtcNow < _pendingMainMovieUntil && _pendingMainMovie == item.InternalId);
-            _pendingMainMovie = 0;
+            if (_isMain)
+            {
+                mainMovie = mainMovie || (DateTime.UtcNow < _pendingMainMovieUntil && _pendingMainMovie == item.InternalId);
+                _pendingMainMovie = 0;
+            }
             // Resume: straight into the main movie at the resume point, not through the disc's menus (only applies to
             // Blu-rays, see PlayPart; the 24/11 request).
             if (!mainMovie && Config.ResumeWithoutMenus && (request.StartPositionTicks ?? 0) > TimeSpan.TicksPerMinute) mainMovie = true;
@@ -168,13 +192,16 @@ namespace Emby.Oppo
                 TimeSpan.FromTicks(request.StartPositionTicks ?? 0), mainMovie ? ", main movie without menus" : "");
 
             // Session attached to the user who starts the movie (otherwise Emby records neither resume point nor "watched").
-            OppoEntryPoint.Current?.AttachUser(request.ControllingUserId);
+            OppoEntryPoint.Current?.AttachUser(_session.DeviceId, request.ControllingUserId);
 
             // Reported right away: the app shows the playback page immediately instead of waiting
             // (and resending the request) while the share is mounted and the disc loads.
             await ReportStart(item).ConfigureAwait(false);
-            _ = TvPower.TurnOn(_logger);   // TV turned on as soon as requested (if a remote is configured)
-            _ = TvLg.SwitchOnPlay(_json, _logger);   // LG TV switched to the OPPO's input (if set up)
+            if (_isMain)   // the TV goes with the main player
+            {
+                _ = TvPower.TurnOn(_logger);   // TV turned on as soon as requested (if a remote is configured)
+                _ = TvLg.SwitchOnPlay(_json, _logger);   // LG TV switched to the OPPO's input (if set up)
+            }
             _ = Task.Run(() => RunPlayback(item, request, cts.Token));
         }
 
@@ -261,14 +288,14 @@ namespace Emby.Oppo
             }
             finally
             {
-                MainMovieChapters = null;
+                _chapters = null;
                 if (ReferenceEquals(_item, item))
                 {
                     _item = null;
                     _playback = null;
                     await ReportStopped(item).ConfigureAwait(false);
                     if (notified) await NotifyHomeAssistant("stopped", title).ConfigureAwait(false);
-                    SleepTimer.PlaybackEnded(finished);
+                    if (_isMain) SleepTimer.PlaybackEnded(finished);
                 }
             }
         }
@@ -283,7 +310,7 @@ namespace Emby.Oppo
             {
                 // Main movie as a file (no menus), then the disc image over DLNA (oppo-dv-mkv mod), then the
                 // network share: each one is the fallback of the previous one.
-                MainMovieChapters = null;
+                _chapters = null;
                 _rendererDeaf = false;
                 bool started = _mainMovie && IsBluray(part.Path)
                     && await StartMainMovie(oppo, title, label, part, partCt).ConfigureAwait(false);
@@ -312,8 +339,11 @@ namespace Emby.Oppo
 
                 _logger.Info("OPPO: {0}{1} started (state \"{2}\")", title, label, state);
                 // What the decoder reports is in the player's log for about 30 s only: read it now.
-                DecoderInfo.Reset();
-                DecoderInfo.Capture(oppo.Host, _logger);
+                if (_isMain)
+                {
+                    DecoderInfo.Reset();
+                    DecoderInfo.Capture(oppo.Host, _logger);
+                }
                 if (!wasStarted())
                 {
                     markStarted();
@@ -325,7 +355,7 @@ namespace Emby.Oppo
                 // Capped at 1 h: a wrong duration in Emby (e.g. 25 h) must not prevent recognising the movie.
                 long minimumMovieTicks = Math.Max(TimeSpan.FromMinutes(20).Ticks, Math.Min((part.RunTimeTicks ?? 0) / 2, TimeSpan.FromHours(1).Ticks));
                 bool movieStarted = false, tracksApplied = false;
-                SoundWatch.Reset();
+                if (_isMain) SoundWatch.Reset();
                 long lastPos = 0, lastDur = 0;
                 int outside = 0, tick = 0;
                 string lastState = state;
@@ -358,7 +388,7 @@ namespace Emby.Oppo
                     var status = await oppo.GetStatus(partCt).ConfigureAwait(false);
                     // Main movie played as a file: tracks and resume point only once the file really plays (known
                     // duration, 2 s in); sent earlier, the player accepted them, then applied its own defaults (2026-11-20).
-                    bool mainTitle = MainMovieChapters != null
+                    bool mainTitle = _chapters != null
                         ? status.Duration.Ticks > 0 && status.Position >= TimeSpan.FromSeconds(2)
                         : status.Duration.Ticks >= minimumMovieTicks;
                     if (mainTitle && state == "PLAY" && !tracksApplied)
@@ -381,7 +411,7 @@ namespace Emby.Oppo
                     }
                     if (++tick % 2 == 0) await ReportProgress(item, status).ConfigureAwait(false);
                     // The film's sound gone to the TV instead of the amplifier (vidinfo + Home Assistant): reported once.
-                    if (mainTitle && state == "PLAY" && status.Position > TimeSpan.FromSeconds(20))
+                    if (_isMain && mainTitle && state == "PLAY" && status.Position > TimeSpan.FromSeconds(20))
                         await SoundWatch.Check(oppo.Host, title, _json, _logger, partCt).ConfigureAwait(false);
                 }
             }
@@ -483,7 +513,7 @@ namespace Emby.Oppo
         private async Task<bool> RendererUsable(OppoClient oppo, CancellationToken ct)
         {
             if (await oppo.DlnaTransportState(ct).ConfigureAwait(false) != null) return true;
-            _logger.Info("OPPO: DLNA renderer not answering ({0}), not used", Config.OppoAddress);
+            _logger.Info("OPPO: DLNA renderer not answering ({0}), not used", Player.Address);
             return false;
         }
 
@@ -626,8 +656,8 @@ namespace Emby.Oppo
                 state = await oppo.QueryPlayback(ct).ConfigureAwait(false);
                 if (state == "PLAY" || state == "PAUSE")
                 {
-                    MainMovieChapters = disc.MainPlaylist.Chapters.ToArray();
-                    _logger.Info("OPPO: main movie started in {0} s ({1} chapters)", (int)(DateTime.UtcNow - started).TotalSeconds, MainMovieChapters.Length);
+                    _chapters = disc.MainPlaylist.Chapters.ToArray();
+                    _logger.Info("OPPO: main movie started in {0} s ({1} chapters)", (int)(DateTime.UtcNow - started).TotalSeconds, _chapters.Length);
                     return true;
                 }
                 if (DateTime.UtcNow - started > TimeSpan.FromSeconds(6) && DiscServer.RequestCount(url) == 0) break;
@@ -642,9 +672,11 @@ namespace Emby.Oppo
         /// Next / previous chapter while the main movie plays as a file: the player has no chapters then,
         /// so jump by time to the disc's chapter marks. Returns false if not in that mode.
         /// </summary>
-        internal static async Task<bool> JumpChapter(OppoClient oppo, bool next, CancellationToken ct)
+        internal static Task<bool> JumpChapter(OppoClient oppo, bool next, CancellationToken ct) =>
+            JumpChapter(MainMovieChapters, oppo, next, ct);
+
+        private static async Task<bool> JumpChapter(double[] marks, OppoClient oppo, bool next, CancellationToken ct)
         {
-            var marks = MainMovieChapters;
             if (marks == null || marks.Length == 0) return false;
             double pos = (await oppo.GetStatus(ct).ConfigureAwait(false)).Position.TotalSeconds;
             double? target;
@@ -764,7 +796,7 @@ namespace Emby.Oppo
             if (pos < 0) return null;
             // A disc played as a disc: its audio menu follows the playlist, whose order can differ from Emby's
             // (Dune: an AC-3 track of the clip that the playlist does not list). Use the playlist position.
-            if (MainMovieChapters == null && IsBluray(item.Path))
+            if (_chapters == null && IsBluray(item.Path))
             {
                 try
                 {
@@ -873,11 +905,11 @@ namespace Emby.Oppo
                     _paused = !_paused;
                     break;
                 case PlaystateCommand.NextTrack:
-                    if (!await JumpChapter(oppo, true, ct).ConfigureAwait(false))
+                    if (!await JumpChapter(_chapters, oppo, true, ct).ConfigureAwait(false))
                         await oppo.Command("NXT", ct).ConfigureAwait(false);   // next chapter
                     break;
                 case PlaystateCommand.PreviousTrack:
-                    if (!await JumpChapter(oppo, false, ct).ConfigureAwait(false))
+                    if (!await JumpChapter(_chapters, oppo, false, ct).ConfigureAwait(false))
                         await oppo.Command("PRE", ct).ConfigureAwait(false);   // previous chapter
                     break;
                 case PlaystateCommand.FastForward:
@@ -942,9 +974,9 @@ namespace Emby.Oppo
             if (string.IsNullOrEmpty(state))
             {
                 // In standby: power it on (requires "network standby" enabled on the OPPO).
-                _logger.Info("OPPO: player in standby or unreachable, powering on ({0})", Config.OppoAddress);
+                _logger.Info("OPPO: player in standby or unreachable, powering on ({0})", Player.Address);
                 if (!await oppo.WakeAndWait(TimeSpan.FromSeconds(Math.Max(60, Config.StartTimeoutSeconds)), ct).ConfigureAwait(false))
-                    _logger.Info("OPPO: no response after the power-on request ({0})", Config.OppoAddress);
+                    _logger.Info("OPPO: no response after the power-on request ({0})", Player.Address);
                 // The command port responds a little after the HTTP interface.
                 for (int i = 0; i < 15 && string.IsNullOrEmpty(state); i++)
                 {
@@ -994,7 +1026,7 @@ namespace Emby.Oppo
             var item = _item;
             _item = null;
             cts.Cancel();
-            SoundWatch.Reset();
+            if (_isMain) SoundWatch.Reset();
             if (reportStopped && item != null)
             {
                 await ReportStopped(item).ConfigureAwait(false);
@@ -1106,7 +1138,7 @@ namespace Emby.Oppo
         private async Task NotifyHomeAssistant(string evt, string title)
         {
             string url = Config.WebhookUrl;
-            if (string.IsNullOrWhiteSpace(url)) return;
+            if (!_isMain || string.IsNullOrWhiteSpace(url)) return;   // the webhook goes with the main player's room
             try
             {
                 var request = (HttpWebRequest)WebRequest.Create(url);
@@ -1124,6 +1156,10 @@ namespace Emby.Oppo
             }
         }
 
-        public void Dispose() => _playback?.Cancel();
+        public void Dispose()
+        {
+            _playback?.Cancel();
+            if (ReferenceEquals(_main, this)) _main = null;
+        }
     }
 }

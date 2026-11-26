@@ -397,7 +397,7 @@ namespace Emby.Oppo
 
                     // Emby's "OPPO" session: used to start a movie on it, and gives the current title.
                     var session = _sessionManager.Sessions.FirstOrDefault(s =>
-                        string.Equals(s.Client, "OPPO", StringComparison.Ordinal) && s.SessionControllers.OfType<OppoSessionController>().Any());
+                        string.Equals(s.Client, "OPPO", StringComparison.Ordinal) && s.SessionControllers.OfType<OppoSessionController>().Any(c => c.IsMain));
                     result.SessionId = session?.Id;
                     result.DeviceName = Plugin.Instance.Configuration.DeviceName;
                     result.SleepAt = SleepTimer.At?.ToString("o", CultureInfo.InvariantCulture);
