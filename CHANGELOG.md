@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.26.0
+
+Stable release: everything since v0.24.1 (betas 0.25.0-beta5, 0.25.0-beta6 and 0.26.0-beta1). The settings page's
+**Update** offers it.
+
+- **Several OPPO players** (*Player → Other OPPO players*): add more players, each with a name, an IP address and,
+  if needed, an oppo-multiplexer address. Each one appears in Emby's **Play on…** menu under its own name, with
+  playback, pause, seek, audio and subtitle tracks, chapters and multi-disc titles, and records the resume point and
+  watched state for the user who started the film. The players share the film access (DLNA or the shares); the TV,
+  the amplifier, the webhook, the sound warning and the web remote stay with the main player. Each player has its own
+  IP control link.
+- **LG webOS TV, without Home Assistant** (*Optional → TV*, beta): the plugin pairs with the TV itself and switches it
+  to the OPPO's input when a film starts, turning it on first with Wake-on-LAN if needed.
+- **OPPO line as coloured labels** (4K · 24 fps · Dolby Vision) for every player, read from what the player tells;
+  frame rates as usually named (24, 30, 60) and the sound without the track's language. With `vidinfo` (oppo-dv-mkv
+  mod addition) it shows what the player really decodes and sends out from the first seconds, discs included, and
+  warns when the film's sound goes to the TV instead of the amplifier.
+- **Port 436 reopened again** whenever the OPPO refuses an HTTP call (after a player restart the remote lost the
+  tracks and the OPPO line).
+- Emby.Oppo 0.26.0, Emby.IsoBluray 0.5.1 (unchanged). Android apps unchanged.
+
 ## v0.26.0-beta1
 
 **Beta** (pre-release: the settings page's **Update** keeps offering v0.24.1; install this one by hand). Tested with two players in "Play on…": playback, pause, seek, audio and subtitle tracks, resume point.

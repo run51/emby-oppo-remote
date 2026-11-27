@@ -4,6 +4,8 @@ Two Emby Server plugins and an Android app to play your library on an **OPPO UDP
 
 Written from scratch using the OPPO's public IP control protocol and Emby's public plugin API. No third-party code is included.
 
+**New in 0.26: several OPPO players** in Emby's **Play on…** menu, each under its own name (*Player → Other OPPO players*).
+
 **New in 0.24: a redesigned remote.** The film's artwork behind every page, a colour taken from each film's poster, a playback screen that fits a phone without scrolling, French trailers, an input screen for the OPPO, and what the OPPO and the amplifier really output. See the [screenshots](#screenshots) and the [changelog](CHANGELOG.md).
 
 The interface is available in **English and French**. The language follows the device or browser, and you can change it in the remote's settings.
@@ -130,7 +132,7 @@ Open this page in a **web browser** (`http://<server>:8096`): plugin settings pa
   - **Amplifier audio format sensor** (optional): the Home Assistant sensor giving what the amplifier decodes (e.g. `sensor.denon_audio_format`), shown on the playback screen. Empty: `sensor.<amplifier>_audio_format` if it exists, else the amplifier's sound mode.
 - **Resume Blu-rays without their menus** (on by default): resuming a Blu-ray (ISO or folder) starts its main movie directly at the resume point, as **Movie without menus** does, instead of the disc's menu.
 - **TV** (optional, beta): LG webOS TVs. The plugin pairs with the TV itself (no Home Assistant needed) and switches it to the OPPO's input when a film starts, turning it on first with Wake-on-LAN if needed ("Turn on via Wi-Fi" or "Mobile TV On" enabled on the TV). The TV must be on to pair it; it asks once to allow the connection.
-- **Other OPPO players** (optional, beta): a second player, e.g. in another room. Enter its name and IP address (and an oppo-multiplexer address if another device controls it too). Each player appears in Emby's **Play on…** menu under its own name and plays the films the same way as the main player (DLNA or the shares). The TV, the amplifier, the webhook and the web remote stay with the main player.
+- **Other OPPO players** (optional): a second player, e.g. in another room. Enter its name and IP address (and an oppo-multiplexer address if another device controls it too). Each player appears in Emby's **Play on…** menu under its own name and plays the films the same way as the main player (DLNA or the shares). The TV, the amplifier, the webhook and the web remote stay with the main player.
 - **TheMovieDb API key** (optional): your own key (themoviedb.org → Settings → API; a v3 key or a v4 read access token). The film pages of the remote then also list each film's French trailers. Without it, the remote shows the trailers Emby already knows.
 
 Then, from any Emby app: **Play on… → OPPO**.
